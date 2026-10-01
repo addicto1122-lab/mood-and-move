@@ -31,6 +31,9 @@ public class User {
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted = false;
 
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -38,4 +41,20 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    private User(String email, String passwordHash, String nickname) {
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.nickname = nickname;
+        this.onboardingCompleted = false;
+        this.tokenVersion = 0;
+    }
+
+    public static User create(String email, String passwordHash, String nickname) {
+        return new User(email, passwordHash, nickname);
+    }
+
+    public void increaseTokenVersion() {
+        this.tokenVersion++;
+    }
 }
