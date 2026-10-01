@@ -192,27 +192,28 @@ CREATE TABLE user_hobbies (
 -- 감정 종류 Master
 -- =========================================================
 CREATE TABLE emotions (
-                          emotion_code VARCHAR(30) PRIMARY KEY,
+                          emotion_code VARCHAR(30) NOT NULL,
 
                           name VARCHAR(50) NOT NULL,
-
                           emoji VARCHAR(10),
 
-                          -- 감정별 고정 기본 점수
-                          -- 화남 0 ~ 기쁨 50
                           base_score INT UNSIGNED NOT NULL,
 
                           active BOOLEAN NOT NULL DEFAULT TRUE,
 
                           created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+                          PRIMARY KEY (emotion_code),
+
                           CONSTRAINT uq_emotions_name
                               UNIQUE (name),
 
                           CONSTRAINT chk_emotions_base_score
-                              CHECK(base_score BETWEEN 0 AND 50)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                              CHECK (base_score BETWEEN 0 AND 50)
 
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
 
 -- =========================================================
@@ -261,16 +262,59 @@ CREATE TABLE mood_entries (
 
                               diary_content TEXT,
 
+                              recommendation_status VARCHAR(20)
+                                  NOT NULL DEFAULT 'AVAILABLE',
+
+                              recommendation_eligible_until DATETIME NULL,
+
+                              recorded_at DATETIME NOT NULL,
+
+                              deleted_at DATETIME NULL,
+
+                              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                              CONSTRAINT uq_mood_entries_user_date
+                                  UNIQUE (user_id, entry_date),
+
                               CONSTRAINT chk_mood_entries_intensity
-                              CHECK (intensity BETWEEN 1 AND 10),
+                                  CHECK (
+                                      intensity BETWEEN 1 AND 10
+                                      ),
 
                               CONSTRAINT chk_mood_entries_score
-                                  CHECK (mood_score BETWEEN 1 AND 60),
+                                  CHECK (
+                                      mood_score BETWEEN 1 AND 60
+                                      ),
+
+                              CONSTRAINT chk_mood_entries_recommendation_status
+                                  CHECK (
+                                      recommendation_status IN (
+                                                                'AVAILABLE',
+                                                                'REQUESTED',
+                                                                'DECLINED',
+                                                                'EXPIRED',
+                                                                'DELETED'
+                                          )
+                                      ),
+
+                              CONSTRAINT fk_mood_entries_user
+                                  FOREIGN KEY (user_id)
+                                      REFERENCES users(id)
+                                      ON DELETE CASCADE,
 
                               CONSTRAINT fk_mood_entries_emotion
                                   FOREIGN KEY (emotion_code)
-                                  REFERENCES emotions(emotion_code)
-    );
+                                      REFERENCES emotions(emotion_code),
+
+                              INDEX idx_mood_entries_user_entry_date
+                                  (user_id, entry_date),
+
+                              INDEX idx_mood_entries_deleted_at
+                                  (deleted_at)
+
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
 
 
 
@@ -867,4 +911,5 @@ CREATE TABLE user_action_stats (
                                                )
                                            )
 
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_unicode_ci;

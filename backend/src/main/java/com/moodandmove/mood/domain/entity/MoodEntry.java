@@ -44,8 +44,7 @@ public class MoodEntry {
     @Column(nullable = false)
     private Integer intensity;
 
-    @Lob
-    @Column(name = "diary_content")
+    @Column(name = "diary_content", columnDefinition = "TEXT")
     private String diaryContent;
 
     @Enumerated(EnumType.STRING)
