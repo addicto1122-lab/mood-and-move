@@ -1,0 +1,376 @@
+/* =========================
+   Mood Write Page
+   ========================= */
+
+.mood-page {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+
+  margin: 0 auto;
+  padding: 30px 20px 120px;
+
+  background: var(--paper);
+}
+
+/* =========================
+   Header
+   ========================= */
+
+.page-header {
+  margin-bottom: 30px;
+}
+
+.page-header > span {
+  display: inline-block;
+  margin-bottom: 8px;
+
+  color: var(--sage);
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.page-header h1 {
+  font-size: 30px;
+  line-height: 1.3;
+  letter-spacing: -0.04em;
+}
+
+.page-header p {
+  margin-top: 8px;
+
+  color: var(--muted);
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* =========================
+   Form Section
+   ========================= */
+
+.form-section {
+  margin-bottom: 28px;
+}
+
+.form-section h2 {
+  margin-bottom: 13px;
+
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* =========================
+   Emotion
+   ========================= */
+
+.emotion-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.emotion-button {
+  min-height: 84px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 10px 5px;
+
+  border: 1px solid var(--line);
+  border-radius: 18px;
+
+  color: var(--ink);
+  background: #ffffff;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.emotion-button span {
+  font-size: 27px;
+}
+
+.emotion-button:hover {
+  transform: translateY(-2px);
+}
+
+.emotion-button.selected {
+  border-color: var(--sage);
+
+  color: var(--sage-dark);
+  background: var(--mint);
+}
+
+/* =========================
+   Intensity
+   ========================= */
+
+.intensity-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.intensity-scale button {
+  height: 46px;
+
+  border: 1px solid var(--line);
+  border-radius: 14px;
+
+  color: var(--muted);
+  background: #ffffff;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.intensity-scale button:hover {
+  border-color: #b9cdc0;
+  transform: translateY(-1px);
+}
+
+.intensity-scale button.selected {
+  border-color: var(--sage-dark);
+
+  color: #ffffff;
+  background: var(--sage-dark);
+}
+
+/* =========================
+   Activity Input
+   ========================= */
+
+.activity-input {
+  width: 100%;
+  height: 52px;
+
+  padding: 0 16px;
+
+  border: 1px solid var(--line);
+  border-radius: 16px;
+
+  outline: none;
+
+  color: var(--ink);
+  background: #ffffff;
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.activity-input:focus {
+  border-color: var(--sage);
+
+  box-shadow: 0 0 0 3px rgba(95, 128, 111, 0.08);
+}
+
+.activity-input::placeholder {
+  color: #a0aaa5;
+}
+
+/* =========================
+   Diary
+   ========================= */
+
+.form-section textarea {
+  width: 100%;
+  min-height: 140px;
+
+  resize: vertical;
+
+  padding: 16px;
+
+  border: 1px solid var(--line);
+  border-radius: 18px;
+
+  outline: none;
+
+  color: var(--ink);
+  background: #ffffff;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-section textarea:focus {
+  border-color: var(--sage);
+
+  box-shadow: 0 0 0 3px rgba(95, 128, 111, 0.08);
+}
+
+.form-section textarea::placeholder {
+  color: #a0aaa5;
+}
+
+.text-count {
+  display: block;
+
+  margin-top: 7px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  text-align: right;
+}
+
+/* =========================
+   Save Button
+   ========================= */
+
+.save-mood-button {
+  width: 100%;
+  min-height: 56px;
+
+  border: 0;
+  border-radius: 18px;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  font-size: 15px;
+  font-weight: 800;
+
+  box-shadow: 0 8px 20px rgba(66, 100, 83, 0.18);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.save-mood-button:hover {
+  background: #365747;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 10px 24px rgba(66, 100, 83, 0.22);
+}
+
+.save-mood-button:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   Tablet
+   ========================= */
+
+@media (min-width: 768px) and (max-width: 959px) {
+  .mood-page {
+    max-width: 720px;
+
+    padding: 42px 40px 120px;
+  }
+
+  .emotion-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .intensity-scale {
+    grid-template-columns: repeat(10, 1fr);
+  }
+}
+
+/* =========================
+   Desktop
+   ========================= */
+
+@media (min-width: 960px) {
+  .mood-page {
+    max-width: 900px;
+    min-height: 100vh;
+
+    margin: 0 auto;
+    padding: 48px 60px 80px;
+
+    background: transparent;
+  }
+
+  .page-header {
+    margin-bottom: 38px;
+  }
+
+  .page-header h1 {
+    font-size: 38px;
+  }
+
+  .page-header p {
+    font-size: 14px;
+  }
+
+  .form-section {
+    margin-bottom: 18px;
+    padding: 24px;
+
+    border: 1px solid var(--line);
+    border-radius: 24px;
+
+    background: #ffffff;
+
+    box-shadow: 0 7px 25px rgba(49, 75, 61, 0.04);
+  }
+
+  .emotion-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .emotion-button {
+    min-height: 96px;
+  }
+
+  .emotion-button span {
+    font-size: 30px;
+  }
+
+  .intensity-scale {
+    grid-template-columns: repeat(10, 1fr);
+  }
+
+  .intensity-scale button {
+    height: 50px;
+  }
+
+  .activity-input {
+    height: 56px;
+
+    background: var(--paper);
+  }
+
+  .form-section textarea {
+    min-height: 170px;
+
+    background: var(--paper);
+  }
+
+  .save-mood-button {
+    max-width: 320px;
+
+    display: block;
+    margin-left: auto;
+  }
+}

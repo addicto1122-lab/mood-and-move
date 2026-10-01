@@ -1,0 +1,471 @@
+/* =========================
+   Onboarding Page
+   ========================= */
+
+.onboarding-page {
+  width: 100%;
+  min-height: 100vh;
+
+  padding: 28px 20px 60px;
+
+  background: linear-gradient(145deg, #eef6ee 0%, #fbfcfa 45%, #f7f2ea 100%);
+}
+
+.onboarding-container {
+  width: 100%;
+  max-width: 620px;
+
+  margin: 0 auto;
+}
+
+/* =========================
+   Header
+   ========================= */
+
+.onboarding-header {
+  margin-bottom: 36px;
+}
+
+.onboarding-logo {
+  margin-bottom: 36px;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+.onboarding-logo span {
+  color: var(--sage);
+
+  font-weight: 500;
+}
+
+.onboarding-eyebrow {
+  display: inline-block;
+
+  margin-bottom: 9px;
+
+  color: var(--sage);
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 0.05em;
+}
+
+.onboarding-header h1 {
+  font-size: 32px;
+  line-height: 1.25;
+
+  letter-spacing: -0.045em;
+}
+
+.onboarding-header p {
+  margin-top: 12px;
+
+  color: var(--muted);
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* =========================
+   Form
+   ========================= */
+
+.onboarding-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+.onboarding-section {
+  padding: 22px 18px;
+
+  border: 1px solid var(--line);
+  border-radius: 24px;
+
+  background: rgba(255, 255, 255, 0.94);
+
+  box-shadow: 0 8px 28px rgba(49, 75, 61, 0.04);
+}
+
+/* =========================
+   Section Title
+   ========================= */
+
+.onboarding-section-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 16px;
+}
+
+.onboarding-section-title h2 {
+  font-size: 16px;
+  font-weight: 800;
+
+  letter-spacing: -0.025em;
+}
+
+.onboarding-section-title p {
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.onboarding-section-title > span {
+  flex-shrink: 0;
+
+  padding: 6px 9px;
+
+  border-radius: 999px;
+
+  color: var(--sage-dark);
+  background: var(--mint);
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* =========================
+   Hobby
+   ========================= */
+
+.hobby-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 9px;
+}
+
+.hobby-card {
+  min-height: 94px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid var(--line);
+  border-radius: 18px;
+
+  color: var(--ink);
+  background: var(--paper);
+
+  font-size: 12px;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.hobby-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #bed0c4;
+}
+
+.hobby-card.selected {
+  border-color: var(--sage);
+
+  color: var(--sage-dark);
+  background: var(--mint);
+}
+
+.hobby-emoji {
+  font-size: 27px;
+}
+
+/* =========================
+   Activity Preference
+   ========================= */
+
+.preference-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 9px;
+}
+
+.preference-card {
+  position: relative;
+
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 15px;
+
+  border: 1px solid var(--line);
+  border-radius: 17px;
+
+  color: var(--ink);
+  background: var(--paper);
+
+  text-align: left;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.preference-card:hover {
+  transform: translateY(-1px);
+
+  border-color: #bed0c4;
+}
+
+.preference-card.selected {
+  border-color: var(--sage);
+
+  background: var(--mint);
+}
+
+.preference-emoji {
+  width: 41px;
+  height: 41px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  font-size: 21px;
+}
+
+.preference-card strong {
+  display: block;
+
+  font-size: 13px;
+}
+
+.preference-card p {
+  margin-top: 3px;
+
+  color: var(--muted);
+
+  font-size: 10px;
+}
+
+.preference-check {
+  width: 26px;
+  height: 26px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  margin-left: auto;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.preference-check:empty {
+  border: 1px solid var(--line);
+
+  background: #ffffff;
+}
+
+/* =========================
+   Environment / Social
+   ========================= */
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 9px;
+}
+
+.choice-card {
+  min-height: 86px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+
+  border: 1px solid var(--line);
+  border-radius: 17px;
+
+  color: var(--ink);
+  background: var(--paper);
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.choice-card span {
+  font-size: 22px;
+}
+
+.choice-card strong {
+  font-size: 11px;
+}
+
+.choice-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #bed0c4;
+}
+
+.choice-card.selected {
+  border-color: var(--sage);
+
+  color: var(--sage-dark);
+  background: var(--mint);
+}
+
+/* =========================
+   Available Time
+   ========================= */
+
+.time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 9px;
+}
+
+.time-card {
+  min-height: 52px;
+
+  border: 1px solid var(--line);
+  border-radius: 15px;
+
+  color: var(--muted);
+  background: var(--paper);
+
+  font-size: 13px;
+  font-weight: 700;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.time-card:hover {
+  transform: translateY(-1px);
+
+  border-color: #bed0c4;
+}
+
+.time-card.selected {
+  border-color: var(--sage);
+
+  color: var(--sage-dark);
+  background: var(--mint);
+}
+
+/* =========================
+   Submit
+   ========================= */
+
+.onboarding-submit {
+  width: 100%;
+  min-height: 58px;
+
+  margin-top: 5px;
+
+  border: 0;
+  border-radius: 18px;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  font-size: 15px;
+  font-weight: 800;
+
+  box-shadow: 0 10px 25px rgba(66, 100, 83, 0.18);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.onboarding-submit:hover {
+  background: #365747;
+
+  transform: translateY(-1px);
+}
+
+/* =========================
+   Tablet / Desktop
+   ========================= */
+
+@media (min-width: 768px) {
+  .onboarding-page {
+    padding: 48px 40px 80px;
+  }
+
+  .onboarding-container {
+    max-width: 760px;
+  }
+
+  .onboarding-header h1 {
+    font-size: 40px;
+  }
+
+  .onboarding-header p {
+    font-size: 14px;
+  }
+
+  .onboarding-section {
+    padding: 26px;
+  }
+
+  .hobby-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .hobby-card {
+    min-height: 105px;
+  }
+
+  .choice-card {
+    min-height: 100px;
+  }
+
+  .time-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .onboarding-submit {
+    max-width: 320px;
+
+    align-self: flex-end;
+  }
+}
