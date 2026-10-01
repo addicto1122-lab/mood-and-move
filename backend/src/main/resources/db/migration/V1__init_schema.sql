@@ -261,8 +261,6 @@ CREATE TABLE mood_entries (
 
                               diary_content TEXT,
 
-    ...
-
                               CONSTRAINT chk_mood_entries_intensity
                               CHECK (intensity BETWEEN 1 AND 10),
 
@@ -778,29 +776,50 @@ CREATE TABLE user_action_stats (
 
                                    action_id BIGINT UNSIGNED NOT NULL,
 
+    -- 어떤 감정 상태에서 수행한 행동인지
+                                   emotion_code VARCHAR(30) NOT NULL,
+
+    -- 월별 통계 기준
+                                   stat_year INT UNSIGNED NOT NULL,
+                                   stat_month INT UNSIGNED NOT NULL,
+
+    -- 해당 행동이 추천된 횟수
                                    recommendation_count INT UNSIGNED
         NOT NULL DEFAULT 0,
 
+    -- 실제 행동을 실행한 횟수
                                    execution_count INT UNSIGNED
         NOT NULL DEFAULT 0,
 
-                                   completed_count INT UNSIGNED
+    -- 행동 완료 + 재측정까지 완료된
+    -- 실제 효과 계산 가능 표본 수
+                                   sample_count INT UNSIGNED
         NOT NULL DEFAULT 0,
 
-                                   recheck_count INT UNSIGNED
-        NOT NULL DEFAULT 0,
-
+    -- sample 중 moodScore가 증가한 횟수
                                    positive_count INT UNSIGNED
         NOT NULL DEFAULT 0,
 
-                                   avg_delta DECIMAL(5,2)
-                                       NOT NULL DEFAULT 0,
+    -- positive_count / sample_count * 100
+                                   positive_rate DECIMAL(5,2),
+
+    -- 재측정 전후 moodScore 변화량 평균
+                                   avg_delta DECIMAL(5,2),
+
+    -- LOW / MEDIUM / HIGH
+                                   confidence_level VARCHAR(20),
 
                                    calculated_at DATETIME
-                                       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                                            NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
                                    CONSTRAINT uq_user_action_stats
-                                       UNIQUE (user_id, action_id),
+                                       UNIQUE (
+                                               user_id,
+                                               action_id,
+                                               emotion_code,
+                                               stat_year,
+                                               stat_month
+                                           ),
 
                                    CONSTRAINT fk_user_action_stats_user
                                        FOREIGN KEY (user_id)
@@ -809,91 +828,43 @@ CREATE TABLE user_action_stats (
 
                                    CONSTRAINT fk_user_action_stats_action
                                        FOREIGN KEY (action_id)
-                                           REFERENCES actions(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                                           REFERENCES actions(id),
 
+                                   CONSTRAINT fk_user_action_stats_emotion
+                                       FOREIGN KEY (emotion_code)
+                                           REFERENCES emotions(emotion_code),
 
+                                   CONSTRAINT chk_user_action_stats_month
+                                       CHECK (
+                                           stat_month BETWEEN 1 AND 12
+                                           ),
 
--- =========================================================
--- 19. PERSONAL_RULES
--- 담당: 백기완
---
--- 언제 / 어떤 상태에서 / 어떤 행동이
--- 효과가 있었는지 저장
--- =========================================================
-CREATE TABLE personal_rules (
-                                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    -- 긍정 횟수는 전체 표본 수를 넘을 수 없음
+                                   CONSTRAINT chk_user_action_stats_positive_count
+                                       CHECK (
+                                           positive_count <= sample_count
+                                           ),
 
-                                user_id BIGINT UNSIGNED NOT NULL,
+    -- 재측정 완료 표본은 실행 횟수를 넘을 수 없음
+                                   CONSTRAINT chk_user_action_stats_sample_count
+                                       CHECK (
+                                           sample_count <= execution_count
+                                           ),
 
-                                action_id BIGINT UNSIGNED NOT NULL,
+                                   CONSTRAINT chk_user_action_stats_positive_rate
+                                       CHECK (
+                                           positive_rate IS NULL
+                                               OR positive_rate BETWEEN 0 AND 100
+                                           ),
 
-                                mood_min INT UNSIGNED,
+                                   CONSTRAINT chk_user_action_stats_confidence
+                                       CHECK (
+                                           confidence_level IS NULL
+                                               OR confidence_level IN (
+                                                                       'LOW',
+                                                                       'MEDIUM',
+                                                                       'HIGH'
+                                               )
+                                           )
 
-                                mood_max INT UNSIGNED,
-
-                                time_bucket VARCHAR(20),
-
-                                activity_tag_id BIGINT UNSIGNED NULL,
-
-                                sample_count INT UNSIGNED
-        NOT NULL DEFAULT 0,
-
-                                positive_count INT UNSIGNED
-        NOT NULL DEFAULT 0,
-
-                                positive_rate DECIMAL(5,2),
-
-                                avg_delta DECIMAL(5,2),
-
-    -- LOW / MEDIUM / HIGH
-                                confidence_level VARCHAR(20),
-
-                                active BOOLEAN NOT NULL DEFAULT TRUE,
-
-                                calculated_at DATETIME
-                                               NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                                created_at DATETIME
-                                               NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                                updated_at DATETIME
-                                               NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                    ON UPDATE CURRENT_TIMESTAMP,
-
-                                CONSTRAINT fk_personal_rules_user
-                                    FOREIGN KEY (user_id)
-                                        REFERENCES users(id)
-                                        ON DELETE CASCADE,
-
-                                CONSTRAINT fk_personal_rules_action
-                                    FOREIGN KEY (action_id)
-                                        REFERENCES actions(id),
-
-                                CONSTRAINT fk_personal_rules_activity_tag
-                                    FOREIGN KEY (activity_tag_id)
-                                        REFERENCES activity_tags(id)
-                                        ON DELETE SET NULL,
-
-                                CONSTRAINT chk_personal_rules_mood_min
-                                    CHECK (
-                                        mood_min IS NULL
-                                            OR mood_min BETWEEN 1 AND 5
-                                        ),
-
-                                CONSTRAINT chk_personal_rules_mood_max
-                                    CHECK (
-                                        mood_max IS NULL
-                                            OR mood_max BETWEEN 1 AND 5
-                                        ),
-
-                                CONSTRAINT chk_personal_rules_confidence
-                                    CHECK (
-                                        confidence_level IS NULL
-                                            OR confidence_level IN (
-                                                                    'LOW',
-                                                                    'MEDIUM',
-                                                                    'HIGH'
-                                            )
-                                        )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
