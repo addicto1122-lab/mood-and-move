@@ -11,16 +11,16 @@
 INSERT INTO emotions (
     emotion_code,
     name,
-    emoji
+    emoji,
+    base_score
 )
 VALUES
-    ('JOY',     '기쁨',   '😄'),
-    ('CALM',    '편안함', '🙂'),
-    ('NEUTRAL', '보통',   '😐'),
-    ('SAD',     '슬픔',   '😢'),
-    ('ANXIOUS', '불안',   '😰'),
-    ('ANGRY',   '화남',   '😡'),
-    ('TIRED',   '지침',   '😩');
+    ('ANGRY',   '화남',   '😡', 0),
+    ('ANXIOUS', '불안',   '😰', 10),
+    ('SAD',     '슬픔',   '😢', 20),
+    ('NEUTRAL', '보통',   '😐', 30),
+    ('CALM',    '편안함', '🙂', 40),
+    ('JOY',     '기쁨',   '😄', 50);
 
 
 
