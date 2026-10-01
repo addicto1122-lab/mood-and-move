@@ -24,6 +24,9 @@ public class Emotion {
     @Column(length = 10)
     private String emoji;
 
+    @Column(name = "base_score", nullable = false)
+    private Integer baseScore;
+
     @Column(nullable = false)
     private boolean active = true;
 

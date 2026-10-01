@@ -18,6 +18,8 @@ CREATE TABLE users (
 
                        onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
 
+                       token_version INT UNSIGNED NOT NULL DEFAULT 0,
+
                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
                            ON UPDATE CURRENT_TIMESTAMP,
@@ -37,9 +39,15 @@ CREATE TABLE refresh_tokens (
 
                                 user_id BIGINT UNSIGNED NOT NULL,
 
+    -- 사용자 로그인 세대
+                                token_version INT UNSIGNED NOT NULL,
+
+    -- 실제 Refresh Token 원문 대신 Hash 저장
                                 token_hash VARCHAR(255) NOT NULL,
 
                                 expires_at DATETIME NOT NULL,
+
+    -- 로그아웃 / 재로그인 등으로 폐기된 시점
                                 revoked_at DATETIME NULL,
 
                                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -47,12 +55,24 @@ CREATE TABLE refresh_tokens (
                                 CONSTRAINT uq_refresh_tokens_token_hash
                                     UNIQUE (token_hash),
 
+    -- 한 사용자가 같은 version을 중복 발급하지 않도록
+                                CONSTRAINT uq_refresh_tokens_user_version
+                                    UNIQUE (user_id, token_version),
+
                                 CONSTRAINT fk_refresh_tokens_user
                                     FOREIGN KEY (user_id)
                                         REFERENCES users(id)
                                         ON DELETE CASCADE,
 
-                                INDEX idx_refresh_tokens_user_id (user_id)
+                                INDEX idx_refresh_tokens_user_id
+                                    (user_id),
+
+                                INDEX idx_refresh_tokens_user_version
+                                    (user_id, token_version),
+
+                                INDEX idx_refresh_tokens_expires_at
+                                    (expires_at)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -68,7 +88,7 @@ CREATE TABLE user_preferences (
                                   user_id BIGINT UNSIGNED NOT NULL,
 
     -- ACTIVE / CALM / ANY
-                                  rest_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
+                                  activity_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
 
     -- INDOOR / OUTDOOR / ANY
                                   activity_environment VARCHAR(20) NOT NULL DEFAULT 'ANY',
@@ -76,7 +96,7 @@ CREATE TABLE user_preferences (
     -- ALONE / SOCIAL / ANY
                                   social_preference VARCHAR(20) NOT NULL DEFAULT 'ANY',
 
-                                  default_available_minutes SMALLINT UNSIGNED,
+                                  default_available_minutes INT UNSIGNED,
 
                                   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -85,9 +105,9 @@ CREATE TABLE user_preferences (
                                   CONSTRAINT uq_user_preferences_user_id
                                       UNIQUE (user_id),
 
-                                  CONSTRAINT chk_user_preferences_rest_style
+                                  CONSTRAINT chk_user_preferences_activity_style
                                       CHECK (
-                                          rest_style IN (
+                                          activity_style IN (
                                                          'ACTIVE',
                                                          'CALM',
                                                          'ANY'
@@ -178,12 +198,19 @@ CREATE TABLE emotions (
 
                           emoji VARCHAR(10),
 
+                          -- 감정별 고정 기본 점수
+                          -- 화남 0 ~ 기쁨 50
+                          base_score INT UNSIGNED NOT NULL,
+
                           active BOOLEAN NOT NULL DEFAULT TRUE,
 
                           created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
                           CONSTRAINT uq_emotions_name
-                              UNIQUE (name)
+                              UNIQUE (name),
+
+                          CONSTRAINT chk_emotions_base_score
+                              CHECK(base_score BETWEEN 0 AND 50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -224,72 +251,28 @@ CREATE TABLE mood_entries (
 
                               user_id BIGINT UNSIGNED NOT NULL,
 
-    -- 하루 한 번 정책 기준
                               entry_date DATE NOT NULL,
 
                               emotion_code VARCHAR(30) NOT NULL,
 
-    -- 현재 기분의 긍정/부정 정도 1~5
-                              mood_score TINYINT UNSIGNED NOT NULL,
+                              intensity INT UNSIGNED NOT NULL,
 
-    -- 선택한 감정의 강도 1~5
-                              intensity TINYINT UNSIGNED NOT NULL,
+                              mood_score INT UNSIGNED NOT NULL,
 
                               diary_content TEXT,
 
-    -- AVAILABLE / REQUESTED / DECLINED / EXPIRED / DELETED
-                              recommendation_status VARCHAR(20)
-                                  NOT NULL DEFAULT 'AVAILABLE',
-
-    -- 추천 요청 가능 시간을 둘 경우 사용
-                              recommendation_eligible_until DATETIME NULL,
-
-                              recorded_at DATETIME NOT NULL,
-
-    -- Soft Delete
-                              deleted_at DATETIME NULL,
-
-                              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                              CONSTRAINT uq_mood_entries_user_date
-                                  UNIQUE (user_id, entry_date),
-
-                              CONSTRAINT chk_mood_entries_score
-                                  CHECK (
-                                      mood_score BETWEEN 1 AND 5
-                                      ),
+    ...
 
                               CONSTRAINT chk_mood_entries_intensity
-                                  CHECK (
-                                      intensity BETWEEN 1 AND 5
-                                      ),
+                              CHECK (intensity BETWEEN 1 AND 10),
 
-                              CONSTRAINT chk_mood_entries_recommendation_status
-                                  CHECK (
-                                      recommendation_status IN (
-                                                                'AVAILABLE',
-                                                                'REQUESTED',
-                                                                'DECLINED',
-                                                                'EXPIRED',
-                                                                'DELETED'
-                                          )
-                                      ),
-
-                              CONSTRAINT fk_mood_entries_user
-                                  FOREIGN KEY (user_id)
-                                      REFERENCES users(id)
-                                      ON DELETE CASCADE,
+                              CONSTRAINT chk_mood_entries_score
+                                  CHECK (mood_score BETWEEN 1 AND 60),
 
                               CONSTRAINT fk_mood_entries_emotion
                                   FOREIGN KEY (emotion_code)
-                                      REFERENCES emotions(emotion_code),
-
-                              INDEX idx_mood_entries_user_entry_date
-                                  (user_id, entry_date),
-
-                              INDEX idx_mood_entries_deleted_at
-                                  (deleted_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+                                  REFERENCES emotions(emotion_code)
+    );
 
 
 
@@ -334,7 +317,7 @@ CREATE TABLE actions (
 
                          category VARCHAR(30) NOT NULL,
 
-                         duration_minutes SMALLINT UNSIGNED NOT NULL,
+                         duration_minutes INT UNSIGNED NOT NULL,
 
     -- INDOOR / OUTDOOR / ANY
                          environment_type VARCHAR(20)
@@ -467,7 +450,7 @@ CREATE TABLE recommendation_sessions (
     -- MORNING / AFTERNOON / EVENING / NIGHT
                                          time_bucket VARCHAR(20),
 
-                                         available_minutes SMALLINT UNSIGNED,
+                                         available_minutes INT UNSIGNED,
 
                                          weather_condition VARCHAR(30),
 
@@ -539,7 +522,7 @@ CREATE TABLE recommendations (
 
                                  score DECIMAL(6,2) NOT NULL,
 
-                                 rank_no SMALLINT UNSIGNED NOT NULL,
+                                 rank_no INT UNSIGNED NOT NULL,
 
                                  reason_code VARCHAR(100),
 
@@ -563,14 +546,21 @@ CREATE TABLE recommendations (
                                  CONSTRAINT uq_recommendations_session_action
                                      UNIQUE (session_id, action_id),
 
-    -- ACTION_EXECUTIONS Composite FK 지원
+    -- ACTION_EXECUTIONS에서
+    -- 같은 Session의 Recommendation인지 검증
                                  CONSTRAINT uq_recommendations_session_id
                                      UNIQUE (session_id, id),
 
+    -- ACTION_EXECUTIONS에서
+    -- 선택한 Recommendation의 Action과
+    -- 실제 수행 Action 일치 여부 검증
+                                 CONSTRAINT uq_recommendations_id_action
+                                     UNIQUE (id, action_id),
+
                                  INDEX idx_recommendations_action_id
                                      (action_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 -- =========================================================
@@ -645,7 +635,6 @@ CREATE TABLE action_executions (
 
                                    completed_at DATETIME NULL,
 
-    -- 완료 후 재측정 가능 구간
                                    recheck_available_at DATETIME NULL,
 
                                    recheck_expires_at DATETIME NULL,
@@ -666,8 +655,9 @@ CREATE TABLE action_executions (
                                            REFERENCES recommendation_sessions(id)
                                            ON DELETE CASCADE,
 
+    -- 1.
     -- 선택한 Recommendation이
-    -- 해당 Session 소속인지 DB에서 검증
+    -- 해당 Session 소속인지 검증
                                    CONSTRAINT fk_action_execution_selected_recommendation
                                        FOREIGN KEY (
                                                     session_id,
@@ -678,6 +668,21 @@ CREATE TABLE action_executions (
                                                                        id
                                                ),
 
+    -- 2.
+    -- RECOMMENDED 실행 시
+    -- 선택한 Recommendation의 action_id와
+    -- 실제 수행한 performed_action_id가 같은지 검증
+                                   CONSTRAINT fk_action_execution_recommended_action
+                                       FOREIGN KEY (
+                                                    selected_recommendation_id,
+                                                    performed_action_id
+                                           )
+                                           REFERENCES recommendations (
+                                                                       id,
+                                                                       action_id
+                                               ),
+
+    -- 실제 수행 Action 존재 여부
                                    CONSTRAINT fk_action_executions_action
                                        FOREIGN KEY (performed_action_id)
                                            REFERENCES actions(id),
@@ -714,6 +719,7 @@ CREATE TABLE action_executions (
 
                                    INDEX idx_action_executions_action
                                        (performed_action_id)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -728,11 +734,11 @@ CREATE TABLE mood_rechecks (
 
                                action_execution_id BIGINT UNSIGNED NOT NULL,
 
-                               before_score TINYINT UNSIGNED NOT NULL,
+                               before_score INT UNSIGNED NOT NULL,
 
-                               after_score TINYINT UNSIGNED NOT NULL,
+                               after_score INT UNSIGNED NOT NULL,
 
-                               delta TINYINT
+                               delta INT
                                    GENERATED ALWAYS AS
                                        (after_score - before_score) STORED,
 
@@ -822,9 +828,9 @@ CREATE TABLE personal_rules (
 
                                 action_id BIGINT UNSIGNED NOT NULL,
 
-                                mood_min TINYINT UNSIGNED,
+                                mood_min INT UNSIGNED,
 
-                                mood_max TINYINT UNSIGNED,
+                                mood_max INT UNSIGNED,
 
                                 time_bucket VARCHAR(20),
 
