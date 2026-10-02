@@ -14,8 +14,8 @@ const recommendations = [
     locationRequired: true,
     place: {
       name: "한빛공원",
-      distance: "도보 4분"
-    }
+      distance: "도보 4분",
+    },
   },
   {
     recommendationId: 2,
@@ -27,7 +27,7 @@ const recommendations = [
     environmentType: "INDOOR",
     reason: "오래 앉아 있어 굳은 몸을 가볍게 풀어보세요.",
     locationRequired: false,
-    place: null
+    place: null,
   },
   {
     recommendationId: 3,
@@ -39,14 +39,14 @@ const recommendations = [
     environmentType: "ANY",
     reason: "익숙한 음악으로 마음의 리듬을 편안하게 바꿔봐요.",
     locationRequired: false,
-    place: null
-  }
+    place: null,
+  },
 ];
 
 const environmentNames = {
   INDOOR: "실내",
   OUTDOOR: "실외",
-  ANY: "어디서든"
+  ANY: "어디서든",
 };
 
 export default function RecommendationPage() {
@@ -55,7 +55,7 @@ export default function RecommendationPage() {
   const handleStart = (item) => {
     console.log("선택한 추천", {
       recommendationId: item.recommendationId,
-      actionId: item.actionId
+      actionId: item.actionId,
     });
 
     // TODO:

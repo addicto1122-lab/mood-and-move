@@ -2,7 +2,9 @@ package com.moodandmove.analysis.controller;
 
 import com.moodandmove.analysis.dto.MonthlyStatsResponse;
 import com.moodandmove.analysis.service.UserActionStatService;
+import com.moodandmove.user.domain.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,13 +19,15 @@ public class StatsController {
 
     @GetMapping("/monthly")
     public MonthlyStatsResponse getMonthlyStats(
-            @RequestParam Long userId,
+            Authentication authentication,
             @RequestParam int year,
             @RequestParam int month
     ){
+        User user = (User) authentication.getPrincipal();
+
         return userActionStatService
                 .getMonthlyStats(
-                        userId,
+                        user.getId(),
                         year,
                         month
                 );

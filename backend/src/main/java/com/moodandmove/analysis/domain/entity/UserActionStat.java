@@ -170,19 +170,13 @@ public class UserActionStat {
 
     private ConfidenceLevel calculateConfidence() {
 
-        if (sampleCount >= 5
-                && positiveRate.compareTo(
-                BigDecimal.valueOf(70)
-        ) >= 0) {
-
+        if (sampleCount >= 10
+            ) {
             return ConfidenceLevel.HIGH;
         }
 
-        if (sampleCount >= 3
-                && positiveRate.compareTo(
-                BigDecimal.valueOf(60)
-        ) >= 0) {
-
+        if (sampleCount >= 5
+              ) {
             return ConfidenceLevel.MEDIUM;
         }
 
