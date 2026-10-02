@@ -2,25 +2,44 @@
   min-height: 100vh;
 }
 
+/* =========================
+   전체 레이아웃
+========================= */
+
 .app-shell {
   min-height: 100vh;
   background: #eef1ee;
 }
 
 .app-content {
+  width: 100%;
   min-height: 100vh;
+
+  padding-bottom: 100px;
+
+  box-sizing: border-box;
 }
+
+/* =========================
+   PC 사이드바
+   모바일에서는 기본 숨김
+========================= */
 
 .desktop-sidebar {
   display: none;
 }
 
-/* 공통 모바일 네비 */
+/* =========================
+   모바일 하단 네비게이션
+========================= */
+
 .bottom-nav {
   position: fixed;
+
   left: 50%;
   bottom: 14px;
-  z-index: 100;
+
+  z-index: 1000;
 
   width: calc(100% - 28px);
   max-width: 402px;
@@ -35,7 +54,7 @@
   border: 1px solid rgba(221, 228, 223, 0.9);
   border-radius: 22px;
 
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
 
   box-shadow: 0 10px 30px rgba(49, 75, 61, 0.12);
 }
@@ -61,28 +80,39 @@
   background: var(--mint);
 }
 
-/* PC Sidebar */
+/* =========================
+   PC
+========================= */
+
 @media (min-width: 960px) {
   .app-shell {
+    min-height: 100vh;
+
     display: flex;
+
     background: #f5f7f5;
   }
 
   .desktop-sidebar {
     position: fixed;
+
     top: 0;
     left: 0;
-    z-index: 200;
 
-    display: flex;
-    flex-direction: column;
+    z-index: 200;
 
     width: 240px;
     height: 100vh;
 
-    padding: 36px 24px;
+    display: flex;
+    flex-direction: column;
+
+    padding: 36px 24px 12px;
+
+    box-sizing: border-box;
 
     background: #ffffff;
+
     border-right: 1px solid var(--line);
   }
 
@@ -101,6 +131,7 @@
   .sidebar-menu {
     display: flex;
     flex-direction: column;
+
     gap: 8px;
   }
 
@@ -110,6 +141,7 @@
     border-radius: 14px;
 
     color: var(--muted);
+
     text-decoration: none;
 
     font-size: 15px;
@@ -118,14 +150,32 @@
 
   .sidebar-menu a.active {
     color: var(--sage-dark);
+
     background: var(--mint);
+  }
+
+  /* 로그아웃을 사이드바 최하단으로 */
+  .desktop-logout {
+    margin-top: auto;
+  }
+
+  .desktop-logout .logout-button {
+    width: 100%;
+
+    justify-content: flex-start;
+
+    padding: 10px 16px;
   }
 
   .app-content {
     width: calc(100% - 240px);
+
     margin-left: 240px;
+
+    padding-bottom: 0;
   }
 
+  /* PC에서는 모바일 네비 숨김 */
   .bottom-nav {
     display: none;
   }
