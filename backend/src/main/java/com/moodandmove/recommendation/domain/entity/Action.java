@@ -6,6 +6,7 @@ import com.moodandmove.common.domain.type.EnvironmentType;
 import com.moodandmove.common.domain.type.SocialType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
