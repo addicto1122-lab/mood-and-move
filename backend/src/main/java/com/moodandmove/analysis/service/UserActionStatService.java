@@ -1,6 +1,8 @@
 package com.moodandmove.analysis.service;
 
 import com.moodandmove.analysis.domain.entity.UserActionStat;
+import com.moodandmove.analysis.domain.type.ConfidenceLevel;
+import com.moodandmove.analysis.dto.ActionAcceptanceStatResponse;
 import com.moodandmove.analysis.dto.ActionPersonalStatResponse;
 import com.moodandmove.analysis.repository.UserActionStatRepository;
 import com.moodandmove.mood.domain.entity.Emotion;
@@ -222,6 +224,9 @@ public class UserActionStatService {
                     );
         }
 
+        ConfidenceLevel confidenceLevel =
+                calculateConfidence(sampleCount);
+
         return new ActionPersonalStatResponse(
                 actionId,
                 emotionCode,
@@ -229,7 +234,43 @@ public class UserActionStatService {
                 executionCount,
                 sampleCount,
                 positiveCount,
-                avgDelta
+                avgDelta,
+                confidenceLevel
         );
+    }
+    @Transactional(readOnly = true)
+    public ActionAcceptanceStatResponse getAcceptanceStat(
+            Long userId,
+            Long actionId
+    ) {
+        List<UserActionStat> stats =
+                userActionStatRepository
+                        .findAllByUser_IdAndAction_Id(
+                                userId,
+                                actionId
+                        );
+
+        long recommendationCount = 0;
+        long executionCount = 0;
+
+        for (UserActionStat stat : stats) {
+            recommendationCount += stat.getRecommendationCount();
+            executionCount += stat.getExecutionCount();
+        }
+
+        return new ActionAcceptanceStatResponse(
+                actionId,
+                recommendationCount,
+                executionCount
+        );
+    }
+    private ConfidenceLevel calculateConfidence(long sampleCount) {
+        if (sampleCount >= 10) {
+            return ConfidenceLevel.HIGH;
+        }
+        if (sampleCount >= 5) {
+            return ConfidenceLevel.MEDIUM;
+        }
+        return ConfidenceLevel.LOW;
     }
 }

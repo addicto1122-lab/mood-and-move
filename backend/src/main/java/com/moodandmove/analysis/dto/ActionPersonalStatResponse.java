@@ -1,6 +1,9 @@
 package com.moodandmove.analysis.dto;
 
+import com.moodandmove.analysis.domain.type.ConfidenceLevel;
+
 import java.math.BigDecimal;
+
 
 public record ActionPersonalStatResponse(
         Long actionId,
@@ -15,6 +18,8 @@ public record ActionPersonalStatResponse(
 
         long positiveCount,
 
-        BigDecimal avgDelta
+        BigDecimal avgDelta,
+
+        ConfidenceLevel confidenceLevel
 ) {
 }
