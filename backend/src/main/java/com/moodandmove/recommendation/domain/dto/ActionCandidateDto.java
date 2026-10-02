@@ -1,15 +1,14 @@
 package com.moodandmove.recommendation.domain.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+
 
 import java.math.BigDecimal;
 
-@Getter
-@AllArgsConstructor
-public class ActionCandidateDto {
+public record ActionCandidateDto (
+        String actionCode,
+        String actionName,
+        BigDecimal score
+){
 
-    private String actionCode;
-    private String actionName;
-    private BigDecimal score;
+
 }

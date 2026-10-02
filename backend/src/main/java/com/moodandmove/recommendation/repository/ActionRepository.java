@@ -12,4 +12,5 @@ public interface ActionRepository
     Optional<Action> findByActionCode(String actionCode);
 
     List<Action> findAllByActiveTrue();
+
 }

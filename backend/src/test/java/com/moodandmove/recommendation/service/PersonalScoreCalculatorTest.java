@@ -12,6 +12,8 @@ class PersonalScoreCalculatorTest {
     private final PersonalScoreCalculator calculator
             = new PersonalScoreCalculator();
 
+
+
     @Test
     void calculate() {
         BigDecimal result = calculator.calculate(
