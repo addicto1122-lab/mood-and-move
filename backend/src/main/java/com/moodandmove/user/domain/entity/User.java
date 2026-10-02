@@ -57,4 +57,12 @@ public class User {
     public void increaseTokenVersion() {
         this.tokenVersion++;
     }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
+    }
+
+    public void updatePassword(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
 }

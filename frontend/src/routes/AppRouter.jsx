@@ -11,6 +11,7 @@ import MoodWritePage from "../pages/MoodWritePage.jsx";
 import RecommendationPage from "../pages/RecommendationPage.jsx";
 import StatsPage from "../pages/StatsPage.jsx";
 import MyPage from "../pages/MyPage.jsx";
+import ProfilePage from "../pages/ProfilePage.jsx";
 
 export default function AppRouter() {
   return (
@@ -30,6 +31,7 @@ export default function AppRouter() {
             <Route path="/recommendation" element={<RecommendationPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/mypage" element={<MyPage />} />
+            <Route path="/mypage/profile" element={<ProfilePage />} />
           </Route>
         </Route>
       </Routes>
