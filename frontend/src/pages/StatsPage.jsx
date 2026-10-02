@@ -11,7 +11,7 @@ import {
 } from "recharts";
 
 export default function StatsPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
 
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +27,11 @@ export default function StatsPage() {
     async function fetchCalendar() {
       try {
         const response = await fetch(
-          `/api/calendar?userId=1&year=${year}&month=${month}`,
+          `/api/calendar?&year=${year}&month=${month}`,
           {
             method: "GET",
-            credentials: "include"
-          }
+            credentials: "include",
+          },
         );
 
         if (!response.ok) {
@@ -53,9 +53,9 @@ export default function StatsPage() {
 
   async function fetchCalendarDetail(moodEntryId) {
     try {
-      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`, {
+      const response = await fetch(`/api/calendar/${moodEntryId}?`, {
         method: "GET",
-        credentials: "include"
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -74,7 +74,7 @@ export default function StatsPage() {
     async function fetchMonthlyStats() {
       try {
         const response = await fetch(
-          `/api/stats/monthly?userId=1&year=${year}&month=${month}`,
+          `/api/stats/monthly?&year=${year}&month=${month}`,
         );
 
         if (!response.ok) {
@@ -114,7 +114,7 @@ export default function StatsPage() {
 
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />
+      <div key={`empty-${i}`} className="calendar-cell empty" />,
     );
   }
 
@@ -140,7 +140,7 @@ export default function StatsPage() {
             <span className="calendar-score">{entry.moodScore}점</span>
           </div>
         )}
-      </div>
+      </div>,
     );
   }
 

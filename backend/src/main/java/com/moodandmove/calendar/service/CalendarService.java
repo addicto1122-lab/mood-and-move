@@ -25,10 +25,10 @@ public class CalendarService {
             int year,
             int month
     ){
-        // 2026-10-01
+        // 조회 월의 첫날
         LocalDate startDate = LocalDate.of(year, month, 1);
 
-        // 2026-11-01
+        // 다음 달 첫날
         LocalDate endDate = startDate.plusMonths(1);
 
         List<MoodEntry> moodEntries =
