@@ -13,6 +13,7 @@ import StatsPage from "../pages/StatsPage.jsx";
 import MyPage from "../pages/MyPage.jsx";
 import ProfilePage from "../pages/ProfilePage.jsx";
 import PreferencePage from "../pages/PreferencePage.jsx";
+import DislikePage from "../pages/DislikePage.jsx";
 
 export default function AppRouter() {
   return (
@@ -34,6 +35,7 @@ export default function AppRouter() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/mypage/profile" element={<ProfilePage />} />
             <Route path="/mypage/preferences" element={<PreferencePage />} />
+            <Route path="/mypage/dislikes" element={<DislikePage />} />
           </Route>
         </Route>
       </Routes>

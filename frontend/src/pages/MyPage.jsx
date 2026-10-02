@@ -97,9 +97,7 @@ export default function MyPage() {
             <button
               type="button"
               className="mypage-settings-item"
-              onClick={() => {
-                // 추후 비선호 행동 관리 페이지 연결
-              }}
+              onClick={() => navigate("/mypage/dislikes")}
             >
               <div className="mypage-settings-icon">◎</div>
 

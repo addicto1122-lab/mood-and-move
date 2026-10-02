@@ -236,3 +236,57 @@ export async function updateProfile({ nickname, ageGroup, gender }) {
     throw new Error("프로필 수정에 실패했습니다.");
   }
 }
+
+export async function getDislikeActions() {
+  const response = await fetch(`${API_BASE_URL}/users/me/dislikes`, {
+    method: "GET",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("비선호 행동 목록을 불러오지 못했습니다.");
+  }
+
+  return response.json();
+}
+
+export async function addDislikeAction(actionId) {
+  const response = await fetch(
+    `${API_BASE_URL}/users/me/dislikes/${actionId}`,
+    {
+      method: "POST",
+      credentials: "include"
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("비선호 행동 추가에 실패했습니다.");
+  }
+}
+
+//비선호행동
+export async function removeDislikeAction(actionId) {
+  const response = await fetch(
+    `${API_BASE_URL}/users/me/dislikes/${actionId}`,
+    {
+      method: "DELETE",
+      credentials: "include"
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("비선호 행동 삭제에 실패했습니다.");
+  }
+}

@@ -1,0 +1,322 @@
+.dislike-page {
+  min-height: 100vh;
+
+  padding: 30px 50px 60px;
+  box-sizing: border-box;
+
+  background: #fbfcfb;
+}
+
+.dislike-container {
+  width: 100%;
+  max-width: 820px;
+
+  margin: 0 auto;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.dislike-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+
+  margin-bottom: 28px;
+}
+
+.dislike-header h1 {
+  margin: 1px 0 6px;
+
+  color: #21312a;
+
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.dislike-header p {
+  margin: 0;
+
+  color: #8b9691;
+
+  font-size: 13px;
+}
+
+.dislike-back-button {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #edf7f1;
+
+  color: #456b59;
+
+  font-size: 28px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.dislike-back-button:hover {
+  background: #e3f1e8;
+}
+
+.dislike-back-button:active {
+  transform: scale(0.96);
+}
+
+/* =========================
+   CARD
+========================= */
+
+.dislike-card {
+  overflow: hidden;
+
+  border: 1px solid #dde6e0;
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 28px rgba(56, 78, 67, 0.05);
+}
+
+.dislike-item {
+  width: 100%;
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 15px 20px;
+
+  border: none;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.dislike-item:hover {
+  background: #fafcfb;
+}
+
+.dislike-item.selected {
+  background: #f2f8f4;
+}
+
+.dislike-item:disabled {
+  opacity: 0.65;
+
+  cursor: default;
+}
+
+.dislike-item-content {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.dislike-item-title {
+  color: #293a32;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dislike-item-meta {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  color: #97a19c;
+
+  font-size: 11px;
+}
+
+.dislike-check {
+  width: 28px;
+  height: 28px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #d8e2dc;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.dislike-item.selected .dislike-check {
+  border-color: #729986;
+
+  background: #729986;
+}
+
+.dislike-divider {
+  height: 1px;
+
+  margin-left: 20px;
+
+  background: #edf1ee;
+}
+
+/* =========================
+   ERROR / EMPTY
+========================= */
+
+.dislike-error {
+  margin-bottom: 14px;
+
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  background: #fff3f3;
+
+  color: #c96868;
+
+  font-size: 12px;
+}
+
+.dislike-empty {
+  padding: 50px 20px;
+
+  border: 1px solid #dde6e0;
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  color: #929d98;
+
+  font-size: 13px;
+  text-align: center;
+}
+
+.dislike-note {
+  margin: 16px 4px 0;
+
+  color: #a0aaa5;
+
+  font-size: 11px;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.dislike-loading {
+  padding-top: 80px;
+
+  color: #87938e;
+
+  text-align: center;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 959px) {
+  .dislike-page {
+    padding: 24px 18px 110px;
+  }
+
+  .dislike-container {
+    max-width: 520px;
+  }
+
+  .dislike-header {
+    margin-bottom: 24px;
+  }
+
+  .dislike-header h1 {
+    font-size: 24px;
+  }
+
+  .dislike-back-button {
+    width: 36px;
+    height: 36px;
+
+    font-size: 26px;
+  }
+
+  .dislike-card {
+    border-radius: 20px;
+  }
+
+  .dislike-item {
+    min-height: 72px;
+
+    padding: 14px 16px;
+  }
+
+  .dislike-divider {
+    margin-left: 16px;
+  }
+}
+
+.dislike-toast {
+  position: fixed;
+
+  left: 50%;
+  bottom: 30px;
+  z-index: 4000;
+
+  transform: translateX(-50%);
+
+  padding: 12px 18px;
+
+  border-radius: 14px;
+
+  background: #35483f;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  box-shadow: 0 10px 30px rgba(34, 52, 43, 0.22);
+
+  white-space: nowrap;
+}
+
+@media (max-width: 959px) {
+  .dislike-toast {
+    bottom: 95px;
+  }
+}
