@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 import "./StatsPage.css";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function StatsPage() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1));
@@ -11,6 +20,8 @@ export default function StatsPage() {
   const month = currentDate.getMonth() + 1;
 
   const [selectedEntry, setSelectedEntry] = useState(null);
+
+  const [monthlyStats, setMonthlyStats] = useState(null);
 
   useEffect(() => {
     async function fetchCalendar() {
@@ -51,6 +62,28 @@ export default function StatsPage() {
       console.error(error);
     }
   }
+
+  useEffect(() => {
+    async function fetchMonthlyStats() {
+      try {
+        const response = await fetch(
+          `/api/stats/monthly?userId=1&year=${year}&month=${month}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("월간 통계 조회 실패");
+        }
+
+        const data = await response.json();
+
+        setMonthlyStats(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    fetchMonthlyStats();
+  }, [year, month]);
 
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 2, 1));
@@ -104,6 +137,12 @@ export default function StatsPage() {
     );
   }
 
+  const moodChartData = days.map((entry) => ({
+    date: entry.date.substring(5),
+    moodScore: entry.moodScore,
+    emotion: `${entry.emoji} ${entry.emotionName}`,
+  }));
+
   return (
     <main className="stats-page">
       <header className="stats-header">
@@ -143,6 +182,71 @@ export default function StatsPage() {
           <div className="calendar-grid">{calendarCells}</div>
         )}
       </section>
+      {monthlyStats && (
+        <section className="monthly-summary">
+          <h2>{monthlyStats.month}월 요약</h2>
+          <div className="summary-grid">
+            <div className="summary-card">
+              <span>작성한 일기</span>
+              <strong>{monthlyStats.diaryCount}일</strong>
+            </div>
+            <div className="summary-card">
+              <span>평균 기분 점수</span>
+              <strong>{monthlyStats.averageMoodScore}점</strong>
+            </div>
+            <div className="summary-card">
+              <span>추천 행동</span>
+              <strong>{monthlyStats.recommendationCount}회</strong>
+            </div>
+            <div className="summary-card">
+              <span>행동 실행</span>
+              <strong>{monthlyStats.executionCount}회</strong>
+            </div>
+            <div className="summary-card">
+              <span>실행률</span>
+              <strong>{monthlyStats.executionRate}%</strong>
+            </div>
+            <div className="summary-card">
+              <span>긍정 변화율</span>
+              <strong>{monthlyStats.positiveRate}%</strong>
+            </div>
+            <div className="summary-card">
+              <span>평균 변화량</span>
+              <strong>
+                {monthlyStats.averageDelta > 0 ? "+" : ""}
+                {monthlyStats.averageDelta}
+              </strong>
+            </div>
+          </div>
+        </section>
+      )}
+      {monthlyStats && monthlyStats.emotions && (
+        <section className="emotion-summary">
+          <h2>{monthlyStats.month}월 감정 분포</h2>
+          <div className="emotion-list">
+            {monthlyStats.emotions.map((emotion) => (
+              <div key={emotion.emotionCode} className="emotion-item">
+                <div className="emotion-info">
+                  <span className="emotion-emoji">{emotion.emoji}</span>
+                  <div>
+                    <strong>{emotion.emotionName}</strong>
+                    <span className="emotion-count">{emotion.count}회</span>
+                  </div>
+                </div>
+                <div className="emotion-rate-area">
+                  <span className="emotion-rate">{emotion.rate}%</span>
+                  <div className="emotion-bar">
+                    <div
+                      className="emotion-bar-fill"
+                      style={{ width: `${emotion.rate}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {selectedEntry && (
         <section className="diary-detail">
           <div className="diary-detail-header">
@@ -173,6 +277,22 @@ export default function StatsPage() {
             <span>오늘의 기록</span>
 
             <p>{selectedEntry.diaryContent || "작성된 내용이 없습니다."}</p>
+          </div>
+        </section>
+      )}
+      {moodChartData.length > 0 && (
+        <section className="mood-chart-section">
+          <h2>{month}월 기분 변화</h2>
+          <div className="mood-chart">
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={moodChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis domain={[0, 60]} />
+                <Tooltip formatter={(value) => [`${value}점`, "기분 점수,"]} />
+                <Line type="monotone" dataKey="moodScore" strokeWidth={3} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </section>
       )}
