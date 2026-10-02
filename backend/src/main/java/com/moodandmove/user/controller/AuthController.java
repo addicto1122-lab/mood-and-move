@@ -5,6 +5,7 @@ import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
 import com.moodandmove.user.dto.response.EmailCheckResponse;
+import com.moodandmove.user.dto.response.MeResponse;
 import com.moodandmove.user.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -69,17 +70,18 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> me(Authentication authentication) {
-
-        if (authentication == null) {
-            return ResponseEntity.status(401).body("로그인 필요");
-        }
+    public ResponseEntity<MeResponse> me(Authentication authentication) {
 
         User user = (User) authentication.getPrincipal();
 
-        return ResponseEntity.ok(
-                "로그인 사용자: " + user.getEmail()
+        MeResponse response = new MeResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getNickname(),
+                user.isOnboardingCompleted()
         );
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

@@ -1,41 +1,401 @@
 .mypage {
   min-height: 100vh;
 
-  padding: 40px;
-
+  padding: 30px 50px 48px;
   box-sizing: border-box;
+
+  background: #fbfcfb;
 }
 
-.mobile-logout {
-  display: none;
+.mypage-container {
+  width: 100%;
+  max-width: 1080px;
+
+  margin: 0 auto;
 }
+
+/* =========================
+   TITLE
+========================= */
+
+.mypage-title {
+  margin: 0 0 26px;
+
+  color: #21312a;
+
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+.mypage-profile-card {
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 14px 18px;
+  box-sizing: border-box;
+
+  border: 1px solid #dde6e0;
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 28px rgba(56, 78, 67, 0.06);
+}
+
+.mypage-profile-left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+}
+
+.mypage-profile-avatar {
+  width: 50px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #e3efe8;
+
+  color: #315f4d;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.mypage-profile-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.mypage-profile-info strong {
+  overflow: hidden;
+
+  color: #27372f;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-profile-info span {
+  overflow: hidden;
+
+  color: #85918c;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-profile-edit {
+  flex-shrink: 0;
+
+  padding: 10px 15px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: #edf7f1;
+
+  color: #466c5b;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.mypage-profile-edit:hover {
+  background: #e3f1e8;
+}
+
+.mypage-profile-edit:active {
+  transform: scale(0.97);
+}
+
+/* =========================
+   SETTINGS
+========================= */
+
+.mypage-settings-section {
+  margin-top: 32px;
+}
+
+.mypage-settings-section h2 {
+  margin: 0 0 15px 2px;
+
+  color: #24352d;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mypage-settings-card {
+  overflow: hidden;
+
+  border: 1px solid #dde6e0;
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  box-shadow: 0 10px 28px rgba(56, 78, 67, 0.06);
+}
+
+.mypage-settings-item {
+  width: 100%;
+  min-height: 70px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 10px 16px;
+
+  border: none;
+
+  background: transparent;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: background 0.15s ease;
+}
+
+.mypage-settings-item:hover {
+  background: #fafcfb;
+}
+
+.mypage-settings-icon {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 14px;
+
+  border-radius: 13px;
+
+  background: #edf7f1;
+
+  color: #557e6c;
+
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.mypage-settings-text {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.mypage-settings-text strong {
+  color: #283831;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mypage-settings-text span {
+  overflow: hidden;
+
+  color: #919d98;
+
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-settings-arrow {
+  margin-left: auto;
+
+  padding-left: 20px;
+
+  color: #34453d;
+
+  font-size: 25px;
+  font-weight: 300;
+}
+
+/* =========================
+   DIVIDER
+========================= */
+
+.mypage-settings-divider {
+  height: 1px;
+
+  margin: 0 16px 0 70px;
+
+  background: #edf1ee;
+}
+
+/* =========================
+   LOGOUT
+========================= */
+
+.mypage-logout {
+  margin-top: 16px;
+}
+
+.mypage-logout .logout-button {
+  width: 100%;
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 15px;
+
+  background: #eaf5ee;
+
+  color: #365f4e;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  transition: background 0.15s ease;
+}
+
+.mypage-logout .logout-button:hover {
+  background: #e0efe6;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.mypage-footer {
+  margin-top: 30px;
+
+  color: #a2aca7;
+
+  font-size: 10px;
+  text-align: center;
+}
+
+/* =========================
+   LOADING
+========================= */
+
+.mypage-loading {
+  padding-top: 80px;
+
+  color: #87938e;
+
+  text-align: center;
+}
+
+/* =========================
+   MOBILE
+========================= */
 
 @media (max-width: 959px) {
   .mypage {
-    padding: 24px 20px 110px;
+    padding: 24px 18px 110px;
   }
 
-  .mobile-logout {
-    display: block;
-
-    margin-top: 24px;
+  .mypage-container {
+    max-width: 520px;
   }
 
-  .mobile-logout .logout-button {
-    width: 100%;
-    min-height: 48px;
+  .mypage-title {
+    margin-bottom: 20px;
 
-    justify-content: center;
+    font-size: 25px;
+  }
 
-    padding: 0 18px;
+  .mypage-profile-card {
+    min-height: 78px;
 
-    border-radius: 14px;
+    padding: 13px 15px;
 
-    background: #edf6ef;
+    border-radius: 20px;
+  }
 
-    color: #426356;
+  .mypage-profile-avatar {
+    width: 48px;
+    height: 48px;
 
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 18px;
+  }
+
+  .mypage-profile-edit {
+    padding: 9px 11px;
+
+    font-size: 11px;
+  }
+
+  .mypage-settings-section {
+    margin-top: 26px;
+  }
+
+  .mypage-settings-card {
+    border-radius: 20px;
+  }
+
+  .mypage-settings-item {
+    min-height: 68px;
+
+    padding: 10px 14px;
+  }
+
+  .mypage-settings-icon {
+    width: 38px;
+    height: 38px;
+
+    margin-right: 12px;
+
+    font-size: 20px;
+  }
+
+  .mypage-settings-divider {
+    margin-left: 64px;
+  }
+
+  .mypage-logout {
+    margin-top: 14px;
+  }
+
+  .mypage-footer {
+    margin-top: 26px;
   }
 }

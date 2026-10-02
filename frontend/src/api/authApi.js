@@ -80,5 +80,51 @@ export async function getMe() {
     throw new Error("로그인이 필요합니다.");
   }
 
-  return response.text();
+  return response.json();
+}
+
+export async function updateNickname(nickname) {
+  const response = await fetch("/api/users/me/nickname", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      nickname
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("닉네임 수정에 실패했습니다.");
+  }
+}
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const response = await fetch(`${API_BASE_URL}/users/me/password`, {
+    method: "PATCH",
+
+    headers: {
+      "Content-Type": "application/json"
+    },
+
+    credentials: "include",
+
+    body: JSON.stringify({
+      currentPassword,
+      newPassword
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      throw new Error("현재 비밀번호를 확인해주세요.");
+    }
+
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("비밀번호 변경에 실패했습니다.");
+  }
 }
