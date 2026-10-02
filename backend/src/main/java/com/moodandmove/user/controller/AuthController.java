@@ -78,6 +78,8 @@ public class AuthController {
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
+                user.getAgeGroup(),
+                user.getGender(),
                 user.isOnboardingCompleted()
         );
 

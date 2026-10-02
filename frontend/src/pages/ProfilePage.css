@@ -155,7 +155,6 @@
 
 .profile-field input:focus {
   border-color: #82aa96;
-
   background: #ffffff;
 }
 
@@ -184,34 +183,75 @@
 }
 
 /* =========================
-   NICKNAME
+   PROFILE INFO
 ========================= */
 
-.profile-input-button {
+.profile-info-card {
   display: flex;
-
-  gap: 10px;
+  flex-direction: column;
 }
 
-.profile-input-button input {
-  flex: 1;
+.profile-age-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
 
-  min-width: 0;
+  gap: 9px;
 }
 
-.profile-input-button button {
-  width: 80px;
+.profile-gender-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
 
-  flex-shrink: 0;
+  gap: 9px;
+}
 
-  border: none;
+.profile-choice {
+  min-height: 46px;
+
+  border: 1px solid #dce5df;
   border-radius: 13px;
 
-  background: #719a86;
-
-  color: #ffffff;
+  color: #65736c;
+  background: #fafcfb;
 
   font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.profile-choice:hover {
+  border-color: #a8c3b5;
+
+  transform: translateY(-1px);
+}
+
+.profile-choice.selected {
+  border-color: #719a86;
+
+  color: #456b59;
+  background: #edf7f1;
+}
+
+.profile-save-button {
+  width: 100%;
+  height: 48px;
+
+  margin-top: 22px;
+
+  border: none;
+  border-radius: 14px;
+
+  color: #ffffff;
+  background: #719a86;
+
+  font-size: 14px;
   font-weight: 700;
 
   cursor: pointer;
@@ -221,12 +261,18 @@
     transform 0.15s ease;
 }
 
-.profile-input-button button:hover {
+.profile-save-button:hover:not(:disabled) {
   background: #638b77;
 }
 
-.profile-input-button button:active {
-  transform: scale(0.97);
+.profile-save-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.profile-save-button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
 }
 
 /* =========================
@@ -263,15 +309,14 @@
     transform 0.15s ease;
 }
 
-.profile-password-button:hover {
+.profile-password-button:hover:not(:disabled) {
   background: #638b77;
 }
 
-.profile-password-button:active {
+.profile-password-button:active:not(:disabled) {
   transform: scale(0.99);
 }
 
-.profile-input-button button:disabled,
 .profile-password-button:disabled {
   opacity: 0.6;
 
@@ -367,13 +412,12 @@
     border-radius: 20px;
   }
 
-  .profile-input-button {
-    flex-direction: column;
+  .profile-age-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .profile-input-button button {
-    width: 100%;
-    height: 44px;
+  .profile-gender-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .profile-toast {

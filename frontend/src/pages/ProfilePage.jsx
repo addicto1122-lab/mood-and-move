@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe, updateNickname, changePassword } from "../api/authApi";
+
+import { getMe, updateProfile, changePassword } from "../api/authApi";
+
+import { AGE_GROUP_OPTIONS, GENDER_OPTIONS } from "../constants/userOptions";
+
 import "./ProfilePage.css";
 
 export default function ProfilePage() {
@@ -8,32 +12,54 @@ export default function ProfilePage() {
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  // 닉네임
+  // 프로필
   const [nickname, setNickname] = useState("");
-  const [nicknameError, setNicknameError] = useState("");
-  const [savingNickname, setSavingNickname] = useState(false);
+  const [ageGroup, setAgeGroup] = useState("");
+  const [gender, setGender] = useState("");
+
+  const [profileError, setProfileError] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   // 비밀번호
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+
   const [passwordError, setPasswordError] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
   // 토스트
   const [toast, setToast] = useState("");
 
+  /*
+   * 현재 사용자 정보 조회
+   */
   useEffect(() => {
     async function fetchUser() {
       try {
-        const data = await getMe();
+        const userData = await getMe();
 
-        setUser(data);
-        setNickname(data.nickname);
+        setUser(userData);
+
+        setNickname(userData.nickname ?? "");
+
+        setAgeGroup(userData.ageGroup ?? "");
+
+        setGender(userData.gender ?? "");
       } catch (error) {
         console.error(error);
-        navigate("/login", { replace: true });
+
+        if (error.message === "로그인이 필요합니다.") {
+          navigate("/login", {
+            replace: true
+          });
+
+          return;
+        }
+
+        setLoadError(error.message || "프로필 정보를 불러오지 못했습니다.");
       } finally {
         setLoading(false);
       }
@@ -42,6 +68,9 @@ export default function ProfilePage() {
     fetchUser();
   }, [navigate]);
 
+  /*
+   * 토스트
+   */
   const showToast = (message) => {
     setToast(message);
 
@@ -50,46 +79,82 @@ export default function ProfilePage() {
     }, 2000);
   };
 
-  const handleNicknameUpdate = async (e) => {
+  /*
+   * 프로필 수정
+   */
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
 
-    const value = nickname.trim();
+    setProfileError("");
 
-    if (!value) {
-      setNicknameError("닉네임을 입력해주세요.");
+    const trimmedNickname = nickname.trim();
+
+    if (!trimmedNickname) {
+      setProfileError("닉네임을 입력해주세요.");
+
       return;
     }
 
-    if (value.length > 50) {
-      setNicknameError("닉네임은 50자 이하로 입력해주세요.");
+    if (trimmedNickname.length > 50) {
+      setProfileError("닉네임은 50자 이하로 입력해주세요.");
+
       return;
     }
 
-    if (value === user.nickname) {
-      setNicknameError("현재 닉네임과 동일합니다.");
+    if (!ageGroup) {
+      setProfileError("나이대를 선택해주세요.");
+
+      return;
+    }
+
+    if (!gender) {
+      setProfileError("성별을 선택해주세요.");
+
+      return;
+    }
+
+    const unchanged =
+      trimmedNickname === user.nickname &&
+      ageGroup === user.ageGroup &&
+      gender === user.gender;
+
+    if (unchanged) {
+      setProfileError("변경된 정보가 없습니다.");
+
       return;
     }
 
     try {
-      setSavingNickname(true);
-      setNicknameError("");
+      setSavingProfile(true);
 
-      await updateNickname(value);
+      await updateProfile({
+        nickname: trimmedNickname,
+        ageGroup,
+        gender
+      });
 
       setUser((prev) => ({
         ...prev,
-        nickname: value
+        nickname: trimmedNickname,
+        ageGroup,
+        gender
       }));
 
-      showToast("닉네임이 수정되었습니다.");
+      setNickname(trimmedNickname);
+
+      showToast("프로필이 수정되었습니다.");
     } catch (error) {
       console.error(error);
-      setNicknameError("닉네임 수정에 실패했습니다.");
+
+      setProfileError(error.message || "프로필 수정에 실패했습니다.");
     } finally {
-      setSavingNickname(false);
+      setSavingProfile(false);
     }
   };
 
+  /*
+   * 비밀번호 변경
+   */
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
 
@@ -97,31 +162,37 @@ export default function ProfilePage() {
 
     if (!currentPassword) {
       setPasswordError("현재 비밀번호를 입력해주세요.");
+
       return;
     }
 
     if (!newPassword) {
       setPasswordError("새 비밀번호를 입력해주세요.");
+
       return;
     }
 
     if (newPassword.length < 8) {
       setPasswordError("새 비밀번호는 8자 이상 입력해주세요.");
+
       return;
     }
 
     if (newPassword.length > 50) {
       setPasswordError("새 비밀번호는 50자 이하로 입력해주세요.");
+
       return;
     }
 
     if (newPassword !== newPasswordConfirm) {
       setPasswordError("새 비밀번호가 일치하지 않습니다.");
+
       return;
     }
 
     if (currentPassword === newPassword) {
       setPasswordError("현재 비밀번호와 다른 비밀번호를 입력해주세요.");
+
       return;
     }
 
@@ -140,7 +211,9 @@ export default function ProfilePage() {
       showToast("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
 
       setTimeout(() => {
-        navigate("/login", { replace: true });
+        navigate("/login", {
+          replace: true
+        });
       }, 1800);
     } catch (error) {
       console.error(error);
@@ -155,6 +228,14 @@ export default function ProfilePage() {
     return (
       <main className="profile-page">
         <div className="profile-page-loading">불러오는 중...</div>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="profile-page">
+        <div className="profile-page-loading">{loadError}</div>
       </main>
     );
   }
@@ -179,6 +260,7 @@ export default function ProfilePage() {
 
           <div>
             <h1>프로필 수정</h1>
+
             <p>내 계정 정보를 확인하고 수정할 수 있어요.</p>
           </div>
         </header>
@@ -187,7 +269,10 @@ export default function ProfilePage() {
         <section className="profile-section">
           <h2>기본 정보</h2>
 
-          <div className="profile-card">
+          <form
+            className="profile-card profile-info-card"
+            onSubmit={handleProfileUpdate}
+          >
             {/* 이메일 */}
             <div className="profile-field">
               <label htmlFor="profile-email">이메일</label>
@@ -205,33 +290,90 @@ export default function ProfilePage() {
             <div className="profile-divider" />
 
             {/* 닉네임 */}
-            <form onSubmit={handleNicknameUpdate}>
-              <div className="profile-field">
-                <label htmlFor="profile-nickname">닉네임</label>
+            <div className="profile-field">
+              <label htmlFor="profile-nickname">닉네임</label>
 
-                <div className="profile-input-button">
-                  <input
-                    id="profile-nickname"
-                    type="text"
-                    value={nickname}
-                    maxLength={50}
-                    onChange={(e) => {
-                      setNickname(e.target.value);
-                      setNicknameError("");
+              <input
+                id="profile-nickname"
+                type="text"
+                value={nickname}
+                maxLength={50}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+
+                  setProfileError("");
+                }}
+              />
+            </div>
+
+            <div className="profile-divider" />
+
+            {/* 나이대 */}
+            <div className="profile-field">
+              <label>나이대</label>
+
+              <div className="profile-age-grid">
+                {AGE_GROUP_OPTIONS.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={
+                      ageGroup === item.value
+                        ? "profile-choice selected"
+                        : "profile-choice"
+                    }
+                    onClick={() => {
+                      setAgeGroup(item.value);
+
+                      setProfileError("");
                     }}
-                  />
-
-                  <button type="submit" disabled={savingNickname}>
-                    {savingNickname ? "저장 중" : "변경"}
+                  >
+                    {item.label}
                   </button>
-                </div>
-
-                {nicknameError && (
-                  <span className="profile-error">{nicknameError}</span>
-                )}
+                ))}
               </div>
-            </form>
-          </div>
+            </div>
+
+            <div className="profile-divider" />
+
+            {/* 성별 */}
+            <div className="profile-field">
+              <label>성별</label>
+
+              <div className="profile-gender-grid">
+                {GENDER_OPTIONS.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    className={
+                      gender === item.value
+                        ? "profile-choice selected"
+                        : "profile-choice"
+                    }
+                    onClick={() => {
+                      setGender(item.value);
+
+                      setProfileError("");
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {profileError && (
+              <span className="profile-error">{profileError}</span>
+            )}
+
+            <button
+              type="submit"
+              className="profile-save-button"
+              disabled={savingProfile}
+            >
+              {savingProfile ? "저장 중..." : "프로필 저장"}
+            </button>
+          </form>
         </section>
 
         {/* 비밀번호 */}
@@ -253,6 +395,7 @@ export default function ProfilePage() {
                 placeholder="현재 비밀번호를 입력해주세요"
                 onChange={(e) => {
                   setCurrentPassword(e.target.value);
+
                   setPasswordError("");
                 }}
               />
@@ -269,6 +412,7 @@ export default function ProfilePage() {
                 placeholder="8자 이상 입력해주세요"
                 onChange={(e) => {
                   setNewPassword(e.target.value);
+
                   setPasswordError("");
                 }}
               />
@@ -285,6 +429,7 @@ export default function ProfilePage() {
                 placeholder="새 비밀번호를 다시 입력해주세요"
                 onChange={(e) => {
                   setNewPasswordConfirm(e.target.value);
+
                   setPasswordError("");
                 }}
               />
@@ -305,7 +450,6 @@ export default function ProfilePage() {
         </section>
       </section>
 
-      {/* 토스트 */}
       {toast && <div className="profile-toast">{toast}</div>}
     </main>
   );

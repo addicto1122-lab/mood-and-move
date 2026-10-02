@@ -17,7 +17,9 @@ export default function MyPage() {
         setUser(data);
       } catch (error) {
         console.error(error);
-        navigate("/login", { replace: true });
+        navigate("/login", {
+          replace: true
+        });
       } finally {
         setLoading(false);
       }
@@ -76,10 +78,7 @@ export default function MyPage() {
             <button
               type="button"
               className="mypage-settings-item"
-              onClick={() => {
-                // 추후 페이지 연결
-                // navigate("/mypage/preferences");
-              }}
+              onClick={() => navigate("/mypage/preferences")}
             >
               <div className="mypage-settings-icon">♡</div>
 
@@ -98,10 +97,7 @@ export default function MyPage() {
             <button
               type="button"
               className="mypage-settings-item"
-              onClick={() => {
-                // 추후 페이지 연결
-                // navigate("/mypage/dislikes");
-              }}
+              onClick={() => navigate("/mypage/dislikes")}
             >
               <div className="mypage-settings-icon">◎</div>
 
