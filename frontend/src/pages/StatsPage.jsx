@@ -28,6 +28,10 @@ export default function StatsPage() {
       try {
         const response = await fetch(
           `/api/calendar?userId=1&year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include"
+          }
         );
 
         if (!response.ok) {
@@ -49,7 +53,10 @@ export default function StatsPage() {
 
   async function fetchCalendarDetail(moodEntryId) {
     try {
-      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`);
+      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`, {
+        method: "GET",
+        credentials: "include"
+      });
 
       if (!response.ok) {
         throw new Error("일기 상세 조회 실패");
@@ -107,7 +114,7 @@ export default function StatsPage() {
 
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />,
+      <div key={`empty-${i}`} className="calendar-cell empty" />
     );
   }
 
@@ -133,7 +140,7 @@ export default function StatsPage() {
             <span className="calendar-score">{entry.moodScore}점</span>
           </div>
         )}
-      </div>,
+      </div>
     );
   }
 
