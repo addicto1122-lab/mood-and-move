@@ -23,29 +23,78 @@ public class UserPreference {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true
+    )
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "activity_style")
-    private ActivityStyle activityStyle;
+    @Column(
+            name = "activity_style",
+            nullable = false,
+            length = 20
+    )
+    private ActivityStyle activityStyle = ActivityStyle.ANY;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "activity_environment", nullable = false, length = 20)
+    @Column(
+            name = "activity_environment",
+            nullable = false,
+            length = 20
+    )
     private EnvironmentType activityEnvironment = EnvironmentType.ANY;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "social_preference", nullable = false, length = 20)
+    @Column(
+            name = "social_preference",
+            nullable = false,
+            length = 20
+    )
     private SocialType socialPreference = SocialType.ANY;
 
     @Column(name = "default_available_minutes")
     private Integer defaultAvailableMinutes;
 
     @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false
+    )
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
+    @Column(
+            name = "updated_at",
+            nullable = false
+    )
     private LocalDateTime updatedAt;
+
+
+    private UserPreference(User user) {
+        this.user = user;
+        this.activityStyle = ActivityStyle.ANY;
+        this.activityEnvironment = EnvironmentType.ANY;
+        this.socialPreference = SocialType.ANY;
+        this.defaultAvailableMinutes = null;
+    }
+
+    public static UserPreference createDefault(User user) {
+        return new UserPreference(user);
+    }
+
+
+    public void updatePreference(
+            ActivityStyle activityStyle,
+            EnvironmentType activityEnvironment,
+            SocialType socialPreference,
+            Integer defaultAvailableMinutes
+    ) {
+        this.activityStyle = activityStyle;
+        this.activityEnvironment = activityEnvironment;
+        this.socialPreference = socialPreference;
+        this.defaultAvailableMinutes = defaultAvailableMinutes;
+    }
 }

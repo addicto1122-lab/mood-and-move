@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
-import { login } from "../api/authApi";
+import { login, getMe } from "../api/authApi";
 
 import "./LoginPage.css";
 
@@ -10,23 +10,41 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
+      setIsSubmitting(true);
+
+      // 로그인
       await login({
         email,
         password
       });
 
-      navigate("/", {
-        replace: true
-      });
+      // 로그인한 사용자 정보 조회
+      const user = await getMe();
+
+      // 온보딩 완료 여부에 따라 이동
+      if (user.onboardingCompleted) {
+        navigate("/", {
+          replace: true
+        });
+      } else {
+        navigate("/onboarding", {
+          replace: true
+        });
+      }
     } catch (error) {
-      alert(error.message);
+      console.error(error);
+
+      alert(error.message || "로그인에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -70,8 +88,8 @@ export default function LoginPage() {
             />
           </div>
 
-          <button className="auth-submit" type="submit">
-            로그인
+          <button className="auth-submit" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "로그인 중..." : "로그인"}
           </button>
         </form>
 

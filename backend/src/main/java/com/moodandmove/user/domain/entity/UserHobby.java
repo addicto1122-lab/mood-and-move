@@ -30,4 +30,27 @@ public class UserHobby {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private UserHobby(
+            User user,
+            Hobby hobby
+    ) {
+        this.id = new UserHobbyId(
+                user.getId(),
+                hobby.getId()
+        );
+
+        this.user = user;
+        this.hobby = hobby;
+    }
+
+    public static UserHobby create(
+            User user,
+            Hobby hobby
+    ) {
+        return new UserHobby(
+                user,
+                hobby
+        );
+    }
 }

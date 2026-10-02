@@ -1,5 +1,7 @@
 package com.moodandmove.user.domain.entity;
 
+import com.moodandmove.user.domain.type.AgeGroup;
+import com.moodandmove.user.domain.type.Gender;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -28,6 +30,14 @@ public class User {
     @Column(nullable = false, length = 50)
     private String nickname;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "age_group", length = 20)
+    private AgeGroup ageGroup;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 20)
+    private Gender gender;
+
     @Column(name = "onboarding_completed", nullable = false)
     private boolean onboardingCompleted = false;
 
@@ -42,15 +52,21 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    private User(String email, String passwordHash, String nickname) {
+    private User(
+            String email,
+            String passwordHash,
+            String nickname
+    ) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.nickname = nickname;
-        this.onboardingCompleted = false;
-        this.tokenVersion = 0;
     }
 
-    public static User create(String email, String passwordHash, String nickname) {
+    public static User create(
+            String email,
+            String passwordHash,
+            String nickname
+    ) {
         return new User(email, passwordHash, nickname);
     }
 
@@ -65,4 +81,24 @@ public class User {
     public void updatePassword(String passwordHash) {
         this.passwordHash = passwordHash;
     }
+
+    public void completeOnboarding(
+            AgeGroup ageGroup,
+            Gender gender
+    ) {
+        this.ageGroup = ageGroup;
+        this.gender = gender;
+        this.onboardingCompleted = true;
+    }
+
+    public void updateProfile(
+            String nickname,
+            AgeGroup ageGroup,
+            Gender gender
+    ) {
+        this.nickname = nickname;
+        this.ageGroup = ageGroup;
+        this.gender = gender;
+    }
+
 }
