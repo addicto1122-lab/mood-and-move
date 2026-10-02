@@ -10,6 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 @Entity
@@ -80,4 +81,111 @@ public class UserActionStat {
 
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
+
+    public static UserActionStat create(
+            User user,
+            Action action,
+            Emotion emotion,
+            int statYear,
+            int statMonth
+    ){
+        UserActionStat stat = new UserActionStat();
+
+        stat.user = user;
+        stat.action = action;
+        stat.emotion = emotion;
+
+        stat.statYear = statYear;
+        stat.statMonth = statMonth;
+
+        stat.recommendationCount = 0;
+        stat.executionCount = 0;
+        stat.sampleCount = 0;
+        stat.positiveCount = 0;
+
+        stat.positiveRate = BigDecimal.ZERO;
+        stat.avgDelta = BigDecimal.ZERO;
+
+        stat.confidenceLevel = ConfidenceLevel.LOW;
+
+        stat.calculatedAt = LocalDateTime.now();
+
+        return stat;
+    }
+
+    public void increaseRecommendationCount() {
+        this.recommendationCount++;
+        this.calculatedAt = LocalDateTime.now();
+    }
+
+    public void increaseExecutionCount() {
+        this.executionCount++;
+        this.calculatedAt = LocalDateTime.now();
+    }
+
+    public void recordRecheck(int delta) {
+
+        int oldSampleCount = this.sampleCount;
+
+        // 기존 평균 × 기존 표본 수
+        BigDecimal totalDelta =
+                this.avgDelta.multiply(
+                        BigDecimal.valueOf(oldSampleCount)
+                );
+
+        // 새로운 delta 추가
+        totalDelta =
+                totalDelta.add(
+                        BigDecimal.valueOf(delta)
+                );
+
+        this.sampleCount++;
+
+        if (delta > 0) {
+            this.positiveCount++;
+        }
+
+        this.avgDelta =
+                totalDelta.divide(
+                        BigDecimal.valueOf(this.sampleCount),
+                        2,
+                        RoundingMode.HALF_UP
+                );
+
+        this.positiveRate =
+                BigDecimal.valueOf(this.positiveCount)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(
+                                BigDecimal.valueOf(this.sampleCount),
+                                2,
+                                RoundingMode.HALF_UP
+                        );
+
+        this.confidenceLevel =
+                calculateConfidence();
+
+        this.calculatedAt =
+                LocalDateTime.now();
+    }
+
+    private ConfidenceLevel calculateConfidence() {
+
+        if (sampleCount >= 5
+                && positiveRate.compareTo(
+                BigDecimal.valueOf(70)
+        ) >= 0) {
+
+            return ConfidenceLevel.HIGH;
+        }
+
+        if (sampleCount >= 3
+                && positiveRate.compareTo(
+                BigDecimal.valueOf(60)
+        ) >= 0) {
+
+            return ConfidenceLevel.MEDIUM;
+        }
+
+        return ConfidenceLevel.LOW;
+    }
 }
