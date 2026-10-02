@@ -1,5 +1,6 @@
 package com.moodandmove.recommendation.service;
 
+import com.moodandmove.analysis.domain.type.ConfidenceLevel;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ public class PersonalScoreCalculator {
 
                         return clamp(deltaScore);
     }
-    public BigDecimal calculateRate(int numerator, int denominator) {
+    public BigDecimal calculateRate(long numerator, long denominator) {
 
         if (denominator <= 0) {
             throw new IllegalArgumentException("분모는 0보다 커야 합니다.");
@@ -62,6 +63,14 @@ public class PersonalScoreCalculator {
         }
 
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimal resolveConfidenceWeight(ConfidenceLevel confidenceLevel){
+        return switch (confidenceLevel){
+            case LOW -> BigDecimal.valueOf(0.5);
+            case MEDIUM -> BigDecimal.valueOf(0.75);
+            case HIGH -> BigDecimal.ONE;
+        };
     }
 
 }
