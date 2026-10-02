@@ -1,24 +1,33 @@
 import { useState } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
+
+import { login } from "../api/authApi";
+
 import "./LoginPage.css";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
+
   const [password, setPassword] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // TODO: 백엔드 로그인 API 연결
-    console.log({
-      email,
-      password
-    });
+    try {
+      await login({
+        email,
+        password
+      });
 
-    // UI 테스트용 임시 이동
-    navigate("/");
+      navigate("/", {
+        replace: true
+      });
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -30,6 +39,7 @@ export default function LoginPage() {
           </div>
 
           <h1>다시 만나서 반가워요</h1>
+
           <p>오늘의 마음을 기록하러 가볼까요?</p>
         </header>
 
@@ -67,6 +77,7 @@ export default function LoginPage() {
 
         <div className="auth-bottom">
           <span>아직 계정이 없나요?</span>
+
           <Link to="/signup">회원가입</Link>
         </div>
       </section>

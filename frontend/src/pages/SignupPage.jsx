@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { checkEmail, signup, login } from "../api/authApi";
 import "./SignupPage.css";
 
 export default function SignupPage() {
@@ -20,24 +21,14 @@ export default function SignupPage() {
       return;
     }
 
-    // TODO: 백엔드 API 연결
-    // 예시
-    //
-    // const response = await fetch(
-    //   `/api/auth/check-email?email=${encodeURIComponent(email)}`
-    // );
-    //
-    // const data = await response.json();
-    //
-    // setEmailChecked(true);
-    // setEmailAvailable(data.available);
+    try {
+      const data = await checkEmail(email);
 
-    // UI 테스트용 임시값
-    // 백api추가시 수정
-    const available = true;
-
-    setEmailChecked(true);
-    setEmailAvailable(available);
+      setEmailChecked(true);
+      setEmailAvailable(data.available);
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   const handleEmailChange = (e) => {
@@ -48,11 +39,16 @@ export default function SignupPage() {
     setEmailAvailable(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!emailChecked || !emailAvailable) {
       alert("이메일 중복확인을 해주세요.");
+      return;
+    }
+
+    if (password.length < 8) {
+      alert("비밀번호는 8자 이상 입력해주세요.");
       return;
     }
 
@@ -61,25 +57,25 @@ export default function SignupPage() {
       return;
     }
 
-    const signupData = {
-      email,
-      password,
-      nickname
-    };
+    try {
+      // 회원가입
+      await signup({
+        email,
+        password,
+        nickname
+      });
 
-    console.log(signupData);
+      // 회원가입 직후 자동 로그인
+      await login({
+        email,
+        password
+      });
 
-    // TODO: 회원가입 API 연결
-    //
-    // fetch("/api/auth/signup", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify(signupData),
-    // });
-
-    navigate("/onboarding");
+      // JWT 쿠키가 저장된 상태로 온보딩 이동
+      navigate("/onboarding");
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -158,7 +154,8 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="비밀번호를 입력해주세요"
+              placeholder="8자 이상 입력해주세요"
+              minLength={8}
               required
             />
           </div>
@@ -173,6 +170,7 @@ export default function SignupPage() {
               value={passwordCheck}
               onChange={(e) => setPasswordCheck(e.target.value)}
               placeholder="비밀번호를 다시 입력해주세요"
+              minLength={8}
               required
             />
 

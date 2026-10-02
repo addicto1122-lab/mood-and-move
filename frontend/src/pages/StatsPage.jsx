@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
+
 import "./StatsPage.css";
 
 export default function StatsPage() {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1));
 
   const [days, setDays] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth() + 1;
+  const [loading, setLoading] = useState(true);
 
   const [selectedEntry, setSelectedEntry] = useState(null);
 
+  const year = currentDate.getFullYear();
+
+  const month = currentDate.getMonth() + 1;
+
   useEffect(() => {
     async function fetchCalendar() {
+      setLoading(true);
+
       try {
         const response = await fetch(
           `/api/calendar?userId=1&year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include"
+          }
         );
 
         if (!response.ok) {
@@ -25,9 +34,11 @@ export default function StatsPage() {
 
         const data = await response.json();
 
-        setDays(data.days);
+        setDays(data.days ?? []);
       } catch (error) {
         console.error(error);
+
+        setDays([]);
       } finally {
         setLoading(false);
       }
@@ -38,7 +49,10 @@ export default function StatsPage() {
 
   async function fetchCalendarDetail(moodEntryId) {
     try {
-      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`);
+      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`, {
+        method: "GET",
+        credentials: "include"
+      });
 
       if (!response.ok) {
         throw new Error("일기 상세 조회 실패");
@@ -74,7 +88,7 @@ export default function StatsPage() {
 
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />,
+      <div key={`empty-${i}`} className="calendar-cell empty" />
     );
   }
 
@@ -100,7 +114,7 @@ export default function StatsPage() {
             <span className="calendar-score">{entry.moodScore}점</span>
           </div>
         )}
-      </div>,
+      </div>
     );
   }
 
@@ -118,13 +132,17 @@ export default function StatsPage() {
 
       <section className="calendar-card">
         <div className="calendar-header">
-          <button onClick={prevMonth}>‹</button>
+          <button type="button" onClick={prevMonth}>
+            ‹
+          </button>
 
           <h2>
             {year}년 {month}월
           </h2>
 
-          <button onClick={nextMonth}>›</button>
+          <button type="button" onClick={nextMonth}>
+            ›
+          </button>
         </div>
 
         <div className="calendar-weekdays">
@@ -143,32 +161,39 @@ export default function StatsPage() {
           <div className="calendar-grid">{calendarCells}</div>
         )}
       </section>
+
       {selectedEntry && (
         <section className="diary-detail">
           <div className="diary-detail-header">
             <div>
               <span className="detail-date">{selectedEntry.date}</span>
+
               <h2>
                 {selectedEntry.emoji} {selectedEntry.emotionName}
               </h2>
             </div>
+
             <button
+              type="button"
               className="detail-close"
               onClick={() => setSelectedEntry(null)}
             >
               ×
             </button>
           </div>
+
           <div className="detail-score">
             <span>
               기분 점수
               <strong>{selectedEntry.moodScore}점</strong>
             </span>
+
             <span>
               감정 강도
               <strong>{selectedEntry.intensity}</strong>
             </span>
           </div>
+
           <div className="detail-content">
             <span>오늘의 기록</span>
 

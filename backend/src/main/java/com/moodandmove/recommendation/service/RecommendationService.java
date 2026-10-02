@@ -20,7 +20,4 @@ public class RecommendationService {
     private final RecommendationSessionRepository recommendationSessionRepository;
     private final RecommendationRepository recommendationRepository;
 
-    public List<Action> getActiveActions() {
-        return actionRepository.findByActiveTrue();
-    }
 }
