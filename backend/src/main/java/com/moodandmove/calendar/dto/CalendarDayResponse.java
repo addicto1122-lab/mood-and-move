@@ -11,5 +11,6 @@ public record CalendarDayResponse(
         String emoji,
 
         Integer moodScore,
-        Integer intensity
+        Integer intensity,
+        Integer afterScore
 ){}
