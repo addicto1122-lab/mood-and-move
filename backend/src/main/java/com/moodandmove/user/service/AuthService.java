@@ -4,6 +4,7 @@ import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
 import com.moodandmove.user.repository.UserRepository;
+import com.moodandmove.user.repository.UserWithdrawalRequestRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -63,5 +65,42 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
         user.increaseTokenVersion();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isWithdrawalPending(Long userId) {
+        return userWithdrawalRequestRepository.existsByUser_Id(userId);
+    }
+
+    @Transactional
+    public User recoverAccount(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "이메일 또는 비밀번호가 올바르지 않습니다."
+                        )
+                );
+
+        if (!passwordEncoder.matches(
+                request.password(),
+                user.getPasswordHash()
+        )) {
+            throw new IllegalArgumentException(
+                    "이메일 또는 비밀번호가 올바르지 않습니다."
+            );
+        }
+
+        if (!userWithdrawalRequestRepository.existsByUser_Id(user.getId())) {
+            throw new IllegalArgumentException(
+                    "탈퇴 신청 상태가 아닙니다."
+            );
+        }
+
+        userWithdrawalRequestRepository.deleteByUser_Id(
+                user.getId()
+        );
+
+        return user;
     }
 }

@@ -5,6 +5,7 @@ import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
 import com.moodandmove.user.dto.response.EmailCheckResponse;
+import com.moodandmove.user.dto.response.LoginResponse;
 import com.moodandmove.user.dto.response.MeResponse;
 import com.moodandmove.user.service.AuthService;
 import jakarta.validation.Valid;
@@ -46,11 +47,20 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> login(
+    public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request
     ) {
 
         User user = authService.login(request);
+
+        boolean withdrawalPending =
+                authService.isWithdrawalPending(user.getId());
+
+        if (withdrawalPending) {
+            return ResponseEntity.ok(
+                    new LoginResponse(true)
+            );
+        }
 
         String accessToken =
                 jwtProvider.createAccessToken(user);
@@ -65,8 +75,13 @@ public class AuthController {
                 .build();
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .build();
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        cookie.toString()
+                )
+                .body(
+                        new LoginResponse(false)
+                );
     }
 
     @GetMapping("/me")
@@ -104,6 +119,33 @@ public class AuthController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .build();
+    }
+
+    @PostMapping("/recover")
+    public ResponseEntity<Void> recoverAccount(
+            @Valid @RequestBody LoginRequest request
+    ) {
+
+        User user = authService.recoverAccount(request);
+
+        String accessToken =
+                jwtProvider.createAccessToken(user);
+
+        ResponseCookie cookie = ResponseCookie
+                .from("accessToken", accessToken)
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ofMinutes(30))
+                .build();
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.SET_COOKIE,
+                        cookie.toString()
+                )
                 .build();
     }
 }

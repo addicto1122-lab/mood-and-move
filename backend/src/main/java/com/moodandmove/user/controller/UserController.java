@@ -1,12 +1,10 @@
 package com.moodandmove.user.controller;
 
 import com.moodandmove.user.domain.entity.User;
-import com.moodandmove.user.dto.request.ChangePasswordRequest;
-import com.moodandmove.user.dto.request.RequiredOnboardingRequest;
-import com.moodandmove.user.dto.request.UpdatePreferenceRequest;
-import com.moodandmove.user.dto.request.UpdateProfileRequest;
+import com.moodandmove.user.dto.request.*;
 import com.moodandmove.user.dto.response.HobbyResponse;
 import com.moodandmove.user.dto.response.PreferenceResponse;
+import com.moodandmove.user.dto.response.WithdrawalStatusResponse;
 import com.moodandmove.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -153,5 +151,74 @@ public class UserController {
         return ResponseEntity.ok(
                 userService.getHobbies()
         );
+    }
+
+    // 회원탈퇴 신청
+    @PostMapping("/me/withdrawal")
+    public ResponseEntity<Void> requestWithdrawal(
+            Authentication authentication,
+            @Valid @RequestBody DeleteAccountRequest request
+    ) {
+        User user = (User) authentication.getPrincipal();
+
+        try {
+            userService.requestWithdrawal(
+                    user.getId(),
+                    request.currentPassword()
+            );
+
+            ResponseCookie cookie = ResponseCookie
+                    .from("accessToken", "")
+                    .httpOnly(true)
+                    .secure(false) // 배포 HTTPS에서는 true
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(Duration.ZERO)
+                    .build();
+
+            return ResponseEntity.ok()
+                    .header(
+                            HttpHeaders.SET_COOKIE,
+                            cookie.toString()
+                    )
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    // 회원탈퇴 신청 상태 조회
+    @GetMapping("/me/withdrawal")
+    public ResponseEntity<WithdrawalStatusResponse> getWithdrawalStatus(
+            Authentication authentication
+    ) {
+        User user = (User) authentication.getPrincipal();
+
+        WithdrawalStatusResponse response =
+                userService.getWithdrawalStatus(
+                        user.getId()
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    // 회원탈퇴 신청 취소
+    @DeleteMapping("/me/withdrawal")
+    public ResponseEntity<Void> cancelWithdrawal(
+            Authentication authentication
+    ) {
+        User user = (User) authentication.getPrincipal();
+
+        try {
+            userService.cancelWithdrawal(
+                    user.getId()
+            );
+
+            return ResponseEntity.noContent().build();
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

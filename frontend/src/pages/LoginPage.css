@@ -184,3 +184,133 @@
     font-size: 31px;
   }
 }
+
+/* =========================
+   ACCOUNT RECOVERY MODAL
+========================= */
+
+.recovery-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(27, 38, 32, 0.42);
+}
+
+.recovery-modal {
+  width: 100%;
+  max-width: 400px;
+
+  padding: 30px;
+  box-sizing: border-box;
+
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  text-align: center;
+
+  box-shadow: 0 20px 60px rgba(30, 45, 37, 0.18);
+}
+
+.recovery-modal-icon {
+  width: 52px;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 16px;
+
+  border-radius: 50%;
+
+  background: #edf7f1;
+
+  color: #4d7965;
+
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.recovery-modal h2 {
+  margin: 0;
+
+  color: #27372f;
+
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.recovery-modal p {
+  margin: 12px 0 24px;
+
+  color: #87928d;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.recovery-modal-buttons {
+  display: flex;
+
+  gap: 10px;
+}
+
+.recovery-modal-buttons button {
+  flex: 1;
+
+  height: 46px;
+
+  border: none;
+  border-radius: 14px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.recovery-cancel {
+  background: #f0f3f1;
+
+  color: #6c7772;
+}
+
+.recovery-cancel:hover {
+  background: #e7ece9;
+}
+
+.recovery-confirm {
+  background: #496f5d;
+
+  color: #ffffff;
+}
+
+.recovery-confirm:hover {
+  background: #3e6252;
+}
+
+.recovery-modal-buttons button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
+}
+
+@media (max-width: 959px) {
+  .recovery-modal {
+    max-width: 350px;
+
+    padding: 26px 22px;
+  }
+}
