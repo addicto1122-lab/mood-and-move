@@ -2,10 +2,7 @@ package com.moodandmove.analysis.service;
 
 import com.moodandmove.analysis.domain.entity.UserActionStat;
 import com.moodandmove.analysis.domain.type.ConfidenceLevel;
-import com.moodandmove.analysis.dto.ActionAcceptanceStatResponse;
-import com.moodandmove.analysis.dto.ActionPersonalStatResponse;
-import com.moodandmove.analysis.dto.EmotionStatResponse;
-import com.moodandmove.analysis.dto.MonthlyStatsResponse;
+import com.moodandmove.analysis.dto.*;
 import com.moodandmove.analysis.repository.UserActionStatRepository;
 import com.moodandmove.mood.domain.entity.Emotion;
 import com.moodandmove.mood.domain.entity.MoodEntry;
@@ -434,23 +431,6 @@ public class UserActionStatService {
 
 
         }
-        if(moodEntries.isEmpty())
-        {
-            averageMoodScore = BigDecimal.ZERO;
-        }else{
-            double average = moodEntries.stream()
-                    .mapToInt(
-                            MoodEntry::getMoodScore
-                    )
-                    .average()
-                    .orElse(0);
-
-            averageMoodScore = BigDecimal.valueOf(average)
-                    .setScale(
-                            2,
-                            RoundingMode.HALF_UP
-                    );
-        }
 
         /*
          * 9. 감정별 분포 계산
@@ -523,6 +503,155 @@ public class UserActionStatService {
 
                 emotionStats
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActionEffectResponse> getMonthlyActionEffects(
+            Long userId,
+            int year,
+            int month
+    ){
+        List<UserActionStat> stats = userActionStatRepository
+                .findAllByUser_IdAndStatYearAndStatMonth(
+                        userId,
+                        year,
+                        month
+                );
+
+        /*
+         * 같은 행동끼리 묶기
+         *
+         * 예:
+         * 산책 + SAD
+         * 산책 + ANXIOUS
+         * 산책 + JOY
+         *
+         * ↓
+         *
+         * 산책
+         */
+
+        Map<Long, List<UserActionStat>> groupedStats = stats.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                stat -> stat.getAction().getId()
+                        )
+                );
+
+        return groupedStats.values()
+                .stream()
+                .map(group -> {
+                    UserActionStat first = group.get(0);
+
+                    /*
+                     * 추천 횟수 합계
+                     */
+                    long recommendationCount = group.stream()
+                            .mapToLong(
+                                    UserActionStat::getRecommendationCount
+                            )
+                            .sum();
+
+                    /*
+                     * 실행 횟수 합계
+                     */
+                    long executionCount = group.stream()
+                            .mapToLong(
+                                    UserActionStat::getExecutionCount
+                            )
+                            .sum();
+
+                    /*
+                     * 재측정 완료 횟수
+                     */
+                    long sampleCount = group.stream()
+                            .mapToLong(
+                                    UserActionStat::getSampleCount
+                            )
+                            .sum();
+
+                    /*
+                     * 긍정 변화 횟수
+                     */
+                    long positiveCount = group.stream()
+                            .mapToLong(
+                                    UserActionStat::getPositiveCount
+                            )
+                            .sum();
+
+                    /*
+                     * 긍정 변화율
+                     */
+                    BigDecimal positiveRate;
+
+                    if(sampleCount == 0)
+                    {
+                        positiveRate = BigDecimal.ZERO;
+                    }else{
+                        positiveRate = BigDecimal.valueOf(positiveCount)
+                                .multiply(
+                                        BigDecimal.valueOf(100)
+                                )
+                                .divide(
+                                        BigDecimal.valueOf(sampleCount),
+                                        2,
+                                        RoundingMode.HALF_UP
+                                );
+                    }
+
+                    /*
+                     * 평균 변화량
+                     *
+                     * 단순 평균 X
+                     *
+                     * aveDelta x sampleCount
+                     * 방식으로 가중 평균 계산
+                     */
+                    BigDecimal weightedDeltaSum = group.stream()
+                            .filter(
+                                    stat -> stat.getSampleCount() > 0
+                            )
+                            .filter(
+                                    stat -> stat.getAvgDelta() != null
+                            )
+                            .map(
+                                    stat -> stat.getAvgDelta()
+                                            .multiply(
+                                                    BigDecimal.valueOf(
+                                                            stat.getSampleCount()
+                                                    )
+                                            )
+                            )
+                            .reduce(
+                                    BigDecimal.ZERO,
+                                    BigDecimal::add
+                            );
+
+                    BigDecimal averageDelta;
+
+                    if(sampleCount == 0)
+                    {
+                        averageDelta = BigDecimal.ZERO;
+                    }else{
+                        averageDelta = weightedDeltaSum
+                                .divide(
+                                        BigDecimal.valueOf(sampleCount),
+                                        2,
+                                        RoundingMode.HALF_UP);
+                    }
+
+                    return new ActionEffectResponse(
+                            first.getAction().getId(),
+                            first.getAction().getName(),
+                            recommendationCount,
+                            executionCount,
+                            sampleCount,
+                            positiveCount,
+                            positiveRate,
+                            averageDelta
+                    );
+                })
+                .toList();
     }
 
 }

@@ -98,12 +98,11 @@ export default function StatsPage() {
    * Calendar
    */
   const [days, setDays] = useState([]);
-
   const [loading, setLoading] = useState(true);
 
-  /*
-   * 일기 상세
-   */
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth() + 1;
+
   const [selectedEntry, setSelectedEntry] = useState(null);
 
   /*
@@ -111,9 +110,7 @@ export default function StatsPage() {
    */
   const [monthlyStats, setMonthlyStats] = useState(null);
 
-  const year = currentDate.getFullYear();
-
-  const month = currentDate.getMonth() + 1;
+  const [actionEffects, setActionEffects] = useState([]);
 
   /*
    * =========================
@@ -148,6 +145,35 @@ export default function StatsPage() {
     }
 
     fetchCalendar();
+  }, [year, month]);
+
+  /*
+   * =========================
+   * Calendar 상세 조회
+   * =========================
+   */
+  useEffect(() => {
+    async function fetchActionEffects() {
+      try {
+        const response = await fetch(
+          `/api/stats/monthly/actions?year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("행동별 효과 통계 조회 실패");
+        }
+        const data = await response.json();
+
+        setActionEffects(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    fetchActionEffects();
   }, [year, month]);
 
   /*
@@ -331,6 +357,13 @@ export default function StatsPage() {
       };
     }) || [];
 
+  const ACTION_EMOJI = {
+    1: "🚶",
+    2: "🤸",
+    3: "🎵",
+    4: "🌿",
+  };
+
   return (
     <main className="stats-page">
       {/* =======================
@@ -386,50 +419,35 @@ export default function StatsPage() {
       {monthlyStats && (
         <section className="monthly-summary">
           <h2>{monthlyStats.month}월 요약</h2>
-
           <div className="summary-grid">
             <div className="summary-card">
               <span>작성한 일기</span>
-
               <strong>{monthlyStats.diaryCount}일</strong>
             </div>
-
             <div className="summary-card">
               <span>평균 기분 점수</span>
-
               <strong>{monthlyStats.averageMoodScore}점</strong>
             </div>
-
             <div className="summary-card">
               <span>추천 행동</span>
-
               <strong>{monthlyStats.recommendationCount}회</strong>
             </div>
-
             <div className="summary-card">
               <span>행동 실행</span>
-
               <strong>{monthlyStats.executionCount}회</strong>
             </div>
-
             <div className="summary-card">
               <span>실행률</span>
-
               <strong>{monthlyStats.executionRate}%</strong>
             </div>
-
             <div className="summary-card">
               <span>긍정 변화율</span>
-
               <strong>{monthlyStats.positiveRate}%</strong>
             </div>
-
             <div className="summary-card">
               <span>평균 변화량</span>
-
               <strong>
                 {monthlyStats.averageDelta > 0 ? "+" : ""}
-
                 {monthlyStats.averageDelta}
               </strong>
             </div>
@@ -531,6 +549,83 @@ export default function StatsPage() {
         </section>
       )}
 
+      {actionEffects.length > 0 && (
+        <section className="action-effect-section">
+          <h2>{month}월 행동별 효과</h2>
+
+          <p className="action-effect-description">
+            이번 달 실행한 행동이 기분에 어떤 변화를 주었는지 확인해보세요.
+          </p>
+
+          <div className="action-effect-list">
+            {actionEffects.map((action) => (
+              <div key={action.actionId} className="action-effect-card">
+                <div className="action-effect-header">
+                  <div className="action-effect-title">
+                    <span className="action-effect-emoji">
+                      {ACTION_EMOJI[action.actionId] || "✨"}
+                    </span>
+
+                    <div>
+                      <strong>{action.actionName}</strong>
+
+                      <span>실행 {action.executionCount}회</span>
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      action.averageDelta > 0
+                        ? "delta positive"
+                        : action.averageDelta < 0
+                          ? "delta negative"
+                          : "delta neutral"
+                    }
+                  >
+                    {action.averageDelta > 0 ? "+" : ""}
+                    {action.averageDelta}
+                  </div>
+                </div>
+
+                <div className="action-effect-stats">
+                  <div>
+                    <span>추천</span>
+                    <strong>{action.recommendationCount}회</strong>
+                  </div>
+
+                  <div>
+                    <span>실행</span>
+                    <strong>{action.executionCount}회</strong>
+                  </div>
+
+                  <div>
+                    <span>재측정</span>
+                    <strong>{action.sampleCount}회</strong>
+                  </div>
+                </div>
+
+                <div className="positive-rate-area">
+                  <div className="positive-rate-header">
+                    <span>긍정 변화율</span>
+
+                    <strong>{action.positiveRate}%</strong>
+                  </div>
+
+                  <div className="positive-rate-bar">
+                    <div
+                      className="positive-rate-fill"
+                      style={{
+                        width: `${Math.min(Number(action.positiveRate), 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* =======================
           일기 상세
       ======================== */}
@@ -540,12 +635,10 @@ export default function StatsPage() {
           <div className="diary-detail-header">
             <div>
               <span className="detail-date">{selectedEntry.date}</span>
-
               <h2>
                 {selectedEntry.emoji} {selectedEntry.emotionName}
               </h2>
             </div>
-
             <button
               className="detail-close"
               onClick={() => setSelectedEntry(null)}
@@ -553,19 +646,16 @@ export default function StatsPage() {
               ×
             </button>
           </div>
-
           <div className="detail-score">
             <span>
               기분 점수
               <strong>{selectedEntry.moodScore}점</strong>
             </span>
-
             <span>
               감정 강도
               <strong>{selectedEntry.intensity}</strong>
             </span>
           </div>
-
           <div className="detail-content">
             <span>오늘의 기록</span>
 
@@ -586,7 +676,6 @@ export default function StatsPage() {
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={moodChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-
                 <XAxis dataKey="date" />
 
                 <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} />

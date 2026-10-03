@@ -1,5 +1,6 @@
 package com.moodandmove.analysis.controller;
 
+import com.moodandmove.analysis.dto.ActionEffectResponse;
 import com.moodandmove.analysis.dto.MonthlyStatsResponse;
 import com.moodandmove.analysis.service.UserActionStatService;
 import com.moodandmove.user.domain.entity.User;
@@ -9,6 +10,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/stats")
@@ -31,5 +34,21 @@ public class StatsController {
                         year,
                         month
                 );
+    }
+
+    @GetMapping("/monthly/actions")
+    public List<ActionEffectResponse> getMonthlyActionEffects(
+            Authentication authentication,
+            @RequestParam int year,
+            @RequestParam int month
+    )
+    {
+        User user = (User) authentication.getPrincipal();
+
+        return userActionStatService.getMonthlyActionEffects(
+                user.getId(),
+                year,
+                month
+        );
     }
 }
