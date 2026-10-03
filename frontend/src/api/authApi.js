@@ -54,6 +54,31 @@ export async function login({ email, password }) {
   if (!response.ok) {
     throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
   }
+
+  return response.json();
+}
+
+// 탈퇴 신청 계정 복구
+export async function recoverAccount({ email, password }) {
+  const response = await fetch(`${API_BASE_URL}/auth/recover`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      email,
+      password
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      throw new Error("계정 복구에 실패했습니다.");
+    }
+
+    throw new Error("계정 복구 중 오류가 발생했습니다.");
+  }
 }
 
 // 로그아웃
@@ -288,5 +313,33 @@ export async function removeDislikeAction(actionId) {
     }
 
     throw new Error("비선호 행동 삭제에 실패했습니다.");
+  }
+}
+
+// 회원탈퇴 신청
+export async function requestWithdrawal(currentPassword) {
+  const response = await fetch(`${API_BASE_URL}/users/me/withdrawal`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      currentPassword
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      throw new Error(
+        "비밀번호가 올바르지 않거나 이미 탈퇴 신청이 진행 중입니다."
+      );
+    }
+
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("회원탈퇴 신청에 실패했습니다.");
   }
 }

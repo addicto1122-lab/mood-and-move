@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getMe } from "../api/authApi";
+import { getMe, requestWithdrawal } from "../api/authApi";
+
 import LogoutButton from "../components/LogoutButton";
 import "./MyPage.css";
 
@@ -10,13 +11,20 @@ export default function MyPage() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const [withdrawPassword, setWithdrawPassword] = useState("");
+  const [withdrawError, setWithdrawError] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+
   useEffect(() => {
     async function fetchUser() {
       try {
         const data = await getMe();
+
         setUser(data);
       } catch (error) {
         console.error(error);
+
         navigate("/login", {
           replace: true
         });
@@ -27,6 +35,48 @@ export default function MyPage() {
 
     fetchUser();
   }, [navigate]);
+
+  const openWithdrawModal = () => {
+    setWithdrawPassword("");
+    setWithdrawError("");
+    setWithdrawModalOpen(true);
+  };
+
+  const closeWithdrawModal = () => {
+    if (withdrawing) {
+      return;
+    }
+
+    setWithdrawPassword("");
+    setWithdrawError("");
+    setWithdrawModalOpen(false);
+  };
+
+  const handleWithdrawal = async (e) => {
+    e.preventDefault();
+
+    if (!withdrawPassword.trim()) {
+      setWithdrawError("현재 비밀번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      setWithdrawing(true);
+      setWithdrawError("");
+
+      await requestWithdrawal(withdrawPassword);
+
+      navigate("/login", {
+        replace: true
+      });
+    } catch (error) {
+      console.error(error);
+
+      setWithdrawError(error.message || "회원탈퇴 신청에 실패했습니다.");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -117,11 +167,78 @@ export default function MyPage() {
           <LogoutButton />
         </div>
 
+        {/* 회원탈퇴 */}
+        <button
+          type="button"
+          className="mypage-withdraw-button"
+          onClick={openWithdrawModal}
+        >
+          회원탈퇴
+        </button>
+
         {/* 하단 문구 */}
         <footer className="mypage-footer">
           Mood&amp;Move v1.0 · 오늘도 내 마음을 가볍게
         </footer>
       </section>
+
+      {/* 회원탈퇴 신청 모달 */}
+      {withdrawModalOpen && (
+        <div className="mypage-modal-overlay">
+          <div
+            className="mypage-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="withdraw-title"
+          >
+            <h2 id="withdraw-title">회원탈퇴 신청</h2>
+
+            <p className="mypage-modal-description">
+              탈퇴 신청 후 7일 동안 계정이 유지됩니다.
+              <br />
+              7일 안에 다시 로그인하면 계정을 복구할 수 있습니다.
+              <br />
+              계속하려면 현재 비밀번호를 입력해주세요.
+            </p>
+
+            <form onSubmit={handleWithdrawal}>
+              <input
+                type="password"
+                value={withdrawPassword}
+                placeholder="현재 비밀번호"
+                autoComplete="current-password"
+                onChange={(e) => {
+                  setWithdrawPassword(e.target.value);
+                  setWithdrawError("");
+                }}
+              />
+
+              {withdrawError && (
+                <span className="mypage-modal-error">{withdrawError}</span>
+              )}
+
+              <div className="mypage-modal-buttons">
+                <button
+                  type="button"
+                  className="mypage-modal-cancel"
+                  onClick={closeWithdrawModal}
+                  disabled={withdrawing}
+                >
+                  취소
+                </button>
+
+                <button
+                  type="submit"
+                  className="mypage-modal-delete"
+                  disabled={withdrawing}
+                >
+                  {withdrawing ? "신청 중..." : "탈퇴 신청"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

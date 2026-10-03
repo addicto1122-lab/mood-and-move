@@ -3,18 +3,13 @@ package com.moodandmove.user.service;
 import com.moodandmove.common.domain.type.ActivityStyle;
 import com.moodandmove.common.domain.type.EnvironmentType;
 import com.moodandmove.common.domain.type.SocialType;
-import com.moodandmove.user.domain.entity.Hobby;
-import com.moodandmove.user.domain.entity.User;
-import com.moodandmove.user.domain.entity.UserHobby;
-import com.moodandmove.user.domain.entity.UserPreference;
+import com.moodandmove.user.domain.entity.*;
 import com.moodandmove.user.domain.type.AgeGroup;
 import com.moodandmove.user.domain.type.Gender;
 import com.moodandmove.user.dto.response.HobbyResponse;
 import com.moodandmove.user.dto.response.PreferenceResponse;
-import com.moodandmove.user.repository.HobbyRepository;
-import com.moodandmove.user.repository.UserHobbyRepository;
-import com.moodandmove.user.repository.UserPreferenceRepository;
-import com.moodandmove.user.repository.UserRepository;
+import com.moodandmove.user.dto.response.WithdrawalStatusResponse;
+import com.moodandmove.user.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,6 +26,7 @@ public class UserService {
     private final UserHobbyRepository userHobbyRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
 
 
     @Transactional
@@ -69,6 +65,42 @@ public class UserService {
 
         user.updatePassword(encodedPassword);
 
+        user.increaseTokenVersion();
+    }
+
+    @Transactional
+    public void requestWithdrawal(
+            Long userId,
+            String currentPassword
+    ) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "사용자를 찾을 수 없습니다."
+                        )
+                );
+
+        if (!passwordEncoder.matches(
+                currentPassword,
+                user.getPasswordHash()
+        )) {
+            throw new IllegalArgumentException(
+                    "현재 비밀번호가 올바르지 않습니다."
+            );
+        }
+
+        if (userWithdrawalRequestRepository.existsByUser_Id(userId)) {
+            throw new IllegalArgumentException(
+                    "이미 탈퇴 신청이 진행 중입니다."
+            );
+        }
+
+        UserWithdrawalRequest withdrawalRequest =
+                UserWithdrawalRequest.create(user);
+
+        userWithdrawalRequestRepository.save(withdrawalRequest);
+
+        // 로그아웃
         user.increaseTokenVersion();
     }
 
@@ -276,5 +308,38 @@ public class UserService {
                         hobby.getCategory()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public WithdrawalStatusResponse getWithdrawalStatus(Long userId) {
+
+        return userWithdrawalRequestRepository
+                .findByUser_Id(userId)
+                .map(request ->
+                        new WithdrawalStatusResponse(
+                                true,
+                                request.getRequestedAt(),
+                                request.getDeletionScheduledAt()
+                        )
+                )
+                .orElse(
+                        new WithdrawalStatusResponse(
+                                false,
+                                null,
+                                null
+                        )
+                );
+    }
+
+    @Transactional
+    public void cancelWithdrawal(Long userId) {
+
+        if (!userWithdrawalRequestRepository.existsByUser_Id(userId)) {
+            throw new IllegalArgumentException(
+                    "진행 중인 탈퇴 신청이 없습니다."
+            );
+        }
+
+        userWithdrawalRequestRepository.deleteByUser_Id(userId);
     }
 }

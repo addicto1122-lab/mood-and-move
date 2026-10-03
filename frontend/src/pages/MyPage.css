@@ -300,6 +300,182 @@
 }
 
 /* =========================
+   WITHDRAWAL BUTTON
+========================= */
+
+.mypage-withdraw-button {
+  width: 100%;
+  min-height: 48px;
+
+  margin-top: 12px;
+
+  border: 1px solid #efdede;
+  border-radius: 15px;
+
+  background: #fffafa;
+
+  color: #b86464;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.mypage-withdraw-button:hover {
+  background: #fff2f2;
+  border-color: #e5c5c5;
+
+  color: #a95555;
+}
+
+/* =========================
+   WITHDRAWAL MODAL
+========================= */
+
+.mypage-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(27, 38, 32, 0.4);
+}
+
+.mypage-modal {
+  width: 100%;
+  max-width: 420px;
+
+  padding: 28px;
+  box-sizing: border-box;
+
+  border-radius: 22px;
+
+  background: #ffffff;
+
+  box-shadow: 0 20px 60px rgba(30, 45, 37, 0.18);
+}
+
+.mypage-modal h2 {
+  margin: 0 0 10px;
+
+  color: #26372f;
+
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.mypage-modal-description {
+  margin: 0 0 20px;
+
+  color: #8c9792;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.mypage-modal input {
+  width: 100%;
+  height: 48px;
+
+  padding: 0 14px;
+  box-sizing: border-box;
+
+  border: 1px solid #dce5df;
+  border-radius: 13px;
+
+  background: #fafcfb;
+
+  color: #33423b;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.mypage-modal input:focus {
+  border-color: #82aa96;
+
+  background: #ffffff;
+}
+
+.mypage-modal-error {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #c96868;
+
+  font-size: 11px;
+}
+
+.mypage-modal-buttons {
+  display: flex;
+
+  gap: 10px;
+
+  margin-top: 22px;
+}
+
+.mypage-modal-buttons button {
+  flex: 1;
+
+  height: 46px;
+
+  border: none;
+  border-radius: 13px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.mypage-modal-cancel {
+  background: #f0f3f1;
+
+  color: #66736d;
+}
+
+.mypage-modal-cancel:hover {
+  background: #e7ece9;
+}
+
+.mypage-modal-delete {
+  background: #cf6f6f;
+
+  color: #ffffff;
+}
+
+.mypage-modal-delete:hover {
+  background: #c46060;
+}
+
+.mypage-modal-buttons button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
+}
+
+/* =========================
    FOOTER
 ========================= */
 
@@ -393,6 +569,18 @@
 
   .mypage-logout {
     margin-top: 14px;
+  }
+
+  .mypage-withdraw-button {
+    min-height: 46px;
+
+    margin-top: 10px;
+  }
+
+  .mypage-modal {
+    max-width: 360px;
+
+    padding: 24px;
   }
 
   .mypage-footer {
