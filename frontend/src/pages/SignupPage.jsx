@@ -4,6 +4,7 @@ import { checkEmail, signup, login } from "../api/authApi";
 import "./SignupPage.css";
 
 export default function SignupPage() {
+  console.log("### NEW STATS PAGE ###");
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -62,13 +63,13 @@ export default function SignupPage() {
       await signup({
         email,
         password,
-        nickname
+        nickname,
       });
 
       // 회원가입 직후 자동 로그인
       await login({
         email,
-        password
+        password,
       });
 
       // JWT 쿠키가 저장된 상태로 온보딩 이동

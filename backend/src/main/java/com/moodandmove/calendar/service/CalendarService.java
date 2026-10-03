@@ -1,6 +1,7 @@
 package com.moodandmove.calendar.service;
 
 
+import com.moodandmove.analysis.repository.MoodRecheckRepository;
 import com.moodandmove.calendar.dto.CalendarDayResponse;
 import com.moodandmove.calendar.dto.CalendarDetailResponse;
 import com.moodandmove.calendar.dto.MonthlyCalendarResponse;
@@ -19,6 +20,7 @@ import java.util.List;
 public class CalendarService {
 
     private final MoodEntryRepository moodEntryRepository;
+    private final MoodRecheckRepository moodRecheckRepository;
 
     public MonthlyCalendarResponse getMonthlyCalendar(
             Long userId,
@@ -55,6 +57,10 @@ public class CalendarService {
             MoodEntry moodEntry
     )
     {
+        Integer afterScore = moodRecheckRepository
+                .findAfterScoreByMoodEntryId(moodEntry.getId())
+                .orElse(null);
+
         return new CalendarDayResponse(
                 moodEntry.getId(),
                 moodEntry.getEntryDate(),
@@ -64,7 +70,8 @@ public class CalendarService {
                 moodEntry.getEmotion().getEmoji(),
 
                 moodEntry.getMoodScore(),
-                moodEntry.getIntensity()
+                moodEntry.getIntensity(),
+                afterScore
         );
     }
 

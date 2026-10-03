@@ -792,12 +792,12 @@ CREATE TABLE mood_rechecks (
 
                                CONSTRAINT chk_mood_rechecks_before
                                    CHECK (
-                                       before_score BETWEEN 1 AND 5
+                                       before_score BETWEEN 1 AND 60
                                        ),
 
                                CONSTRAINT chk_mood_rechecks_after
                                    CHECK (
-                                       after_score BETWEEN 1 AND 5
+                                       after_score BETWEEN 1 AND 60
                                        ),
 
                                CONSTRAINT fk_mood_rechecks_execution
