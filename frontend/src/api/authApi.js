@@ -1,7 +1,26 @@
 const API_BASE_URL = "/api";
 
+// 현재 위치 기반 추천 약관 조회
+export async function getCurrentLocationPolicy() {
+  const response = await fetch(`${API_BASE_URL}/consents/current-location`, {
+    method: "GET"
+  });
+
+  if (!response.ok) {
+    throw new Error("약관 정보를 불러오지 못했습니다.");
+  }
+
+  return response.json();
+}
+
 // 회원가입
-export async function signup({ email, password, nickname }) {
+export async function signup({
+  email,
+  password,
+  nickname,
+  locationPolicyId,
+  locationConsent
+}) {
   const response = await fetch(`${API_BASE_URL}/auth/signup`, {
     method: "POST",
     headers: {
@@ -11,7 +30,9 @@ export async function signup({ email, password, nickname }) {
     body: JSON.stringify({
       email,
       password,
-      nickname
+      nickname,
+      locationPolicyId,
+      locationConsent
     })
   });
 
@@ -204,7 +225,11 @@ export async function updatePreferences({
   activityStyle,
   activityEnvironment,
   socialPreference,
-  defaultAvailableMinutes
+  defaultAvailableMinutes,
+  defaultRegionName,
+  defaultRegionCode,
+  defaultRegionLatitude,
+  defaultRegionLongitude
 }) {
   const response = await fetch(`${API_BASE_URL}/users/me/preferences`, {
     method: "PATCH",
@@ -217,7 +242,11 @@ export async function updatePreferences({
       activityStyle,
       activityEnvironment,
       socialPreference,
-      defaultAvailableMinutes
+      defaultAvailableMinutes,
+      defaultRegionName,
+      defaultRegionCode,
+      defaultRegionLatitude,
+      defaultRegionLongitude
     })
   });
 
@@ -262,6 +291,7 @@ export async function updateProfile({ nickname, ageGroup, gender }) {
   }
 }
 
+// 비선호 행동 목록 조회
 export async function getDislikeActions() {
   const response = await fetch(`${API_BASE_URL}/users/me/dislikes`, {
     method: "GET",
@@ -279,6 +309,7 @@ export async function getDislikeActions() {
   return response.json();
 }
 
+// 비선호 행동 추가
 export async function addDislikeAction(actionId) {
   const response = await fetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,
@@ -297,7 +328,7 @@ export async function addDislikeAction(actionId) {
   }
 }
 
-//비선호행동
+// 비선호 행동 삭제
 export async function removeDislikeAction(actionId) {
   const response = await fetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,
@@ -341,5 +372,66 @@ export async function requestWithdrawal(currentPassword) {
     }
 
     throw new Error("회원탈퇴 신청에 실패했습니다.");
+  }
+}
+
+// 기본 활동 지역 검색
+export async function searchRegions(query) {
+  const response = await fetch(
+    `${API_BASE_URL}/locations/search?query=${encodeURIComponent(query)}`,
+    {
+      method: "GET",
+      credentials: "include"
+    }
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("지역 검색에 실패했습니다.");
+  }
+
+  return response.json();
+}
+
+// 현재 위치 기반 추천 동의 상태 조회
+export async function getLocationConsent() {
+  const response = await fetch(`${API_BASE_URL}/consents/me/current-location`, {
+    method: "GET",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("위치정보 동의 상태를 불러오지 못했습니다.");
+  }
+
+  return response.json();
+}
+
+// 현재 위치 기반 추천 동의 상태 변경
+export async function updateLocationConsent(agreed) {
+  const response = await fetch(`${API_BASE_URL}/consents/me/current-location`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({
+      agreed
+    })
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    throw new Error("위치정보 동의 상태 변경에 실패했습니다.");
   }
 }

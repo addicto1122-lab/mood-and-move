@@ -1,8 +1,13 @@
 package com.moodandmove.user.service;
 
+import com.moodandmove.user.domain.entity.ConsentPolicy;
 import com.moodandmove.user.domain.entity.User;
+import com.moodandmove.user.domain.entity.UserConsent;
+import com.moodandmove.user.domain.type.ConsentType;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
+import com.moodandmove.user.repository.ConsentPolicyRepository;
+import com.moodandmove.user.repository.UserConsentRepository;
 import com.moodandmove.user.repository.UserRepository;
 import com.moodandmove.user.repository.UserWithdrawalRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +22,44 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
+    private final ConsentPolicyRepository consentPolicyRepository;
+    private final UserConsentRepository userConsentRepository;
 
     @Transactional
     public void signup(SignupRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new IllegalArgumentException(
+                    "이미 사용 중인 이메일입니다."
+            );
+        }
+
+
+        ConsentPolicy locationPolicy =
+                consentPolicyRepository
+                        .findById(request.locationPolicyId())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "존재하지 않는 약관입니다."
+                                )
+                        );
+
+        /*
+         * CURRENT_LOCATION 약관인지 확인
+         */
+        if (locationPolicy.getConsentType()
+                != ConsentType.CURRENT_LOCATION) {
+
+            throw new IllegalArgumentException(
+                    "올바르지 않은 위치 이용 약관입니다."
+            );
+        }
+
+
+        if (!locationPolicy.isActive()) {
+            throw new IllegalArgumentException(
+                    "현재 사용할 수 없는 약관입니다."
+            );
         }
 
         String encodedPassword =
@@ -35,6 +72,16 @@ public class AuthService {
         );
 
         userRepository.save(user);
+
+
+        UserConsent userConsent =
+                UserConsent.create(
+                        user,
+                        locationPolicy,
+                        request.locationConsent()
+                );
+
+        userConsentRepository.save(userConsent);
     }
 
     @Transactional(readOnly = true)

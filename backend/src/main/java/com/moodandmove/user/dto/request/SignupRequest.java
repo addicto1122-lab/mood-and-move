@@ -2,6 +2,7 @@ package com.moodandmove.user.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record SignupRequest(
@@ -16,6 +17,12 @@ public record SignupRequest(
 
         @NotBlank(message = "닉네임은 필수입니다.")
         @Size(max = 50, message = "닉네임은 50자 이하로 입력해주세요.")
-        String nickname
+        String nickname,
+
+        @NotNull(message = "약관 정보가 필요합니다.")
+        Long locationPolicyId,
+
+        boolean locationConsent
+
 ) {
 }

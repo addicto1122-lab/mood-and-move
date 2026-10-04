@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   getHobbies,
   completeOnboarding,
-  updatePreferences
+  updatePreferences,
+  searchRegions
 } from "../api/authApi";
 
 import {
@@ -56,6 +58,19 @@ export default function OnboardingPage() {
     DEFAULT_AVAILABLE_TIME
   );
 
+  /*
+   * 기본 활동 지역
+   */
+  const [regionQuery, setRegionQuery] = useState("");
+  const [regionResults, setRegionResults] = useState([]);
+  const [selectedRegion, setSelectedRegion] = useState(null);
+
+  const [regionSearching, setRegionSearching] = useState(false);
+  const [regionError, setRegionError] = useState("");
+
+  /*
+   * 공통 상태
+   */
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +103,64 @@ export default function OnboardingPage() {
     setSelectedHobbies((prev) =>
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
+  };
+
+  /*
+   * 기본 활동 지역 검색
+   */
+  const handleRegionSearch = async () => {
+    const query = regionQuery.trim();
+
+    if (!query) {
+      setRegionError("동네를 입력해주세요.");
+      setRegionResults([]);
+      return;
+    }
+
+    try {
+      setRegionSearching(true);
+      setRegionError("");
+
+      const data = await searchRegions(query);
+
+      setRegionResults(data ?? []);
+
+      if (!data || data.length === 0) {
+        setRegionError("검색 결과가 없습니다.");
+      }
+    } catch (error) {
+      console.error(error);
+
+      setRegionResults([]);
+
+      setRegionError(error.message || "지역 검색 중 오류가 발생했습니다.");
+    } finally {
+      setRegionSearching(false);
+    }
+  };
+
+  /*
+   * 기본 활동 지역 선택
+   */
+  const handleRegionSelect = (region) => {
+    setSelectedRegion(region);
+
+    setRegionQuery(region.regionName);
+
+    setRegionResults([]);
+    setRegionError("");
+  };
+
+  /*
+   * 선택한 기본 활동 지역 변경
+   */
+  const clearSelectedRegion = () => {
+    setSelectedRegion(null);
+
+    setRegionQuery("");
+
+    setRegionResults([]);
+    setRegionError("");
   };
 
   /*
@@ -154,7 +227,15 @@ export default function OnboardingPage() {
         activityStyle,
         activityEnvironment,
         socialPreference,
-        defaultAvailableMinutes
+        defaultAvailableMinutes,
+
+        defaultRegionName: selectedRegion?.regionName ?? null,
+
+        defaultRegionCode: selectedRegion?.regionCode ?? null,
+
+        defaultRegionLatitude: selectedRegion?.latitude ?? null,
+
+        defaultRegionLongitude: selectedRegion?.longitude ?? null
       });
 
       navigate("/", {
@@ -500,6 +581,104 @@ export default function OnboardingPage() {
                   </button>
                 ))}
               </div>
+            </section>
+
+            {/* 기본 활동 지역 */}
+            <section className="onboarding-section">
+              <div className="onboarding-section-title">
+                <div>
+                  <h2>주로 활동하는 동네가 있나요?</h2>
+
+                  <p>
+                    주변 장소를 추천할 때 기준 위치로 사용할게요.
+                    <br />
+                    선택하지 않아도 괜찮아요.
+                  </p>
+                </div>
+
+                <span>선택</span>
+              </div>
+
+              {!selectedRegion ? (
+                <>
+                  <div className="region-search-row">
+                    <input
+                      type="text"
+                      className="region-search-input"
+                      value={regionQuery}
+                      onChange={(e) => {
+                        setRegionQuery(e.target.value);
+
+                        setRegionError("");
+                      }}
+                      placeholder="예: 인계동"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+
+                          handleRegionSearch();
+                        }
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      className="region-search-button"
+                      onClick={handleRegionSearch}
+                      disabled={regionSearching}
+                    >
+                      {regionSearching ? "검색 중..." : "검색"}
+                    </button>
+                  </div>
+
+                  {regionError && (
+                    <p className="region-search-error">{regionError}</p>
+                  )}
+
+                  {regionResults.length > 0 && (
+                    <div className="region-result-list">
+                      {regionResults.map((region) => (
+                        <button
+                          key={`${region.regionCode}-${region.latitude}-${region.longitude}`}
+                          type="button"
+                          className="region-result-item"
+                          onClick={() => handleRegionSelect(region)}
+                        >
+                          <span className="region-result-icon">📍</span>
+
+                          <div>
+                            <strong>{region.regionName}</strong>
+
+                            <p>이 지역을 기본 활동 지역으로 설정</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="selected-region-card">
+                  <div className="selected-region-info">
+                    <span className="selected-region-icon">📍</span>
+
+                    <div>
+                      <span className="selected-region-label">
+                        기본 활동 지역
+                      </span>
+
+                      <strong>{selectedRegion.regionName}</strong>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="selected-region-remove"
+                    onClick={clearSelectedRegion}
+                  >
+                    변경
+                  </button>
+                </div>
+              )}
             </section>
 
             <div className="onboarding-actions">

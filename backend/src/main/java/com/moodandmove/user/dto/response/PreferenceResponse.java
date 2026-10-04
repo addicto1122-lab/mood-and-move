@@ -4,6 +4,7 @@ import com.moodandmove.common.domain.type.ActivityStyle;
 import com.moodandmove.common.domain.type.EnvironmentType;
 import com.moodandmove.common.domain.type.SocialType;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record PreferenceResponse(
@@ -16,7 +17,15 @@ public record PreferenceResponse(
 
         SocialType socialPreference,
 
-        Integer defaultAvailableMinutes
+        Integer defaultAvailableMinutes,
+
+        String defaultRegionName,
+
+        String defaultRegionCode,
+
+        BigDecimal defaultRegionLatitude,
+
+        BigDecimal defaultRegionLongitude
 
 ) {
 }

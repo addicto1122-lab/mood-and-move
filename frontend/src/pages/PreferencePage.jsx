@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getHobbies, getPreferences, updatePreferences } from "../api/authApi";
+import {
+  getHobbies,
+  getPreferences,
+  updatePreferences,
+  searchRegions
+} from "../api/authApi";
 
 import {
   ACTIVITY_STYLE_OPTIONS,
@@ -36,6 +41,21 @@ export default function PreferencePage() {
     DEFAULT_AVAILABLE_TIME
   );
 
+  /*
+   * 기본 활동 지역
+   */
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [regionEditing, setRegionEditing] = useState(true);
+
+  const [regionQuery, setRegionQuery] = useState("");
+  const [regionResults, setRegionResults] = useState([]);
+
+  const [regionSearching, setRegionSearching] = useState(false);
+  const [regionError, setRegionError] = useState("");
+
+  /*
+   * 공통 상태
+   */
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -45,8 +65,8 @@ export default function PreferencePage() {
   /*
    * 페이지 진입 시
    *
-   * 1. hobbies 테이블에서 전체 취미 조회
-   * 2. 현재 사용자의 취미 및 선호 조회
+   * 1. 전체 취미 조회
+   * 2. 현재 사용자의 취미 / 선호 / 기본 활동 지역 조회
    */
   useEffect(() => {
     async function fetchData() {
@@ -56,13 +76,19 @@ export default function PreferencePage() {
           getPreferences()
         ]);
 
-        // hobbies
+        /*
+         * hobbies
+         */
         setHobbies(hobbyData ?? []);
 
-        // user_hobbies
+        /*
+         * user_hobbies
+         */
         setSelectedHobbies(preferenceData.hobbyIds ?? []);
 
-        // user_preferences
+        /*
+         * user_preferences
+         */
         setActivityStyle(
           preferenceData.activityStyle ?? DEFAULT_ACTIVITY_STYLE
         );
@@ -75,14 +101,34 @@ export default function PreferencePage() {
 
         /*
          * null = 상관없음
-         *
-         * 서버 응답에 값이 없을 때만
-         * 기본값을 사용
          */
         if (preferenceData.defaultAvailableMinutes !== undefined) {
           setDefaultAvailableMinutes(preferenceData.defaultAvailableMinutes);
         } else {
           setDefaultAvailableMinutes(DEFAULT_AVAILABLE_TIME);
+        }
+
+        /*
+         * 기본 활동 지역
+         *
+         * regionCode가 없어도
+         * 지역명이 있으면 기존 지역으로 표시
+         */
+        if (preferenceData.defaultRegionName) {
+          setSelectedRegion({
+            regionName: preferenceData.defaultRegionName,
+
+            regionCode: preferenceData.defaultRegionCode ?? null,
+
+            latitude: preferenceData.defaultRegionLatitude ?? null,
+
+            longitude: preferenceData.defaultRegionLongitude ?? null
+          });
+
+          setRegionEditing(false);
+        } else {
+          setSelectedRegion(null);
+          setRegionEditing(true);
         }
       } catch (error) {
         console.error(error);
@@ -109,6 +155,79 @@ export default function PreferencePage() {
 
       return [...prev, id];
     });
+  };
+
+  /*
+   * 기본 활동 지역 검색
+   */
+  const handleRegionSearch = async () => {
+    const query = regionQuery.trim();
+
+    if (!query) {
+      setRegionError("검색할 동네를 입력해주세요.");
+
+      setRegionResults([]);
+
+      return;
+    }
+
+    try {
+      setRegionSearching(true);
+      setRegionError("");
+
+      const data = await searchRegions(query);
+
+      setRegionResults(data ?? []);
+
+      if (!data || data.length === 0) {
+        setRegionError("검색 결과가 없습니다.");
+      }
+    } catch (error) {
+      console.error(error);
+
+      setRegionResults([]);
+
+      setRegionError(error.message || "지역 검색에 실패했습니다.");
+    } finally {
+      setRegionSearching(false);
+    }
+  };
+
+  /*
+   * 지역 선택
+   */
+  const handleRegionSelect = (region) => {
+    setSelectedRegion(region);
+
+    setRegionQuery("");
+    setRegionResults([]);
+    setRegionError("");
+
+    setRegionEditing(false);
+
+    setError("");
+  };
+
+  /*
+   * 지역 변경
+   */
+  const handleRegionChange = () => {
+    setRegionEditing(true);
+
+    setRegionQuery("");
+    setRegionResults([]);
+    setRegionError("");
+  };
+
+  /*
+   * 지역 변경 취소
+   */
+  const handleRegionCancel = () => {
+    setRegionEditing(false);
+
+    setRegionQuery("");
+    setRegionResults([]);
+    setRegionError("");
   };
 
   /*
@@ -162,7 +281,15 @@ export default function PreferencePage() {
         activityStyle,
         activityEnvironment,
         socialPreference,
-        defaultAvailableMinutes
+        defaultAvailableMinutes,
+
+        defaultRegionName: selectedRegion?.regionName ?? null,
+
+        defaultRegionCode: selectedRegion?.regionCode ?? null,
+
+        defaultRegionLatitude: selectedRegion?.latitude ?? null,
+
+        defaultRegionLongitude: selectedRegion?.longitude ?? null
       });
 
       showToast("취미 및 선호 설정이 저장되었습니다.");
@@ -394,6 +521,109 @@ export default function PreferencePage() {
                 </button>
               ))}
             </div>
+          </section>
+
+          {/* =========================
+              기본 활동 지역
+          ========================= */}
+
+          <section className="preference-section">
+            <div className="preference-section-header">
+              <div>
+                <h2>기본 활동 지역</h2>
+
+                <p>주변 장소 추천의 기준이 되는 동네예요.</p>
+              </div>
+
+              <span>선택</span>
+            </div>
+
+            {!regionEditing && selectedRegion ? (
+              <div className="preference-region-selected">
+                <div className="preference-region-selected-info">
+                  <span className="preference-region-icon">📍</span>
+
+                  <div>
+                    <span>현재 기본 활동 지역</span>
+
+                    <strong>{selectedRegion.regionName}</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="preference-region-change"
+                  onClick={handleRegionChange}
+                >
+                  변경
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="preference-region-search">
+                  <input
+                    type="text"
+                    value={regionQuery}
+                    placeholder="예: 인계동"
+                    onChange={(e) => {
+                      setRegionQuery(e.target.value);
+
+                      setRegionError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+
+                        handleRegionSearch();
+                      }
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleRegionSearch}
+                    disabled={regionSearching}
+                  >
+                    {regionSearching ? "검색 중..." : "검색"}
+                  </button>
+                </div>
+
+                {selectedRegion && (
+                  <button
+                    type="button"
+                    className="preference-region-cancel"
+                    onClick={handleRegionCancel}
+                  >
+                    변경 취소
+                  </button>
+                )}
+
+                {regionError && (
+                  <p className="preference-region-error">{regionError}</p>
+                )}
+
+                {regionResults.length > 0 && (
+                  <div className="preference-region-results">
+                    {regionResults.map((region) => (
+                      <button
+                        key={`${region.regionCode ?? "none"}-${region.latitude}-${region.longitude}`}
+                        type="button"
+                        className="preference-region-result"
+                        onClick={() => handleRegionSelect(region)}
+                      >
+                        <span>📍</span>
+
+                        <div>
+                          <strong>{region.regionName}</strong>
+
+                          <p>기본 활동 지역으로 설정</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           {error && <div className="preference-error">{error}</div>}
