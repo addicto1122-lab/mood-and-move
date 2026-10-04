@@ -276,6 +276,149 @@
 }
 
 /* =========================
+   LOCATION CONSENT
+========================= */
+
+.profile-consent-card {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+.profile-consent-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 18px;
+}
+
+.profile-consent-header > div {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.profile-consent-header strong {
+  color: #33443b;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-consent-header > div > span {
+  flex-shrink: 0;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  color: #587564;
+  background: #edf7f1;
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* 위치 동의 토글 */
+
+.profile-consent-toggle {
+  position: relative;
+
+  width: 52px;
+  height: 30px;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #d9dfdc;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-consent-toggle span {
+  position: absolute;
+
+  top: 4px;
+  left: 4px;
+
+  width: 22px;
+  height: 22px;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  box-shadow: 0 2px 6px rgba(40, 60, 50, 0.18);
+
+  transition: transform 0.2s ease;
+}
+
+.profile-consent-toggle.active {
+  background: #719a86;
+}
+
+.profile-consent-toggle.active span {
+  transform: translateX(22px);
+}
+
+.profile-consent-toggle:hover {
+  box-shadow: 0 0 0 4px rgba(113, 154, 134, 0.1);
+}
+
+/* 약관 설명 */
+
+.profile-consent-content {
+  margin: 0;
+
+  padding: 14px 15px;
+
+  border-radius: 14px;
+
+  color: #6e7b75;
+  background: #f8faf9;
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+/* 현재 동의 상태 */
+
+.profile-consent-status {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  color: #8b9691;
+
+  font-size: 12px;
+}
+
+.profile-consent-status strong {
+  color: #456b59;
+
+  font-weight: 700;
+}
+
+.profile-consent-card .profile-save-button {
+  margin-top: 0;
+}
+
+/* =========================
    PASSWORD
 ========================= */
 
@@ -420,7 +563,49 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .profile-consent-header {
+    gap: 12px;
+  }
+
+  .profile-consent-header strong {
+    font-size: 13px;
+  }
+
+  .profile-consent-content {
+    padding: 13px;
+
+    font-size: 11px;
+  }
+
   .profile-toast {
     bottom: 95px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-page {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .profile-card {
+    padding: 18px 16px;
+  }
+
+  .profile-consent-toggle {
+    width: 48px;
+    height: 28px;
+  }
+
+  .profile-consent-toggle span {
+    top: 4px;
+    left: 4px;
+
+    width: 20px;
+    height: 20px;
+  }
+
+  .profile-consent-toggle.active span {
+    transform: translateX(20px);
   }
 }

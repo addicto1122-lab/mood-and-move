@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
 
@@ -57,6 +58,32 @@ public class UserPreference {
     @Column(name = "default_available_minutes")
     private Integer defaultAvailableMinutes;
 
+    @Column(
+            name = "default_region_name",
+            length = 100
+    )
+    private String defaultRegionName;
+
+    @Column(
+            name = "default_region_code",
+            length = 30
+    )
+    private String defaultRegionCode;
+
+    @Column(
+            name = "default_region_latitude",
+            precision = 10,
+            scale = 7
+    )
+    private BigDecimal defaultRegionLatitude;
+
+    @Column(
+            name = "default_region_longitude",
+            precision = 10,
+            scale = 7
+    )
+    private BigDecimal defaultRegionLongitude;
+
     @CreationTimestamp
     @Column(
             name = "created_at",
@@ -96,5 +123,24 @@ public class UserPreference {
         this.activityEnvironment = activityEnvironment;
         this.socialPreference = socialPreference;
         this.defaultAvailableMinutes = defaultAvailableMinutes;
+    }
+
+    public void updateDefaultRegion(
+            String defaultRegionName,
+            String defaultRegionCode,
+            BigDecimal defaultRegionLatitude,
+            BigDecimal defaultRegionLongitude
+    ) {
+        this.defaultRegionName = defaultRegionName;
+        this.defaultRegionCode = defaultRegionCode;
+        this.defaultRegionLatitude = defaultRegionLatitude;
+        this.defaultRegionLongitude = defaultRegionLongitude;
+    }
+
+    public void clearDefaultRegion() {
+        this.defaultRegionName = null;
+        this.defaultRegionCode = null;
+        this.defaultRegionLatitude = null;
+        this.defaultRegionLongitude = null;
     }
 }

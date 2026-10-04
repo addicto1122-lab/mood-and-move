@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -193,7 +194,11 @@ public class UserService {
             ActivityStyle activityStyle,
             EnvironmentType activityEnvironment,
             SocialType socialPreference,
-            Integer defaultAvailableMinutes
+            Integer defaultAvailableMinutes,
+            String defaultRegionName,
+            String defaultRegionCode,
+            BigDecimal defaultRegionLatitude,
+            BigDecimal defaultRegionLongitude
     ) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
@@ -234,7 +239,6 @@ public class UserService {
 
         userHobbyRepository.saveAll(userHobbies);
 
-
         UserPreference preference =
                 userPreferenceRepository
                         .findByUser_Id(userId)
@@ -250,6 +254,20 @@ public class UserService {
                 socialPreference,
                 defaultAvailableMinutes
         );
+
+        if (
+                defaultRegionName != null &&
+                        defaultRegionCode != null &&
+                        defaultRegionLatitude != null &&
+                        defaultRegionLongitude != null
+        ) {
+            preference.updateDefaultRegion(
+                    defaultRegionName,
+                    defaultRegionCode,
+                    defaultRegionLatitude,
+                    defaultRegionLongitude
+            );
+        }
     }
 
     @Transactional
@@ -293,7 +311,11 @@ public class UserService {
                 preference.getActivityStyle(),
                 preference.getActivityEnvironment(),
                 preference.getSocialPreference(),
-                preference.getDefaultAvailableMinutes()
+                preference.getDefaultAvailableMinutes(),
+                preference.getDefaultRegionName(),
+                preference.getDefaultRegionCode(),
+                preference.getDefaultRegionLatitude(),
+                preference.getDefaultRegionLongitude()
         );
     }
 

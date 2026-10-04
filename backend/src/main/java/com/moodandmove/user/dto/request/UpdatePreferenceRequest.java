@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record UpdatePreferenceRequest(
@@ -24,7 +25,15 @@ public record UpdatePreferenceRequest(
         SocialType socialPreference,
 
         @Min(value = 1, message = "활동 가능 시간은 1분 이상이어야 합니다.")
-        Integer defaultAvailableMinutes
+        Integer defaultAvailableMinutes,
+
+        String defaultRegionName,
+
+        String defaultRegionCode,
+
+        BigDecimal defaultRegionLatitude,
+
+        BigDecimal defaultRegionLongitude
 
 ) {
 }

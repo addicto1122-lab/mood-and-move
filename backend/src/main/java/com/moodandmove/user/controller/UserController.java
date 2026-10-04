@@ -102,7 +102,11 @@ public class UserController {
                     request.activityStyle(),
                     request.activityEnvironment(),
                     request.socialPreference(),
-                    request.defaultAvailableMinutes()
+                    request.defaultAvailableMinutes(),
+                    request.defaultRegionName(),
+                    request.defaultRegionCode(),
+                    request.defaultRegionLatitude(),
+                    request.defaultRegionLongitude()
             );
 
             return ResponseEntity.ok().build();
