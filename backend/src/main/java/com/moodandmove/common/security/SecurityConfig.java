@@ -65,7 +65,10 @@ public class SecurityConfig {
                                 "/api/auth/signup",
                                 "/api/auth/login",
                                 "/api/auth/check-email",
-                                "/api/auth/recover"
+                                "/api/auth/recover",
+
+                                // 위치 기반 장소 API 테스트용
+                                "/api/places/**"
                         ).permitAll()
 
                         .anyRequest().authenticated()
