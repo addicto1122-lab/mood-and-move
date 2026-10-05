@@ -28,7 +28,7 @@ public class UserService {
     private final UserPreferenceRepository userPreferenceRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
-
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Transactional
     public void changePassword(
@@ -66,6 +66,9 @@ public class UserService {
 
         user.updatePassword(encodedPassword);
 
+        refreshTokenRepository.deleteAllByUser_Id(userId);
+
+
         user.increaseTokenVersion();
     }
 
@@ -101,7 +104,8 @@ public class UserService {
 
         userWithdrawalRequestRepository.save(withdrawalRequest);
 
-        // 로그아웃
+        refreshTokenRepository.deleteAllByUser_Id(userId);
+
         user.increaseTokenVersion();
     }
 
