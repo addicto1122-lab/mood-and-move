@@ -1,19 +1,21 @@
 package com.moodandmove.user.service;
 
+import com.moodandmove.common.security.JwtProvider;
+import com.moodandmove.common.security.RefreshTokenHasher;
 import com.moodandmove.user.domain.entity.ConsentPolicy;
+import com.moodandmove.user.domain.entity.RefreshToken;
 import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.domain.entity.UserConsent;
 import com.moodandmove.user.domain.type.ConsentType;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
-import com.moodandmove.user.repository.ConsentPolicyRepository;
-import com.moodandmove.user.repository.UserConsentRepository;
-import com.moodandmove.user.repository.UserRepository;
-import com.moodandmove.user.repository.UserWithdrawalRequestRepository;
+import com.moodandmove.user.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,9 @@ public class AuthService {
     private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
     private final ConsentPolicyRepository consentPolicyRepository;
     private final UserConsentRepository userConsentRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenHasher refreshTokenHasher;
+    private final JwtProvider jwtProvider;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -109,11 +114,16 @@ public class AuthService {
     public void logout(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "사용자를 찾을 수 없습니다."
+                        )
+                );
+
+        refreshTokenRepository.deleteAllByUser_Id(userId);
 
         user.increaseTokenVersion();
     }
-
     @Transactional(readOnly = true)
     public boolean isWithdrawalPending(Long userId) {
         return userWithdrawalRequestRepository.existsByUser_Id(userId);
@@ -147,6 +157,90 @@ public class AuthService {
         userWithdrawalRequestRepository.deleteByUser_Id(
                 user.getId()
         );
+
+        return user;
+    }
+
+    @Transactional
+    public void saveRefreshToken(
+            User user,
+            String rawRefreshToken,
+            LocalDateTime expiresAt
+    ) {
+
+        String tokenHash =
+                refreshTokenHasher.hash(
+                        rawRefreshToken
+                );
+
+        refreshTokenRepository
+                .deleteAllByUser_Id(
+                        user.getId()
+                );
+
+
+        refreshTokenRepository.flush();
+
+        RefreshToken refreshToken =
+                RefreshToken.create(
+                        user,
+                        tokenHash,
+                        expiresAt
+                );
+
+        refreshTokenRepository.save(
+                refreshToken
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public User validateRefreshToken(String rawRefreshToken) {
+
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new IllegalArgumentException("Refresh Token이 없습니다.");
+        }
+
+        String tokenType = jwtProvider.getTokenType(rawRefreshToken);
+
+        if (!"REFRESH".equals(tokenType)) {
+            throw new IllegalArgumentException("올바른 Refresh Token이 아닙니다.");
+        }
+
+        Long userId = jwtProvider.getUserId(rawRefreshToken);
+
+        int tokenVersion = jwtProvider.getTokenVersion(rawRefreshToken);
+
+        String tokenHash = refreshTokenHasher.hash(rawRefreshToken);
+
+        RefreshToken savedToken =
+                refreshTokenRepository
+                        .findByTokenHash(tokenHash)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException("유효하지 않은 Refresh Token입니다.")
+                        );
+
+        if (savedToken.isRevoked()) {
+            throw new IllegalArgumentException("폐기된 Refresh Token입니다.");
+        }
+
+        if (savedToken.isExpired()) {
+            throw new IllegalArgumentException("만료된 Refresh Token입니다.");
+        }
+
+        User user = savedToken.getUser();
+
+        if (!user.getId().equals(userId)) {
+            throw new IllegalArgumentException("Refresh Token 사용자 정보가 일치하지 않습니다.");
+        }
+
+        if (user.getTokenVersion() != tokenVersion ||
+                savedToken.getTokenVersion() != tokenVersion) {
+            throw new IllegalArgumentException("Refresh Token 버전이 일치하지 않습니다.");
+        }
+
+        if (userWithdrawalRequestRepository.existsByUser_Id(user.getId())) {
+            throw new IllegalArgumentException("탈퇴 신청 상태에서는 토큰을 재발급할 수 없습니다.");
+        }
 
         return user;
     }
