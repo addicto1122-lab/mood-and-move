@@ -20,4 +20,9 @@ public interface MoodEntryRepository extends JpaRepository<MoodEntry,Long> {
             Long userId
     );
 
+    boolean existsByUser_IdAndEntryDate(
+            Long userId,
+            LocalDate entryDate
+    );
+
 }

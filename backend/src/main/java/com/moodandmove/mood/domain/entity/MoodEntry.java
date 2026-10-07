@@ -44,6 +44,13 @@ public class MoodEntry {
     @Column(nullable = false)
     private Integer intensity;
 
+    @Column(
+            name = "current_activity",
+            nullable = false,
+            length = 100
+    )
+    private String currentActivity;
+
     @Column(name = "diary_content", columnDefinition = "TEXT")
     private String diaryContent;
 
@@ -64,4 +71,29 @@ public class MoodEntry {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    public static MoodEntry create(
+            User user,
+            Emotion emotion,
+            Integer intensity,
+            Integer moodScore,
+            String currentActivity,
+            String diaryContent
+    ) {
+        MoodEntry moodEntry = new MoodEntry();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        moodEntry.user = user;
+        moodEntry.entryDate = now.toLocalDate();
+        moodEntry.emotion = emotion;
+        moodEntry.moodScore = moodScore;
+        moodEntry.intensity = intensity;
+        moodEntry.currentActivity = currentActivity;
+        moodEntry.diaryContent = diaryContent;
+        moodEntry.recommendationStatus = RecommendationStatus.AVAILABLE;
+        moodEntry.recordedAt = now;
+
+        return moodEntry;
+    }
 }

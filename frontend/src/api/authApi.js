@@ -19,7 +19,7 @@ async function refreshAccessToken() {
  * 2. 401이면 Refresh Token으로 재발급 시도
  * 3. 재발급 성공 시 원래 요청 1회 재시도
  */
-async function authFetch(url, options = {}) {
+export async function authFetch(url, options = {}) {
   const response = await fetch(url, {
     ...options,
     credentials: "include"
