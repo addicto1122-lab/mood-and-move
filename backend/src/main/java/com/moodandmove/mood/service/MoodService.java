@@ -20,6 +20,7 @@ public class MoodService {
     private final MoodEntryRepository moodEntryRepository;
     private final EmotionRepository emotionRepository;
     private final UserRepository userRepository;
+    private final MoodScoreCalculator moodScoreCalculator;
 
     @Transactional
     public Long createMood(
@@ -57,8 +58,10 @@ public class MoodService {
         }
 
         int moodScore =
-                emotion.getBaseScore()
-                        + request.intensity();
+                moodScoreCalculator.calculate(
+                        emotion,
+                        request.intensity()
+                );
 
         MoodEntry moodEntry = MoodEntry.create(
                 user,
