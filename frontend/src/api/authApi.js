@@ -1,8 +1,8 @@
 const API_BASE_URL = "/api";
 
-/*
- * Access Token 재발급
- */
+let handlingUnauthorized = false;
+
+// Access Token 재발급
 async function refreshAccessToken() {
   const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
@@ -12,13 +12,7 @@ async function refreshAccessToken() {
   return response.ok;
 }
 
-/*
- * 인증이 필요한 요청 공통 처리
- *
- * 1. 원래 API 호출
- * 2. 401이면 Refresh Token으로 재발급 시도
- * 3. 재발급 성공 시 원래 요청 1회 재시도
- */
+// 인증 요청 공통 처리
 export async function authFetch(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -31,20 +25,27 @@ export async function authFetch(url, options = {}) {
 
   const refreshed = await refreshAccessToken();
 
-  if (!refreshed) {
-    return response;
+  if (refreshed) {
+    return fetch(url, {
+      ...options,
+      credentials: "include"
+    });
   }
 
-  return fetch(url, {
-    ...options,
-    credentials: "include"
-  });
+  if (!handlingUnauthorized) {
+    handlingUnauthorized = true;
+
+    alert(
+      "로그인 세션이 만료되었거나 다른 기기에서 로그인되었습니다.\n다시 로그인해주세요."
+    );
+
+    window.location.href = "/login";
+  }
+
+  return response;
 }
 
-/*
- * 현재 위치 기반 추천 약관 조회
- * 로그인 전에도 사용하므로 일반 fetch
- */
+// 현재 위치 기반 추천 약관 조회
 export async function getCurrentLocationPolicy() {
   const response = await fetch(`${API_BASE_URL}/consents/current-location`, {
     method: "GET"
@@ -57,9 +58,7 @@ export async function getCurrentLocationPolicy() {
   return response.json();
 }
 
-/*
- * 회원가입
- */
+// 회원가입
 export async function signup({
   email,
   password,
@@ -87,9 +86,7 @@ export async function signup({
   }
 }
 
-/*
- * 이메일 중복확인
- */
+// 이메일 중복확인
 export async function checkEmail(email) {
   const response = await fetch(
     `${API_BASE_URL}/auth/check-email?email=${encodeURIComponent(email)}`,
@@ -106,9 +103,7 @@ export async function checkEmail(email) {
   return response.json();
 }
 
-/*
- * 로그인
- */
+// 로그인
 export async function login({ email, password }) {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
@@ -129,9 +124,7 @@ export async function login({ email, password }) {
   return response.json();
 }
 
-/*
- * 탈퇴 신청 계정 복구
- */
+// 탈퇴 신청 계정 복구
 export async function recoverAccount({ email, password }) {
   const response = await fetch(`${API_BASE_URL}/auth/recover`, {
     method: "POST",
@@ -154,9 +147,7 @@ export async function recoverAccount({ email, password }) {
   }
 }
 
-/*
- * 로그아웃
- */
+// 로그아웃
 export async function logout() {
   const response = await authFetch(`${API_BASE_URL}/auth/logout`, {
     method: "POST"
@@ -167,9 +158,7 @@ export async function logout() {
   }
 }
 
-/*
- * 현재 로그인 사용자 조회
- */
+// 현재 로그인 사용자 조회
 export async function getMe() {
   const response = await authFetch(`${API_BASE_URL}/auth/me`, {
     method: "GET"
@@ -182,9 +171,7 @@ export async function getMe() {
   return response.json();
 }
 
-/*
- * 비밀번호 변경
- */
+// 비밀번호 변경
 export async function changePassword({ currentPassword, newPassword }) {
   const response = await authFetch(`${API_BASE_URL}/users/me/password`, {
     method: "PATCH",
@@ -210,9 +197,7 @@ export async function changePassword({ currentPassword, newPassword }) {
   }
 }
 
-/*
- * 온보딩 필수 정보 저장
- */
+// 온보딩 필수 정보 저장
 export async function completeOnboarding({ ageGroup, gender, hobbyIds }) {
   const response = await authFetch(`${API_BASE_URL}/users/me/onboarding`, {
     method: "POST",
@@ -239,9 +224,7 @@ export async function completeOnboarding({ ageGroup, gender, hobbyIds }) {
   }
 }
 
-/*
- * 전체 취미 목록 조회
- */
+// 전체 취미 목록 조회
 export async function getHobbies() {
   const response = await authFetch(`${API_BASE_URL}/users/hobbies`, {
     method: "GET"
@@ -258,9 +241,7 @@ export async function getHobbies() {
   return response.json();
 }
 
-/*
- * 현재 취미 및 선호 설정 조회
- */
+// 현재 취미 및 선호 설정 조회
 export async function getPreferences() {
   const response = await authFetch(`${API_BASE_URL}/users/me/preferences`, {
     method: "GET"
@@ -277,9 +258,7 @@ export async function getPreferences() {
   return response.json();
 }
 
-/*
- * 취미 및 선호 설정 수정
- */
+// 취미 및 선호 설정 수정
 export async function updatePreferences({
   hobbyIds,
   activityStyle,
@@ -322,9 +301,7 @@ export async function updatePreferences({
   }
 }
 
-/*
- * 프로필 기본정보 수정
- */
+// 프로필 기본정보 수정
 export async function updateProfile({ nickname, ageGroup, gender }) {
   const response = await authFetch(`${API_BASE_URL}/users/me/profile`, {
     method: "PATCH",
@@ -351,9 +328,7 @@ export async function updateProfile({ nickname, ageGroup, gender }) {
   }
 }
 
-/*
- * 비선호 행동 목록 조회
- */
+// 비선호 행동 목록 조회
 export async function getDislikeActions() {
   const response = await authFetch(`${API_BASE_URL}/users/me/dislikes`, {
     method: "GET"
@@ -370,9 +345,7 @@ export async function getDislikeActions() {
   return response.json();
 }
 
-/*
- * 비선호 행동 추가
- */
+// 비선호 행동 추가
 export async function addDislikeAction(actionId) {
   const response = await authFetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,
@@ -390,9 +363,7 @@ export async function addDislikeAction(actionId) {
   }
 }
 
-/*
- * 비선호 행동 삭제
- */
+// 비선호 행동 삭제
 export async function removeDislikeAction(actionId) {
   const response = await authFetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,
@@ -410,9 +381,7 @@ export async function removeDislikeAction(actionId) {
   }
 }
 
-/*
- * 회원탈퇴 신청
- */
+// 회원탈퇴 신청
 export async function requestWithdrawal(currentPassword) {
   const response = await authFetch(`${API_BASE_URL}/users/me/withdrawal`, {
     method: "POST",
@@ -439,9 +408,7 @@ export async function requestWithdrawal(currentPassword) {
   }
 }
 
-/*
- * 기본 활동 지역 검색
- */
+// 기본 활동 지역 검색
 export async function searchRegions(query) {
   const response = await authFetch(
     `${API_BASE_URL}/locations/search?query=${encodeURIComponent(query)}`,
@@ -461,9 +428,7 @@ export async function searchRegions(query) {
   return response.json();
 }
 
-/*
- * 현재 위치 기반 추천 동의 상태 조회
- */
+// 현재 위치 기반 추천 동의 상태 조회
 export async function getLocationConsent() {
   const response = await authFetch(
     `${API_BASE_URL}/consents/me/current-location`,
@@ -483,9 +448,7 @@ export async function getLocationConsent() {
   return response.json();
 }
 
-/*
- * 현재 위치 기반 추천 동의 상태 변경
- */
+// 현재 위치 기반 추천 동의 상태 변경
 export async function updateLocationConsent(agreed) {
   const response = await authFetch(
     `${API_BASE_URL}/consents/me/current-location`,

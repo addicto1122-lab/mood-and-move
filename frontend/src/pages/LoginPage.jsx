@@ -90,6 +90,10 @@ export default function LoginPage() {
     setPassword("");
   };
 
+  const handleKakaoLogin = () => {
+    window.location.href = "/api/auth/kakao/login";
+  };
+
   return (
     <main className="auth-page">
       <section className="auth-container">
@@ -132,6 +136,13 @@ export default function LoginPage() {
 
           <button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "로그인 중..." : "로그인"}
+          </button>
+          <button
+            type="button"
+            className="kakao-login-button"
+            onClick={handleKakaoLogin}
+          >
+            카카오로 로그인
           </button>
         </form>
 

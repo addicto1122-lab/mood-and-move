@@ -30,6 +30,7 @@ public class UserService {
     private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    // 비밀번호 변경
     @Transactional
     public void changePassword(
             Long userId,
@@ -42,6 +43,18 @@ public class UserService {
                                 "사용자를 찾을 수 없습니다."
                         )
                 );
+
+        if (!user.isLocalLoginEnabled()) {
+            throw new IllegalArgumentException(
+                    "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다."
+            );
+        }
+
+        if (currentPassword == null || currentPassword.isBlank()) {
+            throw new IllegalArgumentException(
+                    "현재 비밀번호를 입력해주세요."
+            );
+        }
 
         if (!passwordEncoder.matches(
                 currentPassword,
@@ -68,10 +81,10 @@ public class UserService {
 
         refreshTokenRepository.deleteAllByUser_Id(userId);
 
-
         user.increaseTokenVersion();
     }
 
+    // 회원탈퇴 신청
     @Transactional
     public void requestWithdrawal(
             Long userId,
@@ -84,13 +97,23 @@ public class UserService {
                         )
                 );
 
-        if (!passwordEncoder.matches(
-                currentPassword,
-                user.getPasswordHash()
-        )) {
-            throw new IllegalArgumentException(
-                    "현재 비밀번호가 올바르지 않습니다."
-            );
+        // 일반 로그인 계정만 비밀번호 확인
+        if (user.isLocalLoginEnabled()) {
+
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new IllegalArgumentException(
+                        "현재 비밀번호를 입력해주세요."
+                );
+            }
+
+            if (!passwordEncoder.matches(
+                    currentPassword,
+                    user.getPasswordHash()
+            )) {
+                throw new IllegalArgumentException(
+                        "현재 비밀번호가 올바르지 않습니다."
+                );
+            }
         }
 
         if (userWithdrawalRequestRepository.existsByUser_Id(userId)) {
@@ -109,7 +132,7 @@ public class UserService {
         user.increaseTokenVersion();
     }
 
-
+    // 필수 온보딩
     @Transactional
     public void completeOnboarding(
             Long userId,
@@ -142,7 +165,6 @@ public class UserService {
             );
         }
 
-
         List<Long> distinctHobbyIds =
                 hobbyIds.stream()
                         .distinct()
@@ -151,17 +173,14 @@ public class UserService {
         List<Hobby> hobbies =
                 hobbyRepository.findAllById(distinctHobbyIds);
 
-
         if (hobbies.size() != distinctHobbyIds.size()) {
             throw new IllegalArgumentException(
                     "존재하지 않는 취미가 포함되어 있습니다."
             );
         }
 
-
         userHobbyRepository.deleteAllByUser_Id(userId);
         userHobbyRepository.flush();
-
 
         List<UserHobby> userHobbies =
                 hobbies.stream()
@@ -171,7 +190,6 @@ public class UserService {
                         .toList();
 
         userHobbyRepository.saveAll(userHobbies);
-
 
         if (userPreferenceRepository
                 .findByUser_Id(userId)
@@ -183,14 +201,13 @@ public class UserService {
             userPreferenceRepository.save(preference);
         }
 
-
         user.completeOnboarding(
                 ageGroup,
                 gender
         );
     }
 
-
+    // 취미 및 선호 수정
     @Transactional
     public void updatePreference(
             Long userId,
@@ -274,6 +291,7 @@ public class UserService {
         }
     }
 
+    // 프로필 수정
     @Transactional
     public void updateProfile(
             Long userId,
@@ -282,7 +300,11 @@ public class UserService {
             Gender gender
     ) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "사용자를 찾을 수 없습니다."
+                        )
+                );
 
         user.updateProfile(
                 nickname,
@@ -291,6 +313,7 @@ public class UserService {
         );
     }
 
+    // 현재 취미 및 선호 조회
     @Transactional(readOnly = true)
     public PreferenceResponse getPreferences(Long userId) {
 
@@ -323,6 +346,7 @@ public class UserService {
         );
     }
 
+    // 전체 취미 목록 조회
     @Transactional(readOnly = true)
     public List<HobbyResponse> getHobbies() {
         return hobbyRepository
@@ -336,6 +360,7 @@ public class UserService {
                 .toList();
     }
 
+    // 탈퇴 신청 상태 조회
     @Transactional(readOnly = true)
     public WithdrawalStatusResponse getWithdrawalStatus(Long userId) {
 
@@ -357,6 +382,7 @@ public class UserService {
                 );
     }
 
+    // 탈퇴 신청 취소
     @Transactional
     public void cancelWithdrawal(Long userId) {
 

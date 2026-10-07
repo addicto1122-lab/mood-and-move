@@ -27,6 +27,9 @@ public class User {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
+    @Column(name = "local_login_enabled", nullable = false)
+    private boolean localLoginEnabled = true;
+
     @Column(nullable = false, length = 50)
     private String nickname;
 
@@ -101,4 +104,19 @@ public class User {
         this.gender = gender;
     }
 
+    public static User createSocial(
+            String email,
+            String passwordHash,
+            String nickname
+    ) {
+        User user = new User(
+                email,
+                passwordHash,
+                nickname
+        );
+
+        user.localLoginEnabled = false;
+
+        return user;
+    }
 }

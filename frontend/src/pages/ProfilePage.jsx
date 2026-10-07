@@ -513,77 +513,76 @@ export default function ProfilePage() {
             비밀번호
         ========================= */}
 
-        <section className="profile-section">
-          <h2>비밀번호 변경</h2>
+        {user.localLoginEnabled && (
+          <section className="profile-section">
+            <h2>비밀번호 변경</h2>
 
-          <form
-            className="profile-card profile-password-card"
-            onSubmit={handlePasswordUpdate}
-          >
-            <div className="profile-field">
-              <label htmlFor="current-password">현재 비밀번호</label>
-
-              <input
-                id="current-password"
-                type="password"
-                value={currentPassword}
-                autoComplete="current-password"
-                placeholder="현재 비밀번호를 입력해주세요"
-                onChange={(e) => {
-                  setCurrentPassword(e.target.value);
-
-                  setPasswordError("");
-                }}
-              />
-            </div>
-
-            <div className="profile-field">
-              <label htmlFor="new-password">새 비밀번호</label>
-
-              <input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                autoComplete="new-password"
-                placeholder="8자 이상 입력해주세요"
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-
-                  setPasswordError("");
-                }}
-              />
-            </div>
-
-            <div className="profile-field">
-              <label htmlFor="new-password-confirm">새 비밀번호 확인</label>
-
-              <input
-                id="new-password-confirm"
-                type="password"
-                value={newPasswordConfirm}
-                autoComplete="new-password"
-                placeholder="새 비밀번호를 다시 입력해주세요"
-                onChange={(e) => {
-                  setNewPasswordConfirm(e.target.value);
-
-                  setPasswordError("");
-                }}
-              />
-            </div>
-
-            {passwordError && (
-              <span className="profile-error">{passwordError}</span>
-            )}
-
-            <button
-              type="submit"
-              className="profile-password-button"
-              disabled={savingPassword}
+            <form
+              className="profile-card profile-password-card"
+              onSubmit={handlePasswordUpdate}
             >
-              {savingPassword ? "변경 중..." : "비밀번호 변경"}
-            </button>
-          </form>
-        </section>
+              <div className="profile-field">
+                <label htmlFor="current-password">현재 비밀번호</label>
+
+                <input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  autoComplete="current-password"
+                  placeholder="현재 비밀번호를 입력해주세요"
+                  onChange={(e) => {
+                    setCurrentPassword(e.target.value);
+                    setPasswordError("");
+                  }}
+                />
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="new-password">새 비밀번호</label>
+
+                <input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  autoComplete="new-password"
+                  placeholder="8자 이상 입력해주세요"
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    setPasswordError("");
+                  }}
+                />
+              </div>
+
+              <div className="profile-field">
+                <label htmlFor="new-password-confirm">새 비밀번호 확인</label>
+
+                <input
+                  id="new-password-confirm"
+                  type="password"
+                  value={newPasswordConfirm}
+                  autoComplete="new-password"
+                  placeholder="새 비밀번호를 다시 입력해주세요"
+                  onChange={(e) => {
+                    setNewPasswordConfirm(e.target.value);
+                    setPasswordError("");
+                  }}
+                />
+              </div>
+
+              {passwordError && (
+                <span className="profile-error">{passwordError}</span>
+              )}
+
+              <button
+                type="submit"
+                className="profile-password-button"
+                disabled={savingPassword}
+              >
+                {savingPassword ? "변경 중..." : "비밀번호 변경"}
+              </button>
+            </form>
+          </section>
+        )}
       </section>
 
       {toast && <div className="profile-toast">{toast}</div>}

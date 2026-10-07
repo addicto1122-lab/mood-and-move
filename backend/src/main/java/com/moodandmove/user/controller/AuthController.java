@@ -8,6 +8,7 @@ import com.moodandmove.user.dto.response.EmailCheckResponse;
 import com.moodandmove.user.dto.response.LoginResponse;
 import com.moodandmove.user.dto.response.MeResponse;
 import com.moodandmove.user.service.AuthService;
+import com.moodandmove.user.service.KakaoOAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +18,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import com.moodandmove.user.dto.response.KakaoUserResponse;
+import com.moodandmove.user.service.KakaoOAuthService;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import java.time.Duration;
 
@@ -27,6 +32,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtProvider jwtProvider;
+    private final KakaoOAuthService kakaoOAuthService;
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(
@@ -63,6 +69,8 @@ public class AuthController {
                     new LoginResponse(true)
             );
         }
+
+        user = authService.startLoginSession(user.getId());
 
         String accessToken =
                 jwtProvider.createAccessToken(user);
@@ -142,7 +150,8 @@ public class AuthController {
                 user.getNickname(),
                 user.getAgeGroup(),
                 user.getGender(),
-                user.isOnboardingCompleted()
+                user.isOnboardingCompleted(),
+                user.isLocalLoginEnabled()
         );
 
         return ResponseEntity.ok(response);
@@ -340,6 +349,94 @@ public class AuthController {
                         HttpHeaders.SET_COOKIE,
                         refreshCookie.toString()
                 )
+                .build();
+    }
+
+    @GetMapping("/kakao/login")
+    public void kakaoLogin(
+            HttpServletResponse response
+    ) throws IOException {
+
+        response.sendRedirect(
+                kakaoOAuthService.getAuthorizationUrl()
+        );
+    }
+
+    @GetMapping("/kakao/callback")
+    public ResponseEntity<Void> kakaoCallback(@RequestParam String code) {
+
+        String kakaoAccessToken = kakaoOAuthService.getAccessToken(code);
+
+        KakaoUserResponse kakaoUser = kakaoOAuthService.getUser(kakaoAccessToken);
+
+        KakaoUserResponse.KakaoAccount account = kakaoUser.kakaoAccount();
+
+        if (account == null || account.email() == null ||
+                !Boolean.TRUE.equals(account.emailValid()) ||
+                !Boolean.TRUE.equals(account.emailVerified())) {
+
+            throw new IllegalArgumentException("카카오 이메일 정보를 확인할 수 없습니다.");
+        }
+
+        String nickname = account.profile() != null && account.profile().nickname() != null
+                        ? account.profile().nickname() : "Mood&Move 사용자";
+
+        User user = authService.findOrCreateKakaoUser(kakaoUser.id(), account.email(), nickname);
+
+        if (authService.isWithdrawalPending(user.getId())) {
+            authService.recoverSocialAccount(user.getId());
+        }
+
+        user = authService.startLoginSession(user.getId());
+
+        String accessToken = jwtProvider.createAccessToken(user);
+
+        String refreshToken = jwtProvider.createRefreshToken(user);
+
+        LocalDateTime refreshExpiresAt =
+                LocalDateTime.ofInstant(
+                        jwtProvider
+                                .getExpiration(refreshToken)
+                                .toInstant(),
+                        ZoneId.systemDefault()
+                );
+
+        authService.saveRefreshToken(user, refreshToken, refreshExpiresAt);
+
+        ResponseCookie accessCookie =
+                ResponseCookie
+                        .from(
+                                "accessToken",
+                                accessToken
+                        )
+                        .httpOnly(true)
+                        .secure(false)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(
+                                Duration.ofMinutes(30)
+                        )
+                        .build();
+
+        ResponseCookie refreshCookie =
+                ResponseCookie
+                        .from(
+                                "refreshToken",
+                                refreshToken
+                        )
+                        .httpOnly(true)
+                        .secure(false)
+                        .sameSite("Lax")
+                        .path("/")
+                        .maxAge(Duration.ofMillis(jwtProvider.getRefreshTokenExpirationMillis())
+                        )
+                        .build();
+
+        return ResponseEntity
+                .status(302)
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .header(HttpHeaders.LOCATION, "http://localhost:5173/")
                 .build();
     }
 }
