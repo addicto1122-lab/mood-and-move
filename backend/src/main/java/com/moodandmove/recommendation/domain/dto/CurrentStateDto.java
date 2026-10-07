@@ -8,7 +8,6 @@ import java.util.List;
 public record CurrentStateDto(
         String emotion,
         Integer intensity,
-        List<String> activityTags,
         String memo,
         TimeBucket timeBucket
 
