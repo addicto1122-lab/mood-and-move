@@ -61,4 +61,17 @@ public class RecommendationSession {
     @CreationTimestamp
     @Column(name = "requested_at", nullable = false, updatable = false)
     private LocalDateTime requestedAt;
+    public static RecommendationSession create(
+            MoodEntry moodEntry,
+            TimeBucket timeBucket,
+            RecommendationType recommendationType
+    ) {
+        RecommendationSession session = new RecommendationSession();
+
+        session.moodEntry = moodEntry;
+        session.timeBucket = timeBucket;
+        session.recommendationType = recommendationType;
+
+        return session;
+    }
 }

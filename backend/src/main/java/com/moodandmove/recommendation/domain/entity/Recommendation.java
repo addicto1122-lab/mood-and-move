@@ -51,4 +51,27 @@ public class Recommendation {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "reason", columnDefinition = "TEXT")
+    private String reason;
+
+    public static Recommendation create(
+            RecommendationSession session,
+            Action action,
+            int rankNo,
+            String reason
+    ) {
+        Recommendation recommendation = new Recommendation();
+
+        recommendation.session = session;
+        recommendation.action = action;
+        recommendation.rankNo = rankNo;
+        recommendation.reason = reason;
+        recommendation.reasonCode = "LLM_CONTEXT";
+
+        // 현재 LLM은 수치 점수를 반환하지 않아 임시로 0을 저장
+        recommendation.score = BigDecimal.ZERO;
+
+        return recommendation;
+    }
 }
