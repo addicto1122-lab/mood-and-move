@@ -107,10 +107,65 @@ export default function StatsPage() {
 
   /*
    * 월 통계
-   */
+   */ n;
   const [monthlyStats, setMonthlyStats] = useState(null);
 
   const [actionEffects, setActionEffects] = useState([]);
+
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  const [placeType, setPlaceType] = useState("PARK");
+  const [placeLoading, setPlaceLoading] = useState(false);
+  const [placeError, setPlaceError] = useState("");
+
+  const getCurrentLocation = (type) => {
+    if (!navigator.geolocation) {
+      console.log("현재 브라우저에서 위치 기능을 지원하지 않습니다.");
+      return;
+    }
+
+    setPlaceLoading(true);
+    setPlaceError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+
+        const longitude = position.coords.longitude;
+
+        console.log("현재 위도 =", latitude);
+        console.log("현재 경도 =", longitude);
+
+        try {
+          const response = await fetch(
+            `/api/places/nearby?type=${type}&latitude=${latitude}&longitude=${longitude}&radius=3000`,
+            {
+              method: "GET",
+              credentials: "include",
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(`장소 조회 실패: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log(`${type} 검색 결과 =`, data);
+          setNearbyPlaces(data);
+          setPlaceType(type);
+        } catch (error) {
+          console.error(error);
+          setPlaceError("주변 장소를 불러오지 못했습니다.");
+        } finally {
+          setPlaceLoading(false);
+        }
+      },
+      (error) => {
+        console.error("현재 위치 조회 실패 =", error);
+
+        setPlaceError("현재 위치를 가져울 수 없습니다.");
+        setPlaceLoading(false);
+      },
+    );
+  };
 
   /*
    * =========================
@@ -721,6 +776,32 @@ export default function StatsPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </section>
+      )}
+      <div>
+        <button onClick={() => getCurrentLocation("PARK")}>🌳 공원</button>
+        <button onClick={() => getCurrentLocation("CAFE")}>☕ 카페</button>
+        <button onClick={() => getCurrentLocation("SHOPPING")}>🛍 쇼핑</button>
+        <button onClick={() => getCurrentLocation("LIBRARY")}>📚 도서관</button>
+        <button onClick={() => getCurrentLocation("CINEMA")}>🎥 영화관</button>
+      </div>
+      {placeLoading && <p>주변 장소를 찾고 있습니다...</p>}
+      {placeError && <p>{placeError}</p>}
+      {nearbyPlaces.length > 0 && (
+        <section>
+          <h2>내 주변 장소</h2>
+          {nearbyPlaces.map((place) => (
+            <div key={place.placeId}>
+              <h3>{place.name}</h3>
+              <p>{place.category}</p>
+              <p>{place.roadAddress || place.address}</p>
+              <p>현재 위치에서 {place.distance}m</p>
+              <a href={place.placeUrl} target="_blank" rel="noreferror">
+                카카오맵에서 보기
+              </a>
+              <hr />
+            </div>
+          ))}
         </section>
       )}
     </main>

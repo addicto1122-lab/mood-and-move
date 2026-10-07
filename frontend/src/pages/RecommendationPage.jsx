@@ -1,47 +1,56 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { generateRecommendations } from "../api/recommendationApi";
+
 import "./RecommendationPage.css";
 
-const recommendations = [
-  {
-    recommendationId: 1,
-    actionId: 1,
-    rankNo: 1,
+/*
+ * 현재 Backend LLM 응답은
+ *
+ * actionCode
+ * reason
+ *
+ * 만 반환하기 때문에
+ * 화면 표시용 Action 정보는 임시 매핑.
+ *
+ * 나중에는 Backend Response에서
+ * Action 정보까지 내려주도록 변경 예정.
+ */
+const ACTION_META = {
+  WALK_PARK: {
     emoji: "🌿",
     name: "공원 산책",
     durationMinutes: 15,
     environmentType: "OUTDOOR",
-    reason: "복잡한 생각에서 잠시 벗어나 기분을 환기하는 데 도움이 돼요.",
     locationRequired: true,
-    place: {
-      name: "한빛공원",
-      distance: "도보 4분",
-    },
   },
-  {
-    recommendationId: 2,
-    actionId: 2,
-    rankNo: 2,
+
+  STRETCH: {
     emoji: "🧘",
-    name: "목과 어깨 스트레칭",
+    name: "가벼운 스트레칭",
     durationMinutes: 5,
     environmentType: "INDOOR",
-    reason: "오래 앉아 있어 굳은 몸을 가볍게 풀어보세요.",
     locationRequired: false,
-    place: null,
   },
-  {
-    recommendationId: 3,
-    actionId: 3,
-    rankNo: 3,
+
+  LISTEN_MUSIC: {
     emoji: "🎧",
-    name: "좋아하는 음악 한 곡",
-    durationMinutes: 4,
+    name: "음악 듣기",
+    durationMinutes: 10,
     environmentType: "ANY",
-    reason: "익숙한 음악으로 마음의 리듬을 편안하게 바꿔봐요.",
     locationRequired: false,
-    place: null,
   },
-];
+
+  DEEP_BREATH: {
+    emoji: "🌬️",
+    name: "심호흡하기",
+    durationMinutes: 5,
+    environmentType: "ANY",
+    locationRequired: false,
+  },
+};
 
 const environmentNames = {
   INDOOR: "실내",
@@ -51,31 +60,132 @@ const environmentNames = {
 
 export default function RecommendationPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /*
+   * MoodWritePage에서 navigate로 넘긴 값
+   */
+  const { moodEntryId, locationMode, currentLocation } = location.state ?? {};
+
+  const [recommendations, setRecommendations] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+
+  const [error, setError] = useState("");
+
+  /*
+   * React StrictMode 개발 환경에서
+   * API가 2번 호출되는 것을 방지
+   */
+  const requestedRef = useRef(false);
+
+  /*
+   * 추천 페이지 진입 즉시
+   * Gemini 추천 요청
+   */
+  useEffect(() => {
+    if (requestedRef.current) {
+      return;
+    }
+
+    requestedRef.current = true;
+
+    /*
+     * /recommendation 주소를
+     * 직접 입력해서 들어온 경우
+     */
+    if (!moodEntryId) {
+      setError("추천할 감정 기록이 없습니다.");
+
+      setLoading(false);
+
+      return;
+    }
+
+    async function loadRecommendations() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await generateRecommendations({
+          moodEntryId,
+
+          locationMode,
+
+          currentLocation,
+        });
+
+        /*
+         * 현재 Backend 응답
+         *
+         * {
+         *   recommendations: [
+         *      {
+         *        actionCode: "...",
+         *        reason: "..."
+         *      }
+         *   ]
+         * }
+         */
+
+        const converted = (data.recommendations ?? []).map((item, index) => {
+          const meta = ACTION_META[item.actionCode];
+
+          /*
+           * 혹시 모르는 actionCode가 오더라도
+           * 화면 자체는 죽지 않도록 처리
+           */
+          return {
+            recommendationId: `${item.actionCode}-${index}`,
+
+            rankNo: index + 1,
+
+            actionCode: item.actionCode,
+
+            reason: item.reason,
+
+            emoji: meta?.emoji ?? "✨",
+
+            name: meta?.name ?? item.actionCode,
+
+            durationMinutes: meta?.durationMinutes ?? 5,
+
+            environmentType: meta?.environmentType ?? "ANY",
+
+            locationRequired: meta?.locationRequired ?? false,
+
+            /*
+             * 아직 Kakao 장소 연결 전
+             */
+            place: null,
+          };
+        });
+
+        setRecommendations(converted);
+      } catch (error) {
+        console.error(error);
+
+        setError(error.message || "추천 행동을 불러오지 못했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRecommendations();
+  }, [moodEntryId, locationMode, currentLocation]);
 
   const handleStart = (item) => {
     console.log("선택한 추천", {
-      recommendationId: item.recommendationId,
-      actionId: item.actionId,
+      actionCode: item.actionCode,
     });
-
-    // TODO:
-    // 백엔드 행동 시작 API 연결
-    //
-    // await fetch("/api/action-executions", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   credentials: "include",
-    //   body: JSON.stringify({
-    //     recommendationId: item.recommendationId,
-    //   }),
-    // });
 
     alert(`${item.name}을(를) 시작합니다.`);
 
-    // TODO 실행 페이지 완성 후 이동
-    // navigate("/execution");
+    /*
+     * TODO
+     *
+     * ActionExecution API 연결
+     */
   };
 
   const handleSkip = () => {
@@ -85,14 +195,54 @@ export default function RecommendationPage() {
       return;
     }
 
-    console.log("이번 추천 건너뛰기");
-
-    // TODO:
-    // recommendation session
-    // selection_status = SKIPPED 처리 API 연결
-
     navigate("/");
   };
+
+  /*
+   * Gemini 응답 기다리는 동안
+   */
+  if (loading) {
+    return (
+      <main className="recommendation-page">
+        <header className="recommendation-header">
+          <div>
+            <span className="recommendation-eyebrow">맞춤 행동 추천</span>
+
+            <h1>행동을 고르고 있어요...</h1>
+
+            <p>
+              지금의 감정과 상황을 살펴보고
+              <br />
+              부담 없이 할 수 있는 행동을 찾고 있어요.
+            </p>
+          </div>
+        </header>
+      </main>
+    );
+  }
+
+  /*
+   * API 실패
+   */
+  if (error) {
+    return (
+      <main className="recommendation-page">
+        <header className="recommendation-header">
+          <div>
+            <span className="recommendation-eyebrow">추천 오류</span>
+
+            <h1>추천을 불러오지 못했어요.</h1>
+
+            <p>{error}</p>
+
+            <button type="button" onClick={() => navigate("/mood")}>
+              다시 작성하기
+            </button>
+          </div>
+        </header>
+      </main>
+    );
+  }
 
   return (
     <main className="recommendation-page">
@@ -112,8 +262,7 @@ export default function RecommendationPage() {
           <h1>이런 행동은 어때요?</h1>
 
           <p>
-            {/* 불안한 - 받은 사용자의 기분으로 변경 상황 앞에 사용자 상황 넣을지 말지*/}
-            지금의 <strong>불안한 마음</strong>과 현재 상황을 고려해
+            지금의 감정과 상황을 고려해
             <br />
             부담 없이 할 수 있는 행동을 골랐어요.
           </p>
@@ -156,7 +305,9 @@ export default function RecommendationPage() {
                   <strong>가까운 장소</strong>
 
                   <span>
-                    {item.place.name} · {item.place.distance}
+                    {item.place.name}
+                    {" · "}
+                    {item.place.distance}
                   </span>
                 </div>
               </div>
