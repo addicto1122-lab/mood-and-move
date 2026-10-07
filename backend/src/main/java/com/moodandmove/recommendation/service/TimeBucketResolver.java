@@ -14,7 +14,8 @@ public class TimeBucketResolver {
         if (hour >= 6 && hour < 11) {
             return TimeBucket.MORNING;
         }
-        if (hour >= 1 && hour < 17) {
+        //if (hour >= 1 && hour < 17) {
+        if (hour >= 11 && hour < 17){
             return TimeBucket.AFTERNOON;
         }
         if (hour >= 17 && hour < 21) {
