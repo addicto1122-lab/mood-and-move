@@ -1,6 +1,7 @@
 package com.moodandmove.calendar.service;
 
 
+import com.moodandmove.analysis.repository.MoodRecheckRepository;
 import com.moodandmove.calendar.dto.CalendarDayResponse;
 import com.moodandmove.calendar.dto.CalendarDetailResponse;
 import com.moodandmove.calendar.dto.MonthlyCalendarResponse;
@@ -19,16 +20,17 @@ import java.util.List;
 public class CalendarService {
 
     private final MoodEntryRepository moodEntryRepository;
+    private final MoodRecheckRepository moodRecheckRepository;
 
     public MonthlyCalendarResponse getMonthlyCalendar(
             Long userId,
             int year,
             int month
     ){
-        // 2026-10-01
+        // 조회 월의 첫날
         LocalDate startDate = LocalDate.of(year, month, 1);
 
-        // 2026-11-01
+        // 다음 달 첫날
         LocalDate endDate = startDate.plusMonths(1);
 
         List<MoodEntry> moodEntries =
@@ -55,6 +57,10 @@ public class CalendarService {
             MoodEntry moodEntry
     )
     {
+        Integer afterScore = moodRecheckRepository
+                .findAfterScoreByMoodEntryId(moodEntry.getId())
+                .orElse(null);
+
         return new CalendarDayResponse(
                 moodEntry.getId(),
                 moodEntry.getEntryDate(),
@@ -64,7 +70,8 @@ public class CalendarService {
                 moodEntry.getEmotion().getEmoji(),
 
                 moodEntry.getMoodScore(),
-                moodEntry.getIntensity()
+                moodEntry.getIntensity(),
+                afterScore
         );
     }
 

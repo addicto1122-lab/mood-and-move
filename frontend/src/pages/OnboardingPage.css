@@ -37,7 +37,6 @@
 
 .onboarding-logo span {
   color: var(--sage);
-
   font-weight: 500;
 }
 
@@ -68,6 +67,25 @@
 
   font-size: 13px;
   line-height: 1.7;
+}
+
+/* =========================
+   Onboarding Step
+   ========================= */
+
+.onboarding-step-badge {
+  width: fit-content;
+
+  margin-bottom: 14px;
+  padding: 6px 11px;
+
+  border-radius: 999px;
+
+  color: var(--sage-dark);
+  background: var(--mint);
+
+  font-size: 11px;
+  font-weight: 800;
 }
 
 /* =========================
@@ -134,6 +152,32 @@
 
   font-size: 10px;
   font-weight: 800;
+}
+
+/* =========================
+   Age
+   ========================= */
+
+.age-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 9px;
+}
+
+/* =========================
+   Gender
+   ========================= */
+
+.gender-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+
+  gap: 9px;
+}
+
+.gender-grid .choice-card {
+  min-height: 90px;
 }
 
 /* =========================
@@ -391,6 +435,288 @@
 }
 
 /* =========================
+   Default Region
+   ========================= */
+
+.region-search-row {
+  width: 100%;
+
+  display: flex;
+  align-items: stretch;
+
+  gap: 9px;
+}
+
+.region-search-input {
+  width: 100%;
+  min-width: 0;
+  height: 50px;
+
+  flex: 1;
+
+  padding: 0 15px;
+
+  border: 1px solid var(--line);
+  border-radius: 15px;
+
+  color: var(--ink);
+  background: var(--paper);
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.region-search-input::placeholder {
+  color: #a4aaa6;
+}
+
+.region-search-input:focus {
+  border-color: var(--sage);
+
+  background: #ffffff;
+
+  box-shadow: 0 0 0 3px rgba(95, 125, 104, 0.1);
+}
+
+.region-search-button {
+  min-width: 82px;
+  height: 50px;
+
+  flex-shrink: 0;
+
+  padding: 0 16px;
+
+  border: 0;
+  border-radius: 15px;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.region-search-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  background: #365747;
+}
+
+.region-search-button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+}
+
+.region-search-error {
+  margin-top: 9px;
+  padding-left: 2px;
+
+  color: #b85f5f;
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* 검색 결과 */
+
+.region-result-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin-top: 11px;
+}
+
+.region-result-item {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 14px 15px;
+
+  border: 1px solid var(--line);
+  border-radius: 15px;
+
+  color: var(--ink);
+  background: var(--paper);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.region-result-item:hover {
+  transform: translateY(-1px);
+
+  border-color: #bed0c4;
+
+  background: #f8faf8;
+}
+
+.region-result-icon {
+  width: 38px;
+  height: 38px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+
+  background: var(--mint);
+
+  font-size: 18px;
+}
+
+.region-result-item > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.region-result-item strong {
+  overflow: hidden;
+
+  font-size: 13px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.region-result-item p {
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 10px;
+}
+
+/* 선택 완료된 지역 */
+
+.selected-region-card {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 15px;
+
+  border: 1px solid #b9cdbd;
+  border-radius: 17px;
+
+  background: var(--mint);
+}
+
+.selected-region-info {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.selected-region-icon {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 13px;
+
+  background: #ffffff;
+
+  font-size: 19px;
+}
+
+.selected-region-info > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.selected-region-label {
+  color: var(--sage-dark);
+
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.selected-region-info strong {
+  overflow: hidden;
+
+  color: var(--sage-dark);
+
+  font-size: 13px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-region-remove {
+  flex-shrink: 0;
+
+  padding: 8px 11px;
+
+  border: 0;
+  border-radius: 10px;
+
+  color: var(--sage-dark);
+  background: rgba(255, 255, 255, 0.75);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.selected-region-remove:hover {
+  transform: translateY(-1px);
+
+  background: #ffffff;
+}
+
+/* =========================
    Submit
    ========================= */
 
@@ -416,10 +742,155 @@
     transform 0.2s ease;
 }
 
-.onboarding-submit:hover {
+.onboarding-submit:hover:not(:disabled) {
   background: #365747;
 
   transform: translateY(-1px);
+}
+
+/* =========================
+   Bottom Actions
+   ========================= */
+
+.onboarding-actions {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  gap: 8px;
+
+  margin-top: 18px;
+}
+
+.onboarding-actions .onboarding-submit {
+  width: 100%;
+  max-width: none;
+
+  margin-top: 0;
+}
+
+.onboarding-skip {
+  width: 100%;
+  min-height: 52px;
+
+  border: 0;
+  border-radius: 16px;
+
+  color: var(--muted);
+  background: transparent;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.onboarding-skip:hover:not(:disabled) {
+  color: var(--ink);
+
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.onboarding-submit:disabled,
+.onboarding-skip:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.6;
+}
+
+/* =========================
+   Loading / Error
+   ========================= */
+
+.onboarding-loading,
+.onboarding-load-error {
+  padding: 60px 20px;
+
+  color: var(--muted);
+
+  text-align: center;
+}
+
+.onboarding-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 18px;
+}
+
+.onboarding-load-error .onboarding-submit {
+  max-width: 260px;
+}
+
+.onboarding-empty {
+  padding: 20px 0;
+
+  color: var(--muted);
+
+  font-size: 12px;
+  text-align: center;
+}
+
+/* =========================
+   Mobile
+   ========================= */
+
+@media (max-width: 480px) {
+  .onboarding-page {
+    padding: 22px 16px 50px;
+  }
+
+  .onboarding-header {
+    margin-bottom: 28px;
+  }
+
+  .onboarding-logo {
+    margin-bottom: 28px;
+  }
+
+  .onboarding-header h1 {
+    font-size: 29px;
+  }
+
+  .onboarding-section {
+    padding: 19px 15px;
+
+    border-radius: 20px;
+  }
+
+  .region-search-row {
+    gap: 7px;
+  }
+
+  .region-search-input {
+    height: 48px;
+
+    padding: 0 13px;
+  }
+
+  .region-search-button {
+    min-width: 70px;
+    height: 48px;
+
+    padding: 0 12px;
+  }
+
+  .region-result-item {
+    padding: 13px;
+  }
+
+  .selected-region-card {
+    padding: 13px;
+  }
+
+  .selected-region-info strong {
+    max-width: 190px;
+  }
 }
 
 /* =========================
@@ -447,6 +918,14 @@
     padding: 26px;
   }
 
+  .age-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .gender-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
   .hobby-grid {
     grid-template-columns: repeat(5, 1fr);
   }
@@ -463,9 +942,52 @@
     grid-template-columns: repeat(5, 1fr);
   }
 
-  .onboarding-submit {
+  .region-search-input {
+    height: 52px;
+
+    font-size: 14px;
+  }
+
+  .region-search-button {
+    min-width: 94px;
+    height: 52px;
+
+    font-size: 14px;
+  }
+
+  .region-result-item {
+    padding: 16px;
+  }
+
+  .region-result-item strong {
+    font-size: 14px;
+  }
+
+  /*
+   * STEP 1의 완료 버튼
+   */
+  .onboarding-form > .onboarding-submit {
+    width: 320px;
     max-width: 320px;
 
-    align-self: flex-end;
+    align-self: center;
+  }
+
+  /*
+   * STEP 2의 설정 / 건너뛰기 버튼
+   * PC에서는 가운데 정렬
+   */
+  .onboarding-actions {
+    align-items: center;
+
+    margin-top: 22px;
+  }
+
+  .onboarding-actions .onboarding-submit,
+  .onboarding-actions .onboarding-skip {
+    width: 320px;
+    max-width: 320px;
+
+    align-self: center;
   }
 }

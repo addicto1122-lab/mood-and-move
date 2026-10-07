@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { checkEmail, signup, login } from "../api/authApi";
+import {
+  checkEmail,
+  signup,
+  login,
+  getCurrentLocationPolicy
+} from "../api/authApi";
 import "./SignupPage.css";
 
 export default function SignupPage() {
@@ -14,6 +19,30 @@ export default function SignupPage() {
 
   const [password, setPassword] = useState("");
   const [passwordCheck, setPasswordCheck] = useState("");
+
+  // 현재 위치 기반 추천 약관
+  const [locationPolicy, setLocationPolicy] = useState(null);
+  const [locationConsent, setLocationConsent] = useState(false);
+  const [policyError, setPolicyError] = useState("");
+
+  /*
+   * 현재 활성화된 위치 기반 추천 약관 조회
+   */
+  useEffect(() => {
+    async function fetchLocationPolicy() {
+      try {
+        const data = await getCurrentLocationPolicy();
+
+        setLocationPolicy(data);
+      } catch (error) {
+        console.error(error);
+
+        setPolicyError(error.message || "약관 정보를 불러오지 못했습니다.");
+      }
+    }
+
+    fetchLocationPolicy();
+  }, []);
 
   const checkEmailDuplicate = async () => {
     if (!email.trim()) {
@@ -57,12 +86,24 @@ export default function SignupPage() {
       return;
     }
 
+    /*
+     * 사용자가 실제로 확인한 약관 ID를
+     * 회원가입 요청에 포함해야 하므로
+     * 약관 조회가 끝나지 않았다면 가입하지 않음
+     */
+    if (!locationPolicy) {
+      alert("약관 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      return;
+    }
+
     try {
       // 회원가입
       await signup({
         email,
         password,
-        nickname
+        nickname,
+        locationPolicyId: locationPolicy.id,
+        locationConsent
       });
 
       // 회원가입 직후 자동 로그인
@@ -185,7 +226,37 @@ export default function SignupPage() {
             )}
           </div>
 
-          <button className="signup-submit" type="submit">
+          {/* 현재 위치 기반 추천 선택 약관 */}
+          {locationPolicy && (
+            <div className="signup-consent">
+              <label className="signup-consent-label">
+                <input
+                  type="checkbox"
+                  checked={locationConsent}
+                  onChange={(e) => setLocationConsent(e.target.checked)}
+                />
+
+                <span>
+                  <strong>
+                    {locationPolicy.required ? "[필수]" : "[선택]"}
+                  </strong>{" "}
+                  {locationPolicy.title}
+                </span>
+              </label>
+
+              <p className="signup-consent-description">
+                {locationPolicy.content}
+              </p>
+            </div>
+          )}
+
+          {policyError && <p className="check-message error">{policyError}</p>}
+
+          <button
+            className="signup-submit"
+            type="submit"
+            disabled={!locationPolicy}
+          >
             회원가입
           </button>
         </form>

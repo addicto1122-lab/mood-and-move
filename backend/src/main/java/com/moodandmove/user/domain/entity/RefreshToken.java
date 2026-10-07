@@ -1,3 +1,4 @@
+// backend/src/main/java/com/moodandmove/user/domain/entity/RefreshToken.java
 package com.moodandmove.user.domain.entity;
 
 import jakarta.persistence.*;
@@ -22,6 +23,9 @@ public class RefreshToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @Column(name = "token_hash", nullable = false, unique = true)
     private String tokenHash;
 
@@ -34,4 +38,41 @@ public class RefreshToken {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private RefreshToken(
+            User user,
+            int tokenVersion,
+            String tokenHash,
+            LocalDateTime expiresAt
+    ) {
+        this.user = user;
+        this.tokenVersion = tokenVersion;
+        this.tokenHash = tokenHash;
+        this.expiresAt = expiresAt;
+    }
+
+    public static RefreshToken create(
+            User user,
+            String tokenHash,
+            LocalDateTime expiresAt
+    ) {
+        return new RefreshToken(
+                user,
+                user.getTokenVersion(),
+                tokenHash,
+                expiresAt
+        );
+    }
+
+    public void revoke() {
+        this.revokedAt = LocalDateTime.now();
+    }
+
+    public boolean isRevoked() {
+        return revokedAt != null;
+    }
+
+    public boolean isExpired() {
+        return expiresAt.isBefore(LocalDateTime.now());
+    }
 }

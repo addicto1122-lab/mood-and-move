@@ -5,7 +5,6 @@ import com.moodandmove.analysis.dto.ActionPersonalStatResponse;
 import com.moodandmove.analysis.service.UserActionStatService;
 import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
-import com.moodandmove.mood.repository.MoodEntryActivityRepository;
 import com.moodandmove.mood.repository.MoodEntryRepository;
 import com.moodandmove.recommendation.domain.dto.ActionCandidateDto;
 import com.moodandmove.recommendation.domain.dto.CurrentStateDto;
@@ -36,7 +35,6 @@ public class RecommendationService {
     private final RecommendationRepository recommendationRepository;
     private final UserPreferenceRepository userPreferenceRepository;
     private final MoodEntryRepository moodEntryRepository;
-    private final MoodEntryActivityRepository  moodEntryActivityRepository;
     private final TimeBucketResolver timeBucketResolver;
 
     private final UserActionStatService userActionStatService;
@@ -108,16 +106,12 @@ public class RecommendationService {
         MoodEntry moodEntry = moodEntryRepository.findByIdAndUser_IdAndDeletedAtIsNull(moodEntryId,userId)
                                                 .orElseThrow(()
                                                         -> new IllegalArgumentException("감정 기록을 찾을 수 없습니다."));
-        List<String> activityTags = moodEntryActivityRepository
-                .findAllByMoodEntry_Id(moodEntryId)
-                .stream().map(moodEntryActivity -> moodEntryActivity.getActivityTag().getName())
-                .toList();
+
         TimeBucket timeBucket = timeBucketResolver.resolve(moodEntry.getRecordedAt());
 
         return new CurrentStateDto(
                 moodEntry.getEmotion().getEmotionCode(),
                 moodEntry.getIntensity(),
-                activityTags,
                 moodEntry.getDiaryContent(),
                 timeBucket
                 );

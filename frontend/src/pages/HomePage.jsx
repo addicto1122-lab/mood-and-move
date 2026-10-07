@@ -1,8 +1,68 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { getMe } from "../api/authApi";
+
 import "./HomePage.css";
 
 export default function HomePage() {
   const navigate = useNavigate();
+
+  const [user, setUser] = useState(null);
+  const [now, setNow] = useState(new Date());
+
+  /*
+   * 사용자 정보 조회
+   */
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const data = await getMe();
+
+        setUser(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    fetchUser();
+  }, []);
+
+  /*
+   * 현재 시간 갱신
+   * 페이지를 오래 켜놔도 날짜/시간대가 바뀌도록 처리
+   */
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(new Date());
+    }, 60 * 1000);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  /*
+   * 시간대별 인사말
+   */
+  const getGreeting = () => {
+    const hour = now.getHours();
+
+    if (hour < 6) {
+      return "감성넘치는 새벽이에요";
+    }
+
+    if (hour < 12) {
+      return "좋은 오전이에요";
+    }
+
+    return "좋은 오후예요";
+  };
+
+  /*
+   * 오늘 날짜
+   */
+  const todayText = `${now.getMonth() + 1}월 ${now.getDate()}일`;
 
   return (
     <main className="home-page">
@@ -11,11 +71,18 @@ export default function HomePage() {
           <div className="brand">
             Mood<span>&</span>Move
           </div>
-          <p>좋은 오후예요, 민지님</p>
+
+          <p>
+            {getGreeting()}, {user?.nickname ?? "사용자"}님
+          </p>
         </div>
 
-        <button className="avatar" onClick={() => navigate("/mypage")}>
-          민
+        <button
+          type="button"
+          className="avatar"
+          onClick={() => navigate("/mypage")}
+        >
+          {user?.nickname?.charAt(0) ?? "M"}
         </button>
       </header>
 
@@ -24,7 +91,7 @@ export default function HomePage() {
         <div className="orb orb-two" />
 
         <div className="hero-content">
-          <span className="eyebrow">TODAY · 10월 1일</span>
+          <span className="eyebrow">TODAY · {todayText}</span>
 
           <h1>
             오늘 기분은
@@ -43,6 +110,7 @@ export default function HomePage() {
 
       <div className="section-title">
         <h2>최근 마음</h2>
+
         <button onClick={() => navigate("/stats")}>전체 보기</button>
       </div>
 
@@ -51,6 +119,7 @@ export default function HomePage() {
 
         <div className="recent-copy">
           <strong>어제는 편안했어요</strong>
+
           <span>기분 4 · 강도 3</span>
         </div>
 
@@ -72,7 +141,9 @@ export default function HomePage() {
 
         <div className="action-copy">
           <span>오늘의 추천</span>
+
           <h3>10분 동네 산책</h3>
+
           <p>잠깐 바람을 쐬며 머리를 환기해요.</p>
         </div>
 

@@ -108,9 +108,9 @@ CREATE TABLE user_preferences (
                                   CONSTRAINT chk_user_preferences_activity_style
                                       CHECK (
                                           activity_style IN (
-                                                         'ACTIVE',
-                                                         'CALM',
-                                                         'ANY'
+                                                             'ACTIVE',
+                                                             'CALM',
+                                                             'ANY'
                                               )
                                           ),
 
@@ -215,30 +215,8 @@ CREATE TABLE emotions (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
-
 -- =========================================================
--- 7. ACTIVITY_TAGS
--- 담당: 이래원
--- 현재 활동 Master
--- =========================================================
-CREATE TABLE activity_tags (
-                               id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                               name VARCHAR(50) NOT NULL,
-                               category VARCHAR(30),
-
-                               active BOOLEAN NOT NULL DEFAULT TRUE,
-
-                               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                               CONSTRAINT uq_activity_tags_name
-                                   UNIQUE (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
-
--- =========================================================
--- 8. MOOD_ENTRIES
+-- 7. MOOD_ENTRIES
 -- 담당: 이래원
 --
 -- 정책
@@ -316,37 +294,8 @@ CREATE TABLE mood_entries (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
-
-
 -- =========================================================
--- 9. MOOD_ENTRY_ACTIVITIES
--- 담당: 이래원
--- 감정일기 <-> 현재 활동 N:M
--- =========================================================
-CREATE TABLE mood_entry_activities (
-                                       mood_entry_id BIGINT UNSIGNED NOT NULL,
-
-                                       activity_tag_id BIGINT UNSIGNED NOT NULL,
-
-                                       PRIMARY KEY (
-                                                    mood_entry_id,
-                                                    activity_tag_id
-                                           ),
-
-                                       CONSTRAINT fk_mood_entry_activities_mood
-                                           FOREIGN KEY (mood_entry_id)
-                                               REFERENCES mood_entries(id)
-                                               ON DELETE CASCADE,
-
-                                       CONSTRAINT fk_mood_entry_activities_tag
-                                           FOREIGN KEY (activity_tag_id)
-                                               REFERENCES activity_tags(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
-
--- =========================================================
--- 10. ACTIONS
+-- 8. ACTIONS
 -- 담당: 장준호
 -- 추천 가능한 행동 Master
 -- =========================================================
@@ -419,7 +368,7 @@ CREATE TABLE actions (
 
 
 -- =========================================================
--- 11. ACTION_HOBBIES
+-- 9. ACTION_HOBBIES
 -- 담당: 장준호
 -- 행동 <-> 취미 N:M
 -- =========================================================
@@ -446,7 +395,7 @@ CREATE TABLE action_hobbies (
 
 
 -- =========================================================
--- 12. USER_ACTION_DISLIKES
+-- 10. USER_ACTION_DISLIKES
 -- 담당: 이래원
 -- 추천 엔진에서 제외할 비선호 행동
 -- =========================================================
@@ -475,7 +424,7 @@ CREATE TABLE user_action_dislikes (
 
 
 -- =========================================================
--- 13. RECOMMENDATION_SESSIONS
+-- 11. RECOMMENDATION_SESSIONS
 -- 담당: 장준호
 --
 -- 한 감정일기당 최대 한 번의 추천 요청
@@ -551,7 +500,7 @@ CREATE TABLE recommendation_sessions (
 
 
 -- =========================================================
--- 14. RECOMMENDATIONS
+-- 12. RECOMMENDATIONS
 -- 담당: 장준호
 -- Rule Engine 실제 추천 결과
 -- =========================================================
@@ -606,7 +555,7 @@ CREATE TABLE recommendations (
 
 
 -- =========================================================
--- 15. RECOMMENDATION_PLACES
+-- 13. RECOMMENDATION_PLACES
 -- 담당: 장준호
 --
 -- MVP:
@@ -649,7 +598,7 @@ CREATE TABLE recommendation_places (
 
 
 -- =========================================================
--- 16. ACTION_EXECUTIONS
+-- 14. ACTION_EXECUTIONS
 -- 담당: 장준호
 --
 -- Session 하나에서 행동 하나만 수행
@@ -767,7 +716,7 @@ CREATE TABLE action_executions (
 
 
 -- =========================================================
--- 17. MOOD_RECHECKS
+-- 15. MOOD_RECHECKS
 -- 담당: 장준호
 -- 행동 완료 후 감정 재측정
 -- =========================================================
@@ -792,12 +741,12 @@ CREATE TABLE mood_rechecks (
 
                                CONSTRAINT chk_mood_rechecks_before
                                    CHECK (
-                                       before_score BETWEEN 1 AND 5
+                                       before_score BETWEEN 1 AND 60
                                        ),
 
                                CONSTRAINT chk_mood_rechecks_after
                                    CHECK (
-                                       after_score BETWEEN 1 AND 5
+                                       after_score BETWEEN 1 AND 60
                                        ),
 
                                CONSTRAINT fk_mood_rechecks_execution
@@ -809,7 +758,7 @@ CREATE TABLE mood_rechecks (
 
 
 -- =========================================================
--- 18. USER_ACTION_STATS
+-- 16. USER_ACTION_STATS
 -- 담당: 백기완
 -- 사용자별 행동 효과 Summary
 -- =========================================================

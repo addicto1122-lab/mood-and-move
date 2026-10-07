@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./StatsPage.css";
+
 import {
   LineChart,
   Line,
@@ -8,11 +9,94 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 
-export default function StatsPage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1));
+/*
+ * 감정별 색상
+ */
+const EMOTION_STYLE = {
+  JOY: {
+    color: "#F6C445",
+    bg: "#FFF6D8",
+    text: "#8A6200",
+  },
 
+  CALM: {
+    color: "#7BC96F",
+    bg: "#EAF7E7",
+    text: "#2E6B2E",
+  },
+
+  NEUTRAL: {
+    color: "#B8BDC7",
+    bg: "#F3F4F6",
+    text: "#4B5563",
+  },
+
+  SAD: {
+    color: "#5B8DEF",
+    bg: "#EAF1FF",
+    text: "#244C9A",
+  },
+
+  ANXIOUS: {
+    color: "#F39C4A",
+    bg: "#FFF1E5",
+    text: "#9A4F12",
+  },
+
+  ANGRY: {
+    color: "#E85D5D",
+    bg: "#FFEAEA",
+    text: "#992B2B",
+  },
+};
+
+/*
+ * 도넛 조각 안에 Emoji 표시
+ */
+function renderEmotionLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  payload,
+}) {
+  const RADIAN = Math.PI / 180;
+
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
+      fontSize="22"
+    >
+      {payload.emoji}
+    </text>
+  );
+}
+
+export default function StatsPage() {
+  /*
+   * 현재 조회 월
+   */
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  /*
+   * Calendar
+   */
   const [days, setDays] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,17 +105,29 @@ export default function StatsPage() {
 
   const [selectedEntry, setSelectedEntry] = useState(null);
 
+  /*
+   * 월 통계
+   */
   const [monthlyStats, setMonthlyStats] = useState(null);
 
+  const [actionEffects, setActionEffects] = useState([]);
+
+  /*
+   * =========================
+   * 월별 Calendar 조회
+   * =========================
+   */
   useEffect(() => {
     async function fetchCalendar() {
       try {
+        setLoading(true);
+
         const response = await fetch(
-          `/api/calendar?userId=1&year=${year}&month=${month}`,
+          `/api/calendar?year=${year}&month=${month}`,
           {
             method: "GET",
-            credentials: "include"
-          }
+            credentials: "include",
+          },
         );
 
         if (!response.ok) {
@@ -51,11 +147,45 @@ export default function StatsPage() {
     fetchCalendar();
   }, [year, month]);
 
+  /*
+   * =========================
+   * Calendar 상세 조회
+   * =========================
+   */
+  useEffect(() => {
+    async function fetchActionEffects() {
+      try {
+        const response = await fetch(
+          `/api/stats/monthly/actions?year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("행동별 효과 통계 조회 실패");
+        }
+        const data = await response.json();
+
+        setActionEffects(data);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    fetchActionEffects();
+  }, [year, month]);
+
+  /*
+   * =========================
+   * Calendar 상세 조회
+   * =========================
+   */
   async function fetchCalendarDetail(moodEntryId) {
     try {
-      const response = await fetch(`/api/calendar/${moodEntryId}?userId=1`, {
+      const response = await fetch(`/api/calendar/${moodEntryId}`, {
         method: "GET",
-        credentials: "include"
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -70,11 +200,20 @@ export default function StatsPage() {
     }
   }
 
+  /*
+   * =========================
+   * 월간 통계 조회
+   * =========================
+   */
   useEffect(() => {
     async function fetchMonthlyStats() {
       try {
         const response = await fetch(
-          `/api/stats/monthly?userId=1&year=${year}&month=${month}`,
+          `/api/stats/monthly?year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
         );
 
         if (!response.ok) {
@@ -92,32 +231,59 @@ export default function StatsPage() {
     fetchMonthlyStats();
   }, [year, month]);
 
+  /*
+   * =========================
+   * 이전 달
+   * =========================
+   */
   const prevMonth = () => {
     setCurrentDate(new Date(year, month - 2, 1));
+
+    setSelectedEntry(null);
   };
 
+  /*
+   * =========================
+   * 다음 달
+   * =========================
+   */
   const nextMonth = () => {
     setCurrentDate(new Date(year, month, 1));
+
+    setSelectedEntry(null);
   };
 
+  /*
+   * =========================
+   * Calendar 생성
+   * =========================
+   */
   const daysInMonth = new Date(year, month, 0).getDate();
 
   const firstDay = new Date(year, month - 1, 1).getDay();
 
   const findEntry = (day) => {
-    const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(
+      day,
+    ).padStart(2, "0")}`;
 
     return days.find((entry) => entry.date === date);
   };
 
   const calendarCells = [];
 
+  /*
+   * 앞쪽 빈칸
+   */
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />
+      <div key={`empty-${i}`} className="calendar-cell empty" />,
     );
   }
 
+  /*
+   * 날짜
+   */
   for (let day = 1; day <= daysInMonth; day++) {
     const entry = findEntry(day);
 
@@ -140,18 +306,70 @@ export default function StatsPage() {
             <span className="calendar-score">{entry.moodScore}점</span>
           </div>
         )}
-      </div>
+      </div>,
     );
   }
 
+  /*
+   * =========================
+   * 행동 전 / 후 그래프 데이터
+   * =========================
+   */
   const moodChartData = days.map((entry) => ({
     date: entry.date.substring(5),
-    moodScore: entry.moodScore,
+
+    beforeScore: Number(entry.moodScore),
+
+    afterScore: entry.afterScore == null ? null : Number(entry.afterScore),
+
     emotion: `${entry.emoji} ${entry.emotionName}`,
   }));
 
+  /*
+   * =========================
+   * 감정 도넛 그래프 데이터
+   * =========================
+   */
+  const emotionChartData =
+    monthlyStats?.emotions?.map((emotion) => {
+      const style = EMOTION_STYLE[emotion.emotionCode] || {
+        color: "#B8BDC7",
+        bg: "#F3F4F6",
+        text: "#4B5563",
+      };
+
+      return {
+        name: emotion.emotionName,
+
+        emotionCode: emotion.emotionCode,
+
+        emoji: emotion.emoji,
+
+        value: emotion.count,
+
+        rate: emotion.rate,
+
+        fill: style.color,
+
+        bg: style.bg,
+
+        text: style.text,
+      };
+    }) || [];
+
+  const ACTION_EMOJI = {
+    1: "🚶",
+    2: "🤸",
+    3: "🎵",
+    4: "🌿",
+  };
+
   return (
     <main className="stats-page">
+      {/* =======================
+          Header
+      ======================== */}
+
       <header className="stats-header">
         <div>
           <span className="stats-eyebrow">MONTHLY MOOD</span>
@@ -161,6 +379,10 @@ export default function StatsPage() {
           <p>한 달 동안의 마음을 한눈에 확인해보세요.</p>
         </div>
       </header>
+
+      {/* =======================
+          Calendar
+      ======================== */}
 
       <section className="calendar-card">
         <div className="calendar-header">
@@ -189,6 +411,11 @@ export default function StatsPage() {
           <div className="calendar-grid">{calendarCells}</div>
         )}
       </section>
+
+      {/* =======================
+          월간 요약
+      ======================== */}
+
       {monthlyStats && (
         <section className="monthly-summary">
           <h2>{monthlyStats.month}월 요약</h2>
@@ -227,25 +454,169 @@ export default function StatsPage() {
           </div>
         </section>
       )}
-      {monthlyStats && monthlyStats.emotions && (
+
+      {/* =======================
+          감정 분포 도넛
+      ======================== */}
+
+      {emotionChartData.length > 0 && (
         <section className="emotion-summary">
-          <h2>{monthlyStats.month}월 감정 분포</h2>
-          <div className="emotion-list">
-            {monthlyStats.emotions.map((emotion) => (
-              <div key={emotion.emotionCode} className="emotion-item">
-                <div className="emotion-info">
-                  <span className="emotion-emoji">{emotion.emoji}</span>
-                  <div>
-                    <strong>{emotion.emotionName}</strong>
-                    <span className="emotion-count">{emotion.count}회</span>
+          <h2>{month}월 감정 분포</h2>
+
+          <div className="emotion-donut-card">
+            <div className="emotion-donut-chart">
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={emotionChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={68}
+                    outerRadius={108}
+                    paddingAngle={3}
+                    labelLine={false}
+                    label={renderEmotionLabel}
+                  >
+                    {emotionChartData.map((emotion) => (
+                      <Cell key={emotion.emotionCode} fill={emotion.fill} />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                    formatter={(value, name, props) => [
+                      `${value}회 (${props.payload.rate}%)`,
+
+                      `${props.payload.emoji} ${name}`,
+                    ]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+
+              {/* 원 가운데 */}
+
+              <div className="emotion-donut-center">
+                <strong>{month}월</strong>
+
+                <span>총 {monthlyStats.diaryCount}회</span>
+              </div>
+            </div>
+
+            {/* 감정별 상세 */}
+
+            <div className="emotion-legend-list">
+              {emotionChartData.map((emotion) => (
+                <div
+                  key={emotion.emotionCode}
+                  className="emotion-legend-item"
+                  style={{
+                    backgroundColor: emotion.bg,
+
+                    borderLeft: `5px solid ${emotion.fill}`,
+                  }}
+                >
+                  <div className="emotion-legend-left">
+                    <span className="emotion-legend-emoji">
+                      {emotion.emoji}
+                    </span>
+
+                    <div>
+                      <strong
+                        style={{
+                          color: emotion.text,
+                        }}
+                      >
+                        {emotion.name}
+                      </strong>
+
+                      <p>{emotion.value}회</p>
+                    </div>
+                  </div>
+
+                  <span
+                    className="emotion-legend-rate"
+                    style={{
+                      color: emotion.text,
+                    }}
+                  >
+                    {emotion.rate}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {actionEffects.length > 0 && (
+        <section className="action-effect-section">
+          <h2>{month}월 행동별 효과</h2>
+
+          <p className="action-effect-description">
+            이번 달 실행한 행동이 기분에 어떤 변화를 주었는지 확인해보세요.
+          </p>
+
+          <div className="action-effect-list">
+            {actionEffects.map((action) => (
+              <div key={action.actionId} className="action-effect-card">
+                <div className="action-effect-header">
+                  <div className="action-effect-title">
+                    <span className="action-effect-emoji">
+                      {ACTION_EMOJI[action.actionId] || "✨"}
+                    </span>
+
+                    <div>
+                      <strong>{action.actionName}</strong>
+
+                      <span>실행 {action.executionCount}회</span>
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      action.averageDelta > 0
+                        ? "delta positive"
+                        : action.averageDelta < 0
+                          ? "delta negative"
+                          : "delta neutral"
+                    }
+                  >
+                    {action.averageDelta > 0 ? "+" : ""}
+                    {action.averageDelta}
                   </div>
                 </div>
-                <div className="emotion-rate-area">
-                  <span className="emotion-rate">{emotion.rate}%</span>
-                  <div className="emotion-bar">
+
+                <div className="action-effect-stats">
+                  <div>
+                    <span>추천</span>
+                    <strong>{action.recommendationCount}회</strong>
+                  </div>
+
+                  <div>
+                    <span>실행</span>
+                    <strong>{action.executionCount}회</strong>
+                  </div>
+
+                  <div>
+                    <span>재측정</span>
+                    <strong>{action.sampleCount}회</strong>
+                  </div>
+                </div>
+
+                <div className="positive-rate-area">
+                  <div className="positive-rate-header">
+                    <span>긍정 변화율</span>
+
+                    <strong>{action.positiveRate}%</strong>
+                  </div>
+
+                  <div className="positive-rate-bar">
                     <div
-                      className="emotion-bar-fill"
-                      style={{ width: `${emotion.rate}%` }}
+                      className="positive-rate-fill"
+                      style={{
+                        width: `${Math.min(Number(action.positiveRate), 100)}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -254,6 +625,11 @@ export default function StatsPage() {
           </div>
         </section>
       )}
+
+      {/* =======================
+          일기 상세
+      ======================== */}
+
       {selectedEntry && (
         <section className="diary-detail">
           <div className="diary-detail-header">
@@ -287,17 +663,61 @@ export default function StatsPage() {
           </div>
         </section>
       )}
+
+      {/* =======================
+          행동 전 · 후 그래프
+      ======================== */}
+
       {moodChartData.length > 0 && (
         <section className="mood-chart-section">
-          <h2>{month}월 기분 변화</h2>
+          <h2>{month}월 행동 전·후 기분 변화</h2>
+
           <div className="mood-chart">
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={moodChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis domain={[0, 60]} />
-                <Tooltip formatter={(value) => [`${value}점`, "기분 점수,"]} />
-                <Line type="monotone" dataKey="moodScore" strokeWidth={3} />
+
+                <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} />
+
+                <Tooltip formatter={(value, name) => [`${value}점`, name]} />
+
+                <Legend />
+
+                {/* 행동 전 */}
+
+                <Line
+                  type="monotone"
+                  dataKey="beforeScore"
+                  name="행동 전"
+                  stroke="#3b82f6"
+                  strokeWidth={3}
+                  dot={{
+                    r: 4,
+                    strokeWidth: 3,
+                  }}
+                  activeDot={{
+                    r: 6,
+                  }}
+                />
+
+                {/* 행동 후 */}
+
+                <Line
+                  type="monotone"
+                  dataKey="afterScore"
+                  name="행동 후"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  dot={{
+                    r: 4,
+                    strokeWidth: 3,
+                  }}
+                  activeDot={{
+                    r: 6,
+                  }}
+                  connectNulls={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>

@@ -31,4 +31,15 @@ public class UserActionDislike {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    private UserActionDislike(User user, Action action) {
+        this.id = new UserActionDislikeId(user.getId(), action.getId());
+
+        this.user = user;
+        this.action = action;
+    }
+
+    public static UserActionDislike create(User user, Action action) {
+        return new UserActionDislike(user, action);
+    }
 }
