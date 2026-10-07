@@ -2,6 +2,7 @@ package com.moodandmove.recommendation.controller;
 
 import com.moodandmove.recommendation.domain.dto.LlmRecommendationResult;
 import com.moodandmove.recommendation.domain.dto.RecommendationGenerateRequest;
+import com.moodandmove.recommendation.domain.dto.response.RecommendationResponse;
 import com.moodandmove.recommendation.llm.RecommendationLlmGenerator;
 import com.moodandmove.recommendation.service.RecommendationService;
 import com.moodandmove.user.domain.entity.User;
@@ -16,10 +17,9 @@ import org.springframework.web.bind.annotation.*;
 public class RecommendationController {
 
     private final RecommendationService recommendationService;
-    private final RecommendationLlmGenerator recommendationLlmGenerator;
 
     @PostMapping("/{moodEntryId}/generate")
-    public ResponseEntity<LlmRecommendationResult>
+    public ResponseEntity<RecommendationResponse>
     generate(
             Authentication authentication,
             @PathVariable Long moodEntryId,
@@ -31,7 +31,7 @@ public class RecommendationController {
                         .getPrincipal();
 
 
-        LlmRecommendationResult result =
+        RecommendationResponse  result =
                 recommendationService
                         .generateRecommendations(
                                 user.getId(),

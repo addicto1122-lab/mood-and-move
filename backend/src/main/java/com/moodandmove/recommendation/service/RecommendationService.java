@@ -6,17 +6,16 @@ import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
 import com.moodandmove.mood.repository.MoodEntryRepository;
 import com.moodandmove.recommendation.domain.dto.*;
+import com.moodandmove.recommendation.domain.dto.response.RecommendationResponse;
 import com.moodandmove.recommendation.domain.entity.Action;
+import com.moodandmove.recommendation.domain.type.RecommendationType;
 import com.moodandmove.recommendation.llm.RecommendationLlmGenerator;
-import com.moodandmove.recommendation.repository.ActionHobbyRepository;
 import com.moodandmove.recommendation.repository.ActionRepository;
-import com.moodandmove.recommendation.repository.RecommendationRepository;
-import com.moodandmove.recommendation.repository.RecommendationSessionRepository;
 import com.moodandmove.user.domain.entity.UserPreference;
 import com.moodandmove.user.repository.UserPreferenceRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.moodandmove.recommendation.domain.dto.*;
 
 import com.moodandmove.place.domain.type.LocationMode;
 
@@ -29,12 +28,9 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class RecommendationService {
     private final ActionRepository actionRepository;
-    private final ActionHobbyRepository actionHobbyRepository;
-    private final RecommendationSessionRepository recommendationSessionRepository;
-    private final RecommendationRepository recommendationRepository;
+
     private final UserPreferenceRepository userPreferenceRepository;
     private final MoodEntryRepository moodEntryRepository;
     private final TimeBucketResolver timeBucketResolver;
@@ -42,6 +38,8 @@ public class RecommendationService {
     private final UserActionStatService userActionStatService;
     private final PersonalScoreCalculator personalScoreCalculator;
     private final RecommendationLlmGenerator recommendationLlmGenerator;
+
+    private final RecommendationPersistenceService persistenceService;
 
     public BigDecimal calculatePersonalScore(
             ActionPersonalStatResponse emotionStat
@@ -54,31 +52,6 @@ public class RecommendationService {
         );
 
     }
-//    public BigDecimal calculatePersonalScore(
-//            ActionAcceptanceStatResponse acceptanceStat,
-//            ActionPersonalStatResponse emotionStat,
-//            BigDecimal confidenceWeight
-//    ) {
-//        BigDecimal acceptanceRate = personalScoreCalculator.calculateRate(
-//                acceptanceStat.executionCount(),
-//                acceptanceStat.recommendationCount());
-//
-//        BigDecimal emotionExecutionRate = personalScoreCalculator.calculateRate(
-//                emotionStat.executionCount(),
-//                emotionStat.recommendationCount());
-//
-//        BigDecimal positiveRate = personalScoreCalculator.calculateRate(
-//                emotionStat.positiveCount(),
-//                emotionStat.sampleCount());
-//
-//        return personalScoreCalculator.calculate(
-//                emotionStat.avgDelta(),
-//                acceptanceRate,
-//                positiveRate,
-//                emotionExecutionRate,
-//                confidenceWeight
-//        );
-//    }
 
     public List<ActionCandidateDto> createActionCandidates(
             Long userId,
@@ -121,48 +94,14 @@ public class RecommendationService {
                     new ActionCandidateDto(
                             action.getActionCode(),
                             action.getName(),
-                            personalScore
+                            personalScore,
+                            emotionStat.sampleCount()
                     )
             );
         }
 
         return candidates;
     }
-
-//    public List<ActionCandidateDto> createActionCandidates(
-//            Long userId, String emotionCode) {
-//
-//        List<Action> actions = actionRepository.findAllByActiveTrue();
-//        List<ActionCandidateDto> candidates = new ArrayList<>();
-//
-//        for (Action action : actions) {
-//            ActionAcceptanceStatResponse acceptanceStat =
-//                    userActionStatService.getAcceptanceStat(userId, action.getId());
-//
-//            ActionPersonalStatResponse emotionStat =
-//                    userActionStatService.getPersonalStat(userId, action.getId(), emotionCode);
-//
-//            if (acceptanceStat.recommendationCount() == 0
-//                    || emotionStat.recommendationCount() == 0
-//                    || emotionStat.sampleCount() == 0) {
-//                continue;
-//            }
-//
-//            BigDecimal confidenceWeight = personalScoreCalculator.resolveConfidenceWeight(
-//                    emotionStat.confidenceLevel());
-//
-//            BigDecimal personalScore = calculatePersonalScore(
-//                    acceptanceStat,emotionStat, confidenceWeight);
-//
-//            ActionCandidateDto candidate = new ActionCandidateDto(
-//                    action.getActionCode(),
-//                    action.getName(),
-//                    personalScore);
-//
-//            candidates.add(candidate);
-//        }
-//        return candidates;
-//    }
 
     private CurrentStateDto createCurrentState(
             Long userId,
@@ -195,21 +134,6 @@ public class RecommendationService {
         );
     }
 
-//    private CurrentStateDto createCurrentState(
-//            Long userId, Long moodEntryId){
-//        MoodEntry moodEntry = moodEntryRepository.findByIdAndUser_IdAndDeletedAtIsNull(moodEntryId,userId)
-//                                                .orElseThrow(()
-//                                                        -> new IllegalArgumentException("감정 기록을 찾을 수 없습니다."));
-//
-//        TimeBucket timeBucket = timeBucketResolver.resolve(moodEntry.getRecordedAt());
-//
-//        return new CurrentStateDto(
-//                moodEntry.getEmotion().getEmotionCode(),
-//                moodEntry.getIntensity(),
-//                moodEntry.getDiaryContent(),
-//                timeBucket
-//                );
-//    }
 
     private UserPreferenceDto createUserPreference(
             Long userId
@@ -227,16 +151,6 @@ public class RecommendationService {
                 .orElse(null);
     }
 
-//    private UserPreferenceDto createUserPreference(Long userId){
-//        UserPreference preference = userPreferenceRepository.findByUser_Id(userId)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자 선호 정보를 찾을 수 없습니다"));
-//
-//        return new UserPreferenceDto(
-//                preference.getActivityEnvironment(),
-//                preference.getActivityStyle(),
-//                preference.getSocialPreference()
-//        );
-//    }
 
     public LlmRecommendationRequestDto createLlmRequest(
             Long userId,
@@ -271,27 +185,23 @@ public class RecommendationService {
                         location.locationMode()
                 );
 
-        // 5. LLM에 전달할 최종 데이터
+        // 5. 사용자 전체 재측정 횟수로 추천 유형 결정
+        long totalSampleCount =
+                userActionStatService.getTotalSampleCount(userId);
+
+        RecommendationType recommendationType =
+                resolveRecommendationType(totalSampleCount);
+
+    // 6. 추천 유형을 포함한 LLM 요청 데이터 생성
         return new LlmRecommendationRequestDto(
                 currentState,
                 location,
                 preference,
-                candidates
+                candidates,
+                recommendationType
         );
     }
 
-//    public LlmRecommendationRequestDto createLlmRequest(
-//            Long userId,
-//            Long moodEntryId){
-//
-//
-//        CurrentStateDto currentState = createCurrentState(userId,moodEntryId);
-//        UserPreferenceDto preference = createUserPreference(userId);
-//        List<ActionCandidateDto> candidates = createActionCandidates(userId, currentState.emotion());
-//
-//        return new LlmRecommendationRequestDto(
-//                currentState,preference,candidates);
-//    }
 
     private RecommendationLocationDto resolveLocation(
             Long userId,
@@ -361,57 +271,98 @@ public class RecommendationService {
         };
     }
 
-    public LlmRecommendationResult generateRecommendations(
+    public RecommendationResponse generateRecommendations(
             Long userId,
             Long moodEntryId,
             RecommendationGenerateRequest request
     ) {
+        // 이미 저장된 추천이 있으면 그대로 반환
+        var existing = persistenceService.findExisting(userId, moodEntryId);
 
-        // 1. LLM에 넘길 데이터 생성
-        LlmRecommendationRequestDto llmRequest =
-                createLlmRequest(
-                        userId,
-                        moodEntryId,
-                        request
-                );
-
-        // 2. Gemini에게 추천 요청
-        LlmRecommendationResult result =
-                recommendationLlmGenerator.generate(
-                        llmRequest
-                );
-
-        // 3. 실제 DB 행동 후보에 존재하는 actionCode만 허용
-        List<String> validActionCodes =
-                llmRequest.candidates()
-                        .stream()
-                        .map(ActionCandidateDto::actionCode)
-                        .toList();
-
-
-        List<LlmRecommendedActionDto> validated =
-                result.recommendations()
-                        .stream()
-                        .filter(recommendation ->
-                                validActionCodes.contains(
-                                        recommendation.actionCode()
-                                )
-                        )
-                        .limit(3)
-                        .toList();
-
-
-        if (validated.isEmpty()) {
-            throw new IllegalStateException(
-                    "추천 가능한 행동이 없습니다."
-            );
+        if (existing.isPresent()) {
+            return existing.get();
         }
 
+        // 현재 상태, 위치, 선호, 행동 후보를 준비
+        var llmRequest = createLlmRequest(userId, moodEntryId, request);
 
-        return new LlmRecommendationResult(
+        if (llmRequest.candidates().isEmpty()) {
+            throw new IllegalStateException("추천 가능한 행동이 없습니다.");
+        }
+
+        // Gemini 호출 후 응답 검증
+        var result = recommendationLlmGenerator.generate(llmRequest);
+
+        var validated = validateRecommendations(
+                result,
+                llmRequest.candidates()
+        );
+
+        // 추천을 DB에 저장하고 화면용 응답 반환
+
+        RecommendationType recommendationType = llmRequest.recommendationType();
+
+    // 추천을 DB에 저장하고 화면용 응답 반환
+        return persistenceService.save(
+                userId,
+                moodEntryId,
+                llmRequest.currentState().timeBucket(),
+                recommendationType,
                 validated
         );
     }
+    private List<LlmRecommendedActionDto> validateRecommendations(
+            LlmRecommendationResult result,
+            List<ActionCandidateDto> candidates
+    ) {
+        if (result == null || result.recommendations() == null) {
+            throw new IllegalStateException("추천 응답이 없습니다.");
+        }
 
+        List<String> validCodes = candidates.stream()
+                .map(ActionCandidateDto::actionCode)
+                .toList();
 
+        List<LlmRecommendedActionDto> validated = new ArrayList<>();
+        List<String> selectedCodes = new ArrayList<>();
+
+        for (LlmRecommendedActionDto item : result.recommendations()) {
+            if (item == null
+                    || !validCodes.contains(item.actionCode())
+                    || selectedCodes.contains(item.actionCode())
+                    || item.reason() == null
+                    || item.reason().isBlank()) {
+                continue;
+            }
+
+            validated.add(new LlmRecommendedActionDto(
+                    item.actionCode(),
+                    item.reason().strip()
+            ));
+
+            selectedCodes.add(item.actionCode());
+
+            if (validated.size() == 3) {
+                break;
+            }
+        }
+
+        if (validated.isEmpty()) {
+            throw new IllegalStateException("추천 가능한 행동이 없습니다.");
+        }
+
+        return validated;
+    }
+
+    static RecommendationType resolveRecommendationType(long totalSampleCount) {
+        if (totalSampleCount <= 3) {
+            return RecommendationType.COLD_START;
+        }
+
+        if (totalSampleCount <= 10) {
+            return RecommendationType.HYBRID;
+        }
+
+        return RecommendationType.PERSONALIZED;
+    }
 }
