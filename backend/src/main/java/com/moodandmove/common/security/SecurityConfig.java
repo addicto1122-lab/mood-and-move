@@ -68,6 +68,8 @@ public class SecurityConfig {
                                 "/api/auth/recover",
                                 //토큰 만료시 재발급
                                 "/api/auth/refresh",
+                                //카카오 로그인용
+                                "/api/auth/kakao/**",
                                 //사용자 약관 조회
                                 "/api/consents/current-location",
                                 // 위치 기반 장소 API 테스트용

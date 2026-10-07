@@ -55,8 +55,9 @@ export default function MyPage() {
   const handleWithdrawal = async (e) => {
     e.preventDefault();
 
-    if (!withdrawPassword.trim()) {
+    if (user.localLoginEnabled && !withdrawPassword.trim()) {
       setWithdrawError("현재 비밀번호를 입력해주세요.");
+
       return;
     }
 
@@ -64,7 +65,7 @@ export default function MyPage() {
       setWithdrawing(true);
       setWithdrawError("");
 
-      await requestWithdrawal(withdrawPassword);
+      await requestWithdrawal(user.localLoginEnabled ? withdrawPassword : null);
 
       navigate("/login", {
         replace: true
@@ -198,20 +199,25 @@ export default function MyPage() {
               <br />
               7일 안에 다시 로그인하면 계정을 복구할 수 있습니다.
               <br />
-              계속하려면 현재 비밀번호를 입력해주세요.
+              {user.localLoginEnabled
+                ? "계속하려면 현재 비밀번호를 입력해주세요."
+                : "계속하려면 탈퇴 신청 버튼을 눌러주세요."}
             </p>
 
             <form onSubmit={handleWithdrawal}>
-              <input
-                type="password"
-                value={withdrawPassword}
-                placeholder="현재 비밀번호"
-                autoComplete="current-password"
-                onChange={(e) => {
-                  setWithdrawPassword(e.target.value);
-                  setWithdrawError("");
-                }}
-              />
+              {user.localLoginEnabled && (
+                <input
+                  type="password"
+                  value={withdrawPassword}
+                  placeholder="현재 비밀번호"
+                  autoComplete="current-password"
+                  onChange={(e) => {
+                    setWithdrawPassword(e.target.value);
+
+                    setWithdrawError("");
+                  }}
+                />
+              )}
 
               {withdrawError && (
                 <span className="mypage-modal-error">{withdrawError}</span>
