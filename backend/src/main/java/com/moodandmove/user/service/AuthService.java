@@ -2,11 +2,9 @@ package com.moodandmove.user.service;
 
 import com.moodandmove.common.security.JwtProvider;
 import com.moodandmove.common.security.RefreshTokenHasher;
-import com.moodandmove.user.domain.entity.ConsentPolicy;
-import com.moodandmove.user.domain.entity.RefreshToken;
-import com.moodandmove.user.domain.entity.User;
-import com.moodandmove.user.domain.entity.UserConsent;
+import com.moodandmove.user.domain.entity.*;
 import com.moodandmove.user.domain.type.ConsentType;
+import com.moodandmove.user.domain.type.SocialProvider;
 import com.moodandmove.user.dto.request.LoginRequest;
 import com.moodandmove.user.dto.request.SignupRequest;
 import com.moodandmove.user.repository.*;
@@ -29,6 +27,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final RefreshTokenHasher refreshTokenHasher;
     private final JwtProvider jwtProvider;
+    private final SocialAccountRepository socialAccountRepository;
 
     @Transactional
     public void signup(SignupRequest request) {
@@ -243,5 +242,71 @@ public class AuthService {
         }
 
         return user;
+    }
+
+    @Transactional
+    public User startLoginSession(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "사용자를 찾을 수 없습니다."
+                        )
+                );
+
+        // 기존 Access Token 즉시 무효화
+        user.increaseTokenVersion();
+
+        // 기존 Refresh Token 제거
+        refreshTokenRepository.deleteAllByUser_Id(userId);
+
+        refreshTokenRepository.flush();
+
+        return user;
+    }
+
+    @Transactional
+    public User findOrCreateKakaoUser(
+            Long kakaoId,
+            String email,
+            String nickname
+    ) {
+
+        String providerUserId =
+                String.valueOf(kakaoId);
+
+        SocialAccount socialAccount =
+                socialAccountRepository
+                        .findByProviderAndProviderUserId(
+                                SocialProvider.KAKAO,
+                                providerUserId
+                        )
+                        .orElse(null);
+
+        if (socialAccount != null) {return socialAccount.getUser();}
+
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
+            String randomPassword = passwordEncoder.encode(java.util.UUID.randomUUID().toString());
+
+            user = User.createSocial(email, randomPassword, nickname);
+
+            userRepository.save(user);
+        }
+
+        SocialAccount newSocialAccount = SocialAccount.create(user, SocialProvider.KAKAO, providerUserId);
+
+        socialAccountRepository.save(newSocialAccount);
+
+        return user;
+    }
+
+    @Transactional
+    public void recoverSocialAccount(Long userId) {
+
+        if (userWithdrawalRequestRepository.existsByUser_Id(userId)) {
+            userWithdrawalRequestRepository.deleteByUser_Id(userId);
+        }
     }
 }

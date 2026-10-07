@@ -9,6 +9,7 @@ public record MeResponse(
         String nickname,
         AgeGroup ageGroup,
         Gender gender,
-        boolean onboardingCompleted
+        boolean onboardingCompleted,
+        boolean localLoginEnabled
 ) {
 }
