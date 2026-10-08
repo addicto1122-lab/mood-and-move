@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { EMOTION_OPTIONS } from "../constants/moodOptions";
 import {
   getPreferences,
   getLocationConsent,
@@ -8,19 +8,8 @@ import {
   searchRegions,
   updatePreferences
 } from "../api/authApi";
-
 import { createMood } from "../api/moodApi";
-
 import "./MoodWritePage.css";
-
-const emotions = [
-  { code: "ANGRY", name: "화남", emoji: "😡" },
-  { code: "ANXIOUS", name: "불안", emoji: "😰" },
-  { code: "SAD", name: "슬픔", emoji: "😢" },
-  { code: "NEUTRAL", name: "보통", emoji: "😐" },
-  { code: "CALM", name: "편안함", emoji: "🙂" },
-  { code: "JOY", name: "기쁨", emoji: "😄" }
-];
 
 export default function MoodWritePage() {
   const navigate = useNavigate();
@@ -395,7 +384,7 @@ export default function MoodWritePage() {
         <h2>감정 선택</h2>
 
         <div className="emotion-grid">
-          {emotions.map((item) => (
+          {EMOTION_OPTIONS.map((item) => (
             <button
               key={item.code}
               type="button"

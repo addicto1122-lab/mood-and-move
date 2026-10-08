@@ -12,7 +12,7 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell,
+  Cell
 } from "recharts";
 
 /*
@@ -22,38 +22,38 @@ const EMOTION_STYLE = {
   JOY: {
     color: "#F6C445",
     bg: "#FFF6D8",
-    text: "#8A6200",
+    text: "#8A6200"
   },
 
   CALM: {
     color: "#7BC96F",
     bg: "#EAF7E7",
-    text: "#2E6B2E",
+    text: "#2E6B2E"
   },
 
   NEUTRAL: {
     color: "#B8BDC7",
     bg: "#F3F4F6",
-    text: "#4B5563",
+    text: "#4B5563"
   },
 
   SAD: {
     color: "#5B8DEF",
     bg: "#EAF1FF",
-    text: "#244C9A",
+    text: "#244C9A"
   },
 
   ANXIOUS: {
     color: "#F39C4A",
     bg: "#FFF1E5",
-    text: "#9A4F12",
+    text: "#9A4F12"
   },
 
   ANGRY: {
     color: "#E85D5D",
     bg: "#FFEAEA",
-    text: "#992B2B",
-  },
+    text: "#992B2B"
+  }
 };
 
 /*
@@ -65,7 +65,7 @@ function renderEmotionLabel({
   midAngle,
   innerRadius,
   outerRadius,
-  payload,
+  payload
 }) {
   const RADIAN = Math.PI / 180;
 
@@ -107,7 +107,7 @@ export default function StatsPage() {
 
   /*
    * 월 통계
-   */ n;
+   */
   const [monthlyStats, setMonthlyStats] = useState(null);
 
   const [actionEffects, setActionEffects] = useState([]);
@@ -140,8 +140,8 @@ export default function StatsPage() {
             `/api/places/nearby?type=${type}&latitude=${latitude}&longitude=${longitude}&radius=3000`,
             {
               method: "GET",
-              credentials: "include",
-            },
+              credentials: "include"
+            }
           );
 
           if (!response.ok) {
@@ -163,7 +163,7 @@ export default function StatsPage() {
 
         setPlaceError("현재 위치를 가져울 수 없습니다.");
         setPlaceLoading(false);
-      },
+      }
     );
   };
 
@@ -181,8 +181,8 @@ export default function StatsPage() {
           `/api/calendar?year=${year}&month=${month}`,
           {
             method: "GET",
-            credentials: "include",
-          },
+            credentials: "include"
+          }
         );
 
         if (!response.ok) {
@@ -214,8 +214,8 @@ export default function StatsPage() {
           `/api/stats/monthly/actions?year=${year}&month=${month}`,
           {
             method: "GET",
-            credentials: "include",
-          },
+            credentials: "include"
+          }
         );
 
         if (!response.ok) {
@@ -240,7 +240,7 @@ export default function StatsPage() {
     try {
       const response = await fetch(`/api/calendar/${moodEntryId}`, {
         method: "GET",
-        credentials: "include",
+        credentials: "include"
       });
 
       if (!response.ok) {
@@ -267,8 +267,8 @@ export default function StatsPage() {
           `/api/stats/monthly?year=${year}&month=${month}`,
           {
             method: "GET",
-            credentials: "include",
-          },
+            credentials: "include"
+          }
         );
 
         if (!response.ok) {
@@ -319,7 +319,7 @@ export default function StatsPage() {
 
   const findEntry = (day) => {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(
-      day,
+      day
     ).padStart(2, "0")}`;
 
     return days.find((entry) => entry.date === date);
@@ -332,7 +332,7 @@ export default function StatsPage() {
    */
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />,
+      <div key={`empty-${i}`} className="calendar-cell empty" />
     );
   }
 
@@ -361,7 +361,7 @@ export default function StatsPage() {
             <span className="calendar-score">{entry.moodScore}점</span>
           </div>
         )}
-      </div>,
+      </div>
     );
   }
 
@@ -377,7 +377,7 @@ export default function StatsPage() {
 
     afterScore: entry.afterScore == null ? null : Number(entry.afterScore),
 
-    emotion: `${entry.emoji} ${entry.emotionName}`,
+    emotion: `${entry.emoji} ${entry.emotionName}`
   }));
 
   /*
@@ -390,7 +390,7 @@ export default function StatsPage() {
       const style = EMOTION_STYLE[emotion.emotionCode] || {
         color: "#B8BDC7",
         bg: "#F3F4F6",
-        text: "#4B5563",
+        text: "#4B5563"
       };
 
       return {
@@ -408,7 +408,7 @@ export default function StatsPage() {
 
         bg: style.bg,
 
-        text: style.text,
+        text: style.text
       };
     }) || [];
 
@@ -416,7 +416,7 @@ export default function StatsPage() {
     1: "🚶",
     2: "🤸",
     3: "🎵",
-    4: "🌿",
+    4: "🌿"
   };
 
   return (
@@ -543,7 +543,7 @@ export default function StatsPage() {
                     formatter={(value, name, props) => [
                       `${value}회 (${props.payload.rate}%)`,
 
-                      `${props.payload.emoji} ${name}`,
+                      `${props.payload.emoji} ${name}`
                     ]}
                   />
                 </PieChart>
@@ -568,7 +568,7 @@ export default function StatsPage() {
                   style={{
                     backgroundColor: emotion.bg,
 
-                    borderLeft: `5px solid ${emotion.fill}`,
+                    borderLeft: `5px solid ${emotion.fill}`
                   }}
                 >
                   <div className="emotion-legend-left">
@@ -579,7 +579,7 @@ export default function StatsPage() {
                     <div>
                       <strong
                         style={{
-                          color: emotion.text,
+                          color: emotion.text
                         }}
                       >
                         {emotion.name}
@@ -592,7 +592,7 @@ export default function StatsPage() {
                   <span
                     className="emotion-legend-rate"
                     style={{
-                      color: emotion.text,
+                      color: emotion.text
                     }}
                   >
                     {emotion.rate}%
@@ -670,7 +670,7 @@ export default function StatsPage() {
                     <div
                       className="positive-rate-fill"
                       style={{
-                        width: `${Math.min(Number(action.positiveRate), 100)}%`,
+                        width: `${Math.min(Number(action.positiveRate), 100)}%`
                       }}
                     />
                   </div>
@@ -749,10 +749,10 @@ export default function StatsPage() {
                   strokeWidth={3}
                   dot={{
                     r: 4,
-                    strokeWidth: 3,
+                    strokeWidth: 3
                   }}
                   activeDot={{
-                    r: 6,
+                    r: 6
                   }}
                 />
 
@@ -766,10 +766,10 @@ export default function StatsPage() {
                   strokeWidth={3}
                   dot={{
                     r: 4,
-                    strokeWidth: 3,
+                    strokeWidth: 3
                   }}
                   activeDot={{
-                    r: 6,
+                    r: 6
                   }}
                   connectNulls={false}
                 />

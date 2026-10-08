@@ -18,28 +18,26 @@ public class JwtProvider {
 
     private final long accessTokenExpiration;
     private final long refreshTokenExpiration;
+    private final long recoveryTokenExpiration;
 
     public JwtProvider(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-expiration}") long refreshTokenExpiration
+            @Value("${jwt.refresh-expiration}") long refreshTokenExpiration,
+            @Value("${jwt.recovery-expiration:300000}") long recoveryTokenExpiration
     ) {
-        this.secretKey = Keys.hmacShaKeyFor(
-                secret.getBytes(StandardCharsets.UTF_8)
-        );
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
 
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.recoveryTokenExpiration = recoveryTokenExpiration;
     }
-
 
     public String createAccessToken(User user) {
 
         Date now = new Date();
 
-        Date expiration = new Date(
-                now.getTime() + accessTokenExpiration
-        );
+        Date expiration = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
@@ -57,14 +55,11 @@ public class JwtProvider {
                 .compact();
     }
 
-
     public String createRefreshToken(User user) {
 
         Date now = new Date();
 
-        Date expiration = new Date(
-                now.getTime() + refreshTokenExpiration
-        );
+        Date expiration = new Date(now.getTime() + refreshTokenExpiration);
 
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
@@ -82,6 +77,27 @@ public class JwtProvider {
                 .compact();
     }
 
+    public String createRecoveryToken(User user) {
+
+        Date now = new Date();
+
+        Date expiration = new Date(now.getTime() + recoveryTokenExpiration);
+
+        return Jwts.builder()
+                .subject(String.valueOf(user.getId()))
+                .claim(
+                        "tokenVersion",
+                        user.getTokenVersion()
+                )
+                .claim(
+                        "tokenType",
+                        "RECOVERY"
+                )
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(secretKey)
+                .compact();
+    }
 
     public Claims parseToken(String token) {
 
@@ -94,43 +110,31 @@ public class JwtProvider {
 
     public Long getUserId(String token) {
 
-        Claims claims =
-                parseToken(token);
+        Claims claims = parseToken(token);
 
-        return Long.valueOf(
-                claims.getSubject()
-        );
+        return Long.valueOf(claims.getSubject());
     }
 
     public int getTokenVersion(String token) {
 
-        Claims claims =
-                parseToken(token);
+        Claims claims = parseToken(token);
 
-        return claims.get(
-                "tokenVersion",
-                Integer.class
-        );
+        return claims.get("tokenVersion", Integer.class);
     }
 
     public String getTokenType(String token) {
 
-        Claims claims =
-                parseToken(token);
+        Claims claims = parseToken(token);
 
-        return claims.get(
-                "tokenType",
-                String.class
-        );
+        return claims.get("tokenType", String.class);
     }
 
     public Date getExpiration(String token) {
 
-        return parseToken(token)
-                .getExpiration();
+        return parseToken(token).getExpiration();
     }
 
-    public long getRefreshTokenExpirationMillis() {
-        return refreshTokenExpiration;
-    }
+    public long getRefreshTokenExpirationMillis() {return refreshTokenExpiration;}
+
+    public long getRecoveryTokenExpirationMillis() {return recoveryTokenExpiration;}
 }
