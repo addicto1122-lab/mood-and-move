@@ -225,21 +225,40 @@ export default function HomePage() {
           </div>
 
           <section className="card action-card">
-            <div className="action-icon">✨</div>
+            <div className="action-icon">🌿</div>
 
             <div className="action-copy">
-              <span>
-                오늘의 추천
-                {todayRecommendation.durationMinutes
-                  ? ` · ${todayRecommendation.durationMinutes}분`
-                  : ""}
-              </span>
+              <span>오늘의 추천</span>
 
-              <h3>{todayRecommendation.actionName}</h3>
+              <h3>
+                {todayRecommendation.durationMinutes
+                  ? `${todayRecommendation.durationMinutes}분 `
+                  : ""}
+                {todayRecommendation.actionName}
+              </h3>
 
               <p>{todayRecommendation.reason}</p>
             </div>
+
+            <button
+              type="button"
+              className="round-arrow"
+              onClick={() =>
+                navigate("/recommendation", {
+                  state: {
+                    moodEntryId: latestMood?.moodEntryId
+                  }
+                })
+              }
+              aria-label="오늘의 추천 보기"
+            >
+              ›
+            </button>
           </section>
+
+          <p className="tiny-note">
+            ✧ 오늘의 기록을 남기면 더 잘 맞는 행동을 추천해요.
+          </p>
         </>
       )}
     </main>

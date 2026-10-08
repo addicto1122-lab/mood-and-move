@@ -6,56 +6,10 @@ import { generateRecommendations } from "../api/recommendationApi";
 
 import "./RecommendationPage.css";
 
-/*
- * 현재 Backend LLM 응답은
- *
- * actionCode
- * reason
- *
- * 만 반환하기 때문에
- * 화면 표시용 Action 정보는 임시 매핑.
- *
- * 나중에는 Backend Response에서
- * Action 정보까지 내려주도록 변경 예정.
- */
-const ACTION_META = {
-  WALK_PARK: {
-    emoji: "🌿",
-    name: "공원 산책",
-    durationMinutes: 15,
-    environmentType: "OUTDOOR",
-    locationRequired: true,
-  },
-
-  STRETCH: {
-    emoji: "🧘",
-    name: "가벼운 스트레칭",
-    durationMinutes: 5,
-    environmentType: "INDOOR",
-    locationRequired: false,
-  },
-
-  LISTEN_MUSIC: {
-    emoji: "🎧",
-    name: "음악 듣기",
-    durationMinutes: 10,
-    environmentType: "ANY",
-    locationRequired: false,
-  },
-
-  DEEP_BREATH: {
-    emoji: "🌬️",
-    name: "심호흡하기",
-    durationMinutes: 5,
-    environmentType: "ANY",
-    locationRequired: false,
-  },
-};
-
 const environmentNames = {
   INDOOR: "실내",
   OUTDOOR: "실외",
-  ANY: "어디서든",
+  ANY: "어디서든"
 };
 
 export default function RecommendationPage() {
@@ -63,7 +17,7 @@ export default function RecommendationPage() {
   const location = useLocation();
 
   /*
-   * MoodWritePage에서 navigate로 넘긴 값
+   * MoodWritePage에서 전달된 값
    */
   const { moodEntryId, locationMode, currentLocation } = location.state ?? {};
 
@@ -74,33 +28,24 @@ export default function RecommendationPage() {
   const [error, setError] = useState("");
 
   /*
-   * React StrictMode 개발 환경에서
-   * API가 2번 호출되는 것을 방지
+   * React StrictMode에서
+   * 추천 API 중복 호출 방지
    */
   const requestedRef = useRef(false);
 
   /*
-   * 추천 페이지 진입 즉시
-   * Gemini 추천 요청
+   * 추천 생성
    */
   useEffect(() => {
+    if (!moodEntryId) {
+      return;
+    }
+
     if (requestedRef.current) {
       return;
     }
 
     requestedRef.current = true;
-
-    /*
-     * /recommendation 주소를
-     * 직접 입력해서 들어온 경우
-     */
-    if (!moodEntryId) {
-      setError("추천할 감정 기록이 없습니다.");
-
-      setLoading(false);
-
-      return;
-    }
 
     async function loadRecommendations() {
       try {
@@ -109,59 +54,11 @@ export default function RecommendationPage() {
 
         const data = await generateRecommendations({
           moodEntryId,
-
           locationMode,
-
-          currentLocation,
+          currentLocation
         });
 
-        /*
-         * 현재 Backend 응답
-         *
-         * {
-         *   recommendations: [
-         *      {
-         *        actionCode: "...",
-         *        reason: "..."
-         *      }
-         *   ]
-         * }
-         */
-
-        const converted = (data.recommendations ?? []).map((item, index) => {
-          const meta = ACTION_META[item.actionCode];
-
-          /*
-           * 혹시 모르는 actionCode가 오더라도
-           * 화면 자체는 죽지 않도록 처리
-           */
-          return {
-            recommendationId: `${item.actionCode}-${index}`,
-
-            rankNo: index + 1,
-
-            actionCode: item.actionCode,
-
-            reason: item.reason,
-
-            emoji: meta?.emoji ?? "✨",
-
-            name: meta?.name ?? item.actionCode,
-
-            durationMinutes: meta?.durationMinutes ?? 5,
-
-            environmentType: meta?.environmentType ?? "ANY",
-
-            locationRequired: meta?.locationRequired ?? false,
-
-            /*
-             * 아직 Kakao 장소 연결 전
-             */
-            place: null,
-          };
-        });
-
-        setRecommendations(converted);
+        setRecommendations(data.recommendations ?? []);
       } catch (error) {
         console.error(error);
 
@@ -174,12 +71,19 @@ export default function RecommendationPage() {
     loadRecommendations();
   }, [moodEntryId, locationMode, currentLocation]);
 
+  /*
+   * 추천 행동 시작
+   *
+   * 추후 ActionExecution API 연결
+   */
   const handleStart = (item) => {
     console.log("선택한 추천", {
-      actionCode: item.actionCode,
+      recommendationId: item.recommendationId,
+      actionId: item.actionId,
+      actionCode: item.actionCode
     });
 
-    alert(`${item.name}을(를) 시작합니다.`);
+    alert(`${item.actionName}을(를) 시작합니다.`);
 
     /*
      * TODO
@@ -188,6 +92,12 @@ export default function RecommendationPage() {
      */
   };
 
+  /*
+   * 추천 건너뛰기
+   *
+   * 추후 RecommendationSession
+   * selectionStatus 변경 API 연결
+   */
   const handleSkip = () => {
     const skip = window.confirm("이번 추천을 건너뛸까요?");
 
@@ -199,7 +109,31 @@ export default function RecommendationPage() {
   };
 
   /*
-   * Gemini 응답 기다리는 동안
+   * 추천할 감정 기록 없이
+   * URL로 직접 진입한 경우
+   */
+  if (!moodEntryId) {
+    return (
+      <main className="recommendation-page">
+        <header className="recommendation-header">
+          <div>
+            <span className="recommendation-eyebrow">맞춤 행동 추천</span>
+
+            <h1>추천할 감정 기록이 없어요.</h1>
+
+            <p>오늘의 감정을 먼저 기록해주세요.</p>
+
+            <button type="button" onClick={() => navigate("/mood")}>
+              감정 기록하기
+            </button>
+          </div>
+        </header>
+      </main>
+    );
+  }
+
+  /*
+   * 추천 생성 중
    */
   if (loading) {
     return (
@@ -222,7 +156,7 @@ export default function RecommendationPage() {
   }
 
   /*
-   * API 실패
+   * 추천 API 실패
    */
   if (error) {
     return (
@@ -280,38 +214,24 @@ export default function RecommendationPage() {
             }
           >
             <div className="card-top">
-              <div className="card-icon">{item.emoji}</div>
+              <div className="card-icon">✨</div>
 
               {item.rankNo === 1 && (
                 <span className="best-badge">✨ 가장 잘 맞아요</span>
               )}
             </div>
 
-            <h2>{item.name}</h2>
+            <h2>{item.actionName}</h2>
 
             <div className="card-meta">
               <span>◷ {item.durationMinutes}분</span>
 
-              <span>⌖ {environmentNames[item.environmentType]}</span>
+              <span>
+                ⌖ {environmentNames[item.environmentType] ?? "어디서든"}
+              </span>
             </div>
 
             <p className="card-reason">{item.reason}</p>
-
-            {item.locationRequired && item.place && (
-              <div className="place-box">
-                <div className="place-icon">⌖</div>
-
-                <div>
-                  <strong>가까운 장소</strong>
-
-                  <span>
-                    {item.place.name}
-                    {" · "}
-                    {item.place.distance}
-                  </span>
-                </div>
-              </div>
-            )}
 
             <button
               type="button"
