@@ -45,7 +45,7 @@
   max-width: 402px;
 
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 
   transform: translateX(-50%);
 
