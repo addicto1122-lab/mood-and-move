@@ -80,7 +80,7 @@ export default function RecommendationPage() {
     console.log("선택한 추천", {
       recommendationId: item.recommendationId,
       actionId: item.actionId,
-      actionCode: item.actionCode
+      actionName: item.actionName
     });
 
     alert(`${item.actionName}을(를) 시작합니다.`);

@@ -1,13 +1,15 @@
-package com.moodandmove.home.dto.response;
 
+package com.moodandmove.home.dto.response;
 
 import com.moodandmove.mood.domain.entity.MoodEntry;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 
 import java.time.LocalDate;
 
-public record HomeResponse(LatestMood latestMood,
-        TodayRecommendation todayRecommendation) {
+public record HomeResponse(
+        LatestMood latestMood,
+        TodayRecommendation todayRecommendation
+) {
 
     public record LatestMood(
             Long moodEntryId,
@@ -35,18 +37,18 @@ public record HomeResponse(LatestMood latestMood,
     public record TodayRecommendation(
             Long recommendationId,
             Long actionId,
-            String actionCode,
             String actionName,
             Integer durationMinutes,
             String reason
     ) {
 
-        public static TodayRecommendation from(Recommendation recommendation) {
+        public static TodayRecommendation from(
+                Recommendation recommendation
+        ) {
             return new TodayRecommendation(
                     recommendation.getId(),
                     recommendation.getAction().getId(),
-                    recommendation.getAction().getActionCode(),
-                    recommendation.getAction().getName(),
+                    recommendation.getAction().getActionName(),
                     recommendation.getAction().getDurationMinutes(),
                     recommendation.getReason()
             );
