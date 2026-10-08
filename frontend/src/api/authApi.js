@@ -1,5 +1,16 @@
 const API_BASE_URL = "/api";
 
+// 에러 메시지
+export async function getErrorMessage(response, fallbackMessage) {
+  try {
+    const data = await response.json();
+
+    return data?.message || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
 let handlingUnauthorized = false;
 
 // Access Token 재발급
@@ -82,7 +93,9 @@ export async function signup({
   });
 
   if (!response.ok) {
-    throw new Error("회원가입에 실패했습니다.");
+    throw new Error(
+      await getErrorMessage(response, "회원가입에 실패했습니다.")
+    );
   }
 }
 
@@ -118,7 +131,12 @@ export async function login({ email, password }) {
   });
 
   if (!response.ok) {
-    throw new Error("이메일 또는 비밀번호가 올바르지 않습니다.");
+    throw new Error(
+      await getErrorMessage(
+        response,
+        "이메일 또는 비밀번호가 올바르지 않습니다."
+      )
+    );
   }
 
   return response.json();
@@ -139,11 +157,9 @@ export async function recoverAccount({ email, password }) {
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("계정 복구에 실패했습니다.");
-    }
-
-    throw new Error("계정 복구 중 오류가 발생했습니다.");
+    throw new Error(
+      await getErrorMessage(response, "계정 복구 중 오류가 발생했습니다.")
+    );
   }
 }
 
@@ -185,15 +201,12 @@ export async function changePassword({ currentPassword, newPassword }) {
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("현재 비밀번호를 확인해주세요.");
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "비밀번호 변경에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("비밀번호 변경에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 }
 
@@ -212,15 +225,12 @@ export async function completeOnboarding({ ageGroup, gender, hobbyIds }) {
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("필수 정보를 다시 확인해주세요.");
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "온보딩 저장에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("온보딩 저장에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 }
 
@@ -289,15 +299,12 @@ export async function updatePreferences({
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("선호 설정을 다시 확인해주세요.");
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "선호 설정 저장에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("선호 설정 저장에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 }
 
@@ -316,15 +323,12 @@ export async function updateProfile({ nickname, ageGroup, gender }) {
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("프로필 정보를 다시 확인해주세요.");
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "프로필 수정에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("프로필 수정에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 }
 
@@ -394,17 +398,12 @@ export async function requestWithdrawal(currentPassword) {
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error(
-        "비밀번호가 올바르지 않거나 이미 탈퇴 신청이 진행 중입니다."
-      );
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "회원탈퇴 신청에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("회원탈퇴 신청에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 }
 

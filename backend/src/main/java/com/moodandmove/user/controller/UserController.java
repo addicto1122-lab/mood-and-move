@@ -24,6 +24,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+
     @Value("${app.cookie-secure}")
     private boolean cookieSecure;
 
@@ -35,40 +36,34 @@ public class UserController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            userService.changePassword(
-                    user.getId(),
-                    request.currentPassword(),
-                    request.newPassword()
-            );
+        userService.changePassword(
+                user.getId(),
+                request.currentPassword(),
+                request.newPassword()
+        );
 
+        ResponseCookie accessCookie = ResponseCookie
+                .from("accessToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
 
-            ResponseCookie accessCookie = ResponseCookie
-                    .from("accessToken", "")
-                    .httpOnly(true)
-                    .secure(cookieSecure)
-                    .sameSite("Lax")
-                    .path("/")
-                    .maxAge(Duration.ZERO)
-                    .build();
+        ResponseCookie refreshCookie = ResponseCookie
+                .from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
 
-            ResponseCookie refreshCookie = ResponseCookie
-                    .from("refreshToken", "")
-                    .httpOnly(true)
-                    .secure(cookieSecure)
-                    .sameSite("Lax")
-                    .path("/")
-                    .maxAge(Duration.ZERO)
-                    .build();
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
-                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                    .build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .build();
     }
 
     // 필수 온보딩
@@ -79,19 +74,14 @@ public class UserController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            userService.completeOnboarding(
-                    user.getId(),
-                    request.ageGroup(),
-                    request.gender(),
-                    request.hobbyIds()
-            );
+        userService.completeOnboarding(
+                user.getId(),
+                request.ageGroup(),
+                request.gender(),
+                request.hobbyIds()
+        );
 
-            return ResponseEntity.ok().build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok().build();
     }
 
     // 취미 및 선택 선호 수정
@@ -102,25 +92,20 @@ public class UserController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            userService.updatePreference(
-                    user.getId(),
-                    request.hobbyIds(),
-                    request.activityStyle(),
-                    request.activityEnvironment(),
-                    request.socialPreference(),
-                    request.defaultAvailableMinutes(),
-                    request.defaultRegionName(),
-                    request.defaultRegionCode(),
-                    request.defaultRegionLatitude(),
-                    request.defaultRegionLongitude()
-            );
+        userService.updatePreference(
+                user.getId(),
+                request.hobbyIds(),
+                request.activityStyle(),
+                request.activityEnvironment(),
+                request.socialPreference(),
+                request.defaultAvailableMinutes(),
+                request.defaultRegionName(),
+                request.defaultRegionCode(),
+                request.defaultRegionLatitude(),
+                request.defaultRegionLongitude()
+        );
 
-            return ResponseEntity.ok().build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok().build();
     }
 
     // 프로필 기본 정보 수정
@@ -172,38 +157,33 @@ public class UserController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            userService.requestWithdrawal(
-                    user.getId(),
-                    request.currentPassword()
-            );
+        userService.requestWithdrawal(
+                user.getId(),
+                request.currentPassword()
+        );
 
-            ResponseCookie accessCookie = ResponseCookie
-                    .from("accessToken", "")
-                    .httpOnly(true)
-                    .secure(cookieSecure)
-                    .sameSite("Lax")
-                    .path("/")
-                    .maxAge(Duration.ZERO)
-                    .build();
+        ResponseCookie accessCookie = ResponseCookie
+                .from("accessToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
 
-            ResponseCookie refreshCookie = ResponseCookie
-                    .from("refreshToken", "")
-                    .httpOnly(true)
-                    .secure(cookieSecure)
-                    .sameSite("Lax")
-                    .path("/")
-                    .maxAge(Duration.ZERO)
-                    .build();
+        ResponseCookie refreshCookie = ResponseCookie
+                .from("refreshToken", "")
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(Duration.ZERO)
+                .build();
 
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
-                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                    .build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .build();
     }
 
     // 회원탈퇴 신청 상태 조회
@@ -228,15 +208,10 @@ public class UserController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            userService.cancelWithdrawal(
-                    user.getId()
-            );
+        userService.cancelWithdrawal(
+                user.getId()
+        );
 
-            return ResponseEntity.noContent().build();
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.noContent().build();
     }
 }
