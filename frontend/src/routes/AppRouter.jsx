@@ -14,11 +14,8 @@ import MyPage from "../pages/MyPage.jsx";
 import ProfilePage from "../pages/ProfilePage.jsx";
 import PreferencePage from "../pages/PreferencePage.jsx";
 import DislikePage from "../pages/DislikePage.jsx";
-<<<<<<< Updated upstream
 import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
-=======
 import CalendarPage from "../pages/CalendarPage.jsx";
->>>>>>> Stashed changes
 
 export default function AppRouter() {
   return (
