@@ -14,7 +14,11 @@ import MyPage from "../pages/MyPage.jsx";
 import ProfilePage from "../pages/ProfilePage.jsx";
 import PreferencePage from "../pages/PreferencePage.jsx";
 import DislikePage from "../pages/DislikePage.jsx";
+<<<<<<< Updated upstream
 import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
+=======
+import CalendarPage from "../pages/CalendarPage.jsx";
+>>>>>>> Stashed changes
 
 export default function AppRouter() {
   return (
@@ -38,6 +42,7 @@ export default function AppRouter() {
             <Route path="/mypage/profile" element={<ProfilePage />} />
             <Route path="/mypage/preferences" element={<PreferencePage />} />
             <Route path="/mypage/dislikes" element={<DislikePage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
           </Route>
         </Route>
       </Routes>

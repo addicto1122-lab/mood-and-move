@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import "./StatsPage.css";
 
 import {
@@ -10,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+<<<<<<< Updated upstream
   PieChart,
   Pie,
   Cell
@@ -87,30 +89,45 @@ function renderEmotionLabel({
     </text>
   );
 }
+=======
+} from "recharts";
+import { authFetch } from "../api/authApi";
+>>>>>>> Stashed changes
 
 export default function StatsPage() {
-  /*
-   * 현재 조회 월
-   */
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [currentDate, setCurrentDate] = useState(() => {
+    const queryYear = Number(searchParams.get("year"));
+    const queryMonth = Number(searchParams.get("month"));
+
+    if (queryYear && queryMonth >= 1 && queryMonth <= 12) {
+      return new Date(queryYear, queryMonth - 1, 1);
+    }
+    return new Date();
+  });
 
   /*
-   * Calendar
+   * 행동 전/후 그래프용 감정 기록
    */
-  const [days, setDays] = useState([]);
+  const [moodEntries, setMoodEntries] = useState([]);
+
+  /*
+   * 월간 통계
+   */
+  const [monthlyStats, setMonthlyStats] = useState(null);
+
+  /*
+   * 행동별 효과
+   */
+  const [actionEffects, setActionEffects] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
 
-  const [selectedEntry, setSelectedEntry] = useState(null);
-
-  /*
-   * 월 통계
-   */
-  const [monthlyStats, setMonthlyStats] = useState(null);
-
-  const [actionEffects, setActionEffects] = useState([]);
+  const [activeTab, setActiveTab] = useState("SUMMARY");
 
   const [nearbyPlaces, setNearbyPlaces] = useState([]);
   const [placeType, setPlaceType] = useState("PARK");
@@ -171,13 +188,16 @@ export default function StatsPage() {
    * =========================
    * 월별 Calendar 조회
    * =========================
+   *
+   * 현재는 기존 Calendar API 데이터를
+   * 그래프에서도 사용한다.
    */
   useEffect(() => {
-    async function fetchCalendar() {
+    async function fetchMoodEntries() {
       try {
         setLoading(true);
 
-        const response = await fetch(
+        const response = await authFetch(
           `/api/calendar?year=${year}&month=${month}`,
           {
             method: "GET",
@@ -186,24 +206,27 @@ export default function StatsPage() {
         );
 
         if (!response.ok) {
-          throw new Error("캘린더 조회 실패");
+          throw new Error("감정 기록 조회 실패");
         }
 
         const data = await response.json();
 
-        setDays(data.days);
+        setMoodEntries(data.days || []);
       } catch (error) {
         console.error(error);
+
+        setMoodEntries([]);
       } finally {
         setLoading(false);
       }
     }
 
-    fetchCalendar();
+    fetchMoodEntries();
   }, [year, month]);
 
   /*
    * =========================
+<<<<<<< Updated upstream
    * Calendar 상세 조회
    * =========================
    */
@@ -257,13 +280,15 @@ export default function StatsPage() {
 
   /*
    * =========================
+=======
+>>>>>>> Stashed changes
    * 월간 통계 조회
    * =========================
    */
   useEffect(() => {
     async function fetchMonthlyStats() {
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `/api/stats/monthly?year=${year}&month=${month}`,
           {
             method: "GET",
@@ -280,6 +305,8 @@ export default function StatsPage() {
         setMonthlyStats(data);
       } catch (error) {
         console.error(error);
+
+        setMonthlyStats(null);
       }
     }
 
@@ -288,13 +315,53 @@ export default function StatsPage() {
 
   /*
    * =========================
+   * 행동별 효과 통계 조회
+   * =========================
+   */
+  useEffect(() => {
+    async function fetchActionEffects() {
+      try {
+        const response = await authFetch(
+          `/api/stats/monthly/actions?year=${year}&month=${month}`,
+          {
+            method: "GET",
+            credentials: "include",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error("행동별 효과 통계 조회 실패");
+        }
+
+        const data = await response.json();
+
+        setActionEffects(data || []);
+      } catch (error) {
+        console.error(error);
+
+        setActionEffects([]);
+      }
+    }
+
+    fetchActionEffects();
+  }, [year, month]);
+
+  const changeMonth = (newDate) => {
+    setCurrentDate(newDate);
+
+    setSearchParams({
+      year: newDate.getFullYear(),
+      month: newDate.getMonth() + 1,
+    });
+  };
+
+  /*
+   * =========================
    * 이전 달
    * =========================
    */
   const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 2, 1));
-
-    setSelectedEntry(null);
+    changeMonth(new Date(year, month - 2, 1));
   };
 
   /*
@@ -303,13 +370,12 @@ export default function StatsPage() {
    * =========================
    */
   const nextMonth = () => {
-    setCurrentDate(new Date(year, month, 1));
-
-    setSelectedEntry(null);
+    changeMonth(new Date(year, month, 1));
   };
 
   /*
    * =========================
+<<<<<<< Updated upstream
    * Calendar 생성
    * =========================
    */
@@ -367,10 +433,12 @@ export default function StatsPage() {
 
   /*
    * =========================
+=======
+>>>>>>> Stashed changes
    * 행동 전 / 후 그래프 데이터
    * =========================
    */
-  const moodChartData = days.map((entry) => ({
+  const moodChartData = moodEntries.map((entry) => ({
     date: entry.date.substring(5),
 
     beforeScore: Number(entry.moodScore),
@@ -381,10 +449,9 @@ export default function StatsPage() {
   }));
 
   /*
-   * =========================
-   * 감정 도넛 그래프 데이터
-   * =========================
+   * 행동 Emoji
    */
+<<<<<<< Updated upstream
   const emotionChartData =
     monthlyStats?.emotions?.map((emotion) => {
       const style = EMOTION_STYLE[emotion.emotionCode] || {
@@ -412,6 +479,8 @@ export default function StatsPage() {
       };
     }) || [];
 
+=======
+>>>>>>> Stashed changes
   const ACTION_EMOJI = {
     1: "🚶",
     2: "🤸",
@@ -421,69 +490,93 @@ export default function StatsPage() {
 
   return (
     <main className="stats-page">
-      {/* =======================
+      {/* =========================
           Header
-      ======================== */}
+      ========================= */}
 
       <header className="stats-header">
         <div>
-          <span className="stats-eyebrow">MONTHLY MOOD</span>
+          <span className="stats-eyebrow">MOOD REPORT</span>
 
-          <h1>나의 감정 기록</h1>
+          <h1>나의 마음 통계</h1>
 
-          <p>한 달 동안의 마음을 한눈에 확인해보세요.</p>
+          <p>기록과 행동을 통해 달라진 마음을 확인해보세요.</p>
         </div>
       </header>
 
-      {/* =======================
-          Calendar
-      ======================== */}
+      {/* =========================
+          월 선택
+      ========================= */}
 
-      <section className="calendar-card">
-        <div className="calendar-header">
-          <button onClick={prevMonth}>‹</button>
+      <section className="stats-month-selector">
+        <button type="button" onClick={prevMonth}>
+          ‹
+        </button>
 
-          <h2>
-            {year}년 {month}월
-          </h2>
+        <h2>
+          {year}년 {month}월
+        </h2>
 
-          <button onClick={nextMonth}>›</button>
-        </div>
-
-        <div className="calendar-weekdays">
-          <span>일</span>
-          <span>월</span>
-          <span>화</span>
-          <span>수</span>
-          <span>목</span>
-          <span>금</span>
-          <span>토</span>
-        </div>
-
-        {loading ? (
-          <p className="calendar-loading">불러오는 중...</p>
-        ) : (
-          <div className="calendar-grid">{calendarCells}</div>
-        )}
+        <button type="button" onClick={nextMonth}>
+          ›
+        </button>
       </section>
 
-      {/* =======================
-          월간 요약
-      ======================== */}
+      {/* 통계 분할 페이지 */}
+      <div className="stats-tabs">
+        <button
+          className={activeTab === "SUMMARY" ? "active" : ""}
+          onClick={() => setActiveTab("SUMMARY")}
+        >
+          요약
+        </button>
 
-      {monthlyStats && (
-        <section className="monthly-summary">
-          <h2>{monthlyStats.month}월 요약</h2>
-          <div className="summary-grid">
-            <div className="summary-card">
-              <span>작성한 일기</span>
-              <strong>{monthlyStats.diaryCount}일</strong>
-            </div>
-            <div className="summary-card">
-              <span>평균 기분 점수</span>
-              <strong>{monthlyStats.averageMoodScore}점</strong>
-            </div>
-            <div className="summary-card">
+        <button
+          className={activeTab === "TREND" ? "active" : ""}
+          onClick={() => setActiveTab("TREND")}
+        >
+          기분 변화
+        </button>
+
+        <button
+          className={activeTab === "ACTION" ? "active" : ""}
+          onClick={() => setActiveTab("ACTION")}
+        >
+          행동 효과
+        </button>
+      </div>
+
+      {/* =========================
+          월간 요약
+      ========================= */}
+
+      {activeTab === "SUMMARY" && monthlyStats && (
+        <>
+          <section className="monthly-summary">
+            <h2>{month}월 요약</h2>
+
+            <div className="summary-grid">
+              <div className="summary-card">
+                <span>작성한 일기</span>
+
+                <strong>{monthlyStats.diaryCount}일</strong>
+              </div>
+
+              <div className="summary-card">
+                <span>평균 기분 점수</span>
+
+                <strong>{monthlyStats.averageMoodScore}점</strong>
+              </div>
+
+              <div className="summary-card">
+                <span>평균 변화량</span>
+                <strong>
+                  {monthlyStats.averageDelta > 0 ? "+" : ""}
+                  {monthlyStats.averageDelta}점
+                </strong>
+              </div>
+
+              {/* <div className="summary-card">
               <span>추천 행동</span>
               <strong>{monthlyStats.recommendationCount}회</strong>
             </div>
@@ -506,10 +599,14 @@ export default function StatsPage() {
                 {monthlyStats.averageDelta}
               </strong>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+          <div className="summary-links">
+            <button type="button" onClick={() => setActiveTab("TREND")}>
+              <span>기분 변화 자세히 보기</span>
+              <span>→</span>
+            </button>
 
+<<<<<<< Updated upstream
       {/* =======================
           감정 분포 도넛
       ======================== */}
@@ -699,48 +796,51 @@ export default function StatsPage() {
               onClick={() => setSelectedEntry(null)}
             >
               ×
+=======
+            <button type="button" onClick={() => setActiveTab("ACTION")}>
+              <span>행동 효과 자세히 보기</span>
+              <span>→</span>
+>>>>>>> Stashed changes
             </button>
           </div>
-          <div className="detail-score">
-            <span>
-              기분 점수
-              <strong>{selectedEntry.moodScore}점</strong>
-            </span>
-            <span>
-              감정 강도
-              <strong>{selectedEntry.intensity}</strong>
-            </span>
-          </div>
-          <div className="detail-content">
-            <span>오늘의 기록</span>
-
-            <p>{selectedEntry.diaryContent || "작성된 내용이 없습니다."}</p>
-          </div>
-        </section>
+        </>
       )}
 
-      {/* =======================
-          행동 전 · 후 그래프
-      ======================== */}
+      {/* =========================
+        기분 변화
+        ========================= */}
+      {activeTab === "TREND" && (
+        <>
+          {loading ? (
+            <p className="stats-loading">통계를 불러오는 중...</p>
+          ) : moodChartData.length > 0 ? (
+            <section className="mood-chart-section">
+              <h2>{month}월 행동 전·후 기분 변화</h2>
 
-      {moodChartData.length > 0 && (
-        <section className="mood-chart-section">
-          <h2>{month}월 행동 전·후 기분 변화</h2>
+              <div className="mood-chart">
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={moodChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
 
-          <div className="mood-chart">
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={moodChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
+                    <XAxis dataKey="date" />
 
-                <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} />
+                    <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} />
 
-                <Tooltip formatter={(value, name) => [`${value}점`, name]} />
+                    <Tooltip
+                      formatter={(value, name) => [`${value}점`, name]}
+                    />
 
-                <Legend />
+                    <Legend />
 
-                {/* 행동 전 */}
+                    <Line
+                      type="monotone"
+                      dataKey="beforeScore"
+                      name="행동 전"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                    />
 
+<<<<<<< Updated upstream
                 <Line
                   type="monotone"
                   dataKey="beforeScore"
@@ -755,9 +855,33 @@ export default function StatsPage() {
                     r: 6
                   }}
                 />
+=======
+                    <Line
+                      type="monotone"
+                      dataKey="afterScore"
+                      name="행동 후"
+                      stroke="#22c55e"
+                      strokeWidth={3}
+                      connectNulls={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
+          ) : (
+            <section className="stats-empty">
+              이번 달에는 기분 변화 데이터가 없습니다.
+            </section>
+          )}
+        </>
+      )}
+>>>>>>> Stashed changes
 
-                {/* 행동 후 */}
+      {/* =========================
+          행동별 효과
+      ========================= */}
 
+<<<<<<< Updated upstream
                 <Line
                   type="monotone"
                   dataKey="afterScore"
@@ -777,6 +901,103 @@ export default function StatsPage() {
             </ResponsiveContainer>
           </div>
         </section>
+=======
+      {activeTab === "ACTION" && (
+        <>
+          {actionEffects.length > 0 ? (
+            <section className="action-effect-section">
+              <h2>{month}월 행동별 효과</h2>
+
+              <p className="action-effect-description">
+                이번 달 실행한 행동이 기분에 어떤 변화를 주었는지 확인해보세요.
+              </p>
+
+              <div className="action-effect-list">
+                {actionEffects.map((action) => (
+                  <div key={action.actionId} className="action-effect-card">
+                    <div className="action-effect-header">
+                      <div className="action-effect-title">
+                        <span className="action-effect-emoji">
+                          {ACTION_EMOJI[action.actionId] || "✨"}
+                        </span>
+
+                        <div>
+                          <strong>{action.actionName}</strong>
+
+                          <span>실행 {action.executionCount}회</span>
+                        </div>
+                      </div>
+
+                      <div
+                        className={
+                          action.averageDelta > 0
+                            ? "delta positive"
+                            : action.averageDelta < 0
+                              ? "delta negative"
+                              : "delta neutral"
+                        }
+                      >
+                        {action.averageDelta > 0 ? "+" : ""}
+
+                        {action.averageDelta}
+                      </div>
+                    </div>
+
+                    <div className="action-effect-stats">
+                      <div>
+                        <span>추천</span>
+
+                        <strong>{action.recommendationCount}회</strong>
+                      </div>
+
+                      <div>
+                        <span>실행</span>
+
+                        <strong>{action.executionCount}회</strong>
+                      </div>
+
+                      <div>
+                        <span>재측정</span>
+
+                        <strong>{action.sampleCount}회</strong>
+                      </div>
+                    </div>
+
+                    <div className="positive-rate-area">
+                      <div className="positive-rate-header">
+                        <span>긍정 변화율</span>
+
+                        <strong>{action.positiveRate}%</strong>
+                      </div>
+
+                      <div className="positive-rate-bar">
+                        <div
+                          className="positive-rate-fill"
+                          style={{
+                            width: `${Math.min(Number(action.positiveRate), 100)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <section className="stats-empty action-empty">
+              <div className="empty-icon">🌱</div>
+
+              <strong>아직 행동 효과 데이터가 없어요</strong>
+
+              <p>
+                추천 행동을 실행하고 기분을 다시 기록하면
+                <br />
+                어떤 행동이 도움이 되었는지 보여드릴게요.
+              </p>
+            </section>
+          )}
+        </>
+>>>>>>> Stashed changes
       )}
       <div>
         <button onClick={() => getCurrentLocation("PARK")}>🌳 공원</button>
