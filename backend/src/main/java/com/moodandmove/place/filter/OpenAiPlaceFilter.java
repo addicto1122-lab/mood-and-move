@@ -26,22 +26,10 @@ public class OpenAiPlaceFilter implements PlaceFilter{
             @Value("${openai.model}") String model
     )
     {
-        System.out.println(
-                "OpenAI API Key loaded = "
-                        + (apiKey != null && !apiKey.isBlank())
-        );
 
         this.objectMapper = objectMapper;
         this.model = model;
 
-        /*
-         * API Key가 정상적으로 주입됐는지만 확인
-         * 실제 Key 값 자체는 출력하지 않음
-         */
-        System.out.println(
-                "OpenAI API Key loaded = "
-                        + (apiKey != null && !apiKey.isBlank())
-        );
 
         this.restClient = RestClient.builder()
                 .baseUrl("https://api.openai.com")
@@ -68,26 +56,6 @@ public class OpenAiPlaceFilter implements PlaceFilter{
             return List.of();
         }
 
-        /*
-         * =========================
-         * LLM 전달 전 후보 확인
-         * =========================
-         */
-        System.out.println();
-        System.out.println("===== LLM 전달 전 후보 =====");
-
-        candidates.forEach(place ->
-                System.out.println(
-                        place.placeId()
-                                + " / "
-                                + place.name()
-                                + " / "
-                                + place.category()
-                                + " / "
-                                + place.distance()
-                                + "m"
-                )
-        );
 
         /*
          * Prompt 생성
@@ -132,20 +100,6 @@ public class OpenAiPlaceFilter implements PlaceFilter{
 //                            )
 //            );
 
-            /*
-             * =========================
-             * LLM 원본 응답 확인
-             * =========================
-             */
-            System.out.println();
-            System.out.println("===== LLM 원본 응답 =====");
-            System.out.println(outputText);
-
-            /*
-             * JSON 문자열
-             * →
-             * PlaceFilterResult DTO
-             */
             PlaceFilterResult result = objectMapper.readValue(
                     outputText,
                     PlaceFilterResult.class
@@ -163,22 +117,6 @@ public class OpenAiPlaceFilter implements PlaceFilter{
                     );
             //Set<String> selectedIds = Set.copyOf(result.selectedPlaceIds());
 
-            /*
-             * =========================
-             * LLM이 선택한 ID 확인
-             * =========================
-             */
-            System.out.println();
-            System.out.println("===== LLM 선택 placeId =====");
-            System.out.println(selectedIds);
-
-            /*
-             * 중요한 부분
-             *
-             * LLM이 새로운 장소를 만드는 것이 아니라
-             * Kakao에서 받은 원본 후보 중
-             * LLM이 선택한 placeId와 일치하는 것만 반환
-             */
             List<PlaceResponse> filteredPlaces =
                     candidates.stream()
                             .filter(place ->
@@ -188,23 +126,6 @@ public class OpenAiPlaceFilter implements PlaceFilter{
                             )
                             .limit(5)
                             .toList();
-
-
-            /*
-             * =========================
-             * 최종 반환 장소 확인
-             * =========================
-             */
-            System.out.println();
-            System.out.println("===== 최종 장소 결과 =====");
-
-            filteredPlaces.forEach(place ->
-                    System.out.println(
-                            place.name()
-                                    + " / "
-                                    + place.category()
-                    )
-            );
 
 
             return filteredPlaces;

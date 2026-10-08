@@ -1,4 +1,4 @@
-import { authFetch } from "./authApi";
+import { authFetch, getErrorMessage } from "./authApi";
 
 const API_BASE_URL = "/api";
 
@@ -22,15 +22,12 @@ export async function createMood({
   });
 
   if (!response.ok) {
-    if (response.status === 400) {
-      throw new Error("오늘의 감정 기록을 다시 확인해주세요.");
-    }
+    const fallbackMessage =
+      response.status === 401
+        ? "로그인이 필요합니다."
+        : "감정 기록 저장에 실패했습니다.";
 
-    if (response.status === 401) {
-      throw new Error("로그인이 필요합니다.");
-    }
-
-    throw new Error("감정 기록 저장에 실패했습니다.");
+    throw new Error(await getErrorMessage(response, fallbackMessage));
   }
 
   return response.json();

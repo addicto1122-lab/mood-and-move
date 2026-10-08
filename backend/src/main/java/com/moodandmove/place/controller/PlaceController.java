@@ -25,7 +25,6 @@ public class PlaceController {
             @RequestParam(defaultValue = "3000")
             int radius
     ){
-        System.out.println("======= PlaceController 호출됨 =======");
         return placeService.findNearbyPlaces(
                 type,
                 latitude,
