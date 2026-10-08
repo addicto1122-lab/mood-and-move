@@ -1,16 +1,18 @@
+
 package com.moodandmove.recommendation.repository;
 
 import com.moodandmove.recommendation.domain.entity.Action;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ActionRepository
         extends JpaRepository<Action, Long> {
 
-    Optional<Action> findByActionCode(String actionCode);
+    // 행동 이름으로 조회 (LLM 생성 행동 중복 확인)
+    Optional<Action> findByActionName(String actionName);
 
-    List<Action> findAllByActiveTrue();
+    // 행동 이름 존재 여부 확인
+    boolean existsByActionName(String actionName);
 
 }

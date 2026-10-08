@@ -1,3 +1,4 @@
+
 package com.moodandmove.recommendation.service;
 
 import com.moodandmove.analysis.service.UserActionStatService;
@@ -19,11 +20,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -35,15 +36,23 @@ public class RecommendationPersistenceService {
     private final ActionRepository actionRepository;
     private final UserActionStatService userActionStatService;
 
+    private static final Set<String> ACTION_CATEGORIES = Set.of(
+            "WALK", "EXERCISE", "STRETCHING",
+            "MEDITATION", "SLEEP", "MUSIC",
+            "READING", "ENTERTAINMENT", "SOCIAL",
+            "OUTDOOR", "EATING", "SELF_CARE", "CLEANING"
+    );
+
     // 이미 저장된 추천 조회
     @Transactional(readOnly = true)
     public Optional<RecommendationResponse> findExisting(
             Long userId,
             Long moodEntryId
     ) {
-        // 본인 소유이고 삭제되지 않은 일기인지 먼저 확인
         moodEntryRepository
-                .findByIdAndUser_IdAndDeletedAtIsNull(moodEntryId, userId)
+                .findByIdAndUser_IdAndDeletedAtIsNull(
+                        moodEntryId, userId
+                )
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "감정 기록을 찾을 수 없습니다."
@@ -53,7 +62,7 @@ public class RecommendationPersistenceService {
                 .map(this::toResponse);
     }
 
-    // 추천 세션, 추천 행동, 통계를 함께 저장
+    // 추천 세션 + 행동 3개 + 추천 3개 저장
     @Transactional
     public RecommendationResponse save(
             Long userId,
@@ -62,7 +71,7 @@ public class RecommendationPersistenceService {
             RecommendationType recommendationType,
             List<LlmRecommendedActionDto> selected
     ) {
-        // 동일 일기에 대한 동시 저장을 막기 위해 잠금
+        // 동일 일기에서 중복 추천 세션 생성 방지
         var moodEntry = moodEntryRepository
                 .findOwnedForUpdate(moodEntryId, userId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -70,56 +79,42 @@ public class RecommendationPersistenceService {
                         "감정 기록을 찾을 수 없습니다."
                 ));
 
-        // 다른 요청이 먼저 저장했을 수 있으므로 다시 확인
+        // 이미 저장된 추천이 있다면 기존 결과 반환
         var existing = sessionRepository.findByMoodEntry_Id(moodEntryId);
 
         if (existing.isPresent()) {
             return toResponse(existing.get());
         }
 
-        if (recommendationType == null
+        if (timeBucket == null
+                || recommendationType == null
                 || selected == null
-                || selected.isEmpty()
-                || selected.size() > 3) {
+                || selected.size() != 3) {
             throw new IllegalArgumentException(
-                    "저장할 추천 정보가 올바르지 않습니다."
+                    "추천 정보는 정확히 3개여야 합니다."
             );
         }
 
-        Map<String, Action> actionsByCode =
-                actionRepository.findAllByActiveTrue().stream()
-                        .collect(Collectors.toMap(
-                                Action::getActionCode,
-                                Function.identity()
-                        ));
+        // LLM 추천 결과 사전 검증
+        Set<String> uniqueNames = new HashSet<>();
 
-        // 저장 직전에도 행동과 추천 이유를 확인
-        for (var item : selected) {
-            if (item == null
-                    || item.actionCode() == null
-                    || !actionsByCode.containsKey(item.actionCode())
-                    || item.reason() == null
-                    || item.reason().isBlank()) {
+        for (LlmRecommendedActionDto item : selected) {
+            validateAction(item);
+
+            String actionName = normalizeName(item.actionName());
+            String normalizedKey = actionName.toLowerCase(Locale.ROOT);
+
+            if (!uniqueNames.add(normalizedKey)) {
                 throw new IllegalArgumentException(
-                        "저장할 추천 후보가 유효하지 않습니다."
+                        "같은 행동을 중복 추천할 수 없습니다."
                 );
             }
         }
 
-        long uniqueCount = selected.stream()
-                .map(LlmRecommendedActionDto::actionCode)
-                .distinct()
-                .count();
-
-        if (uniqueCount != selected.size()) {
-            throw new IllegalArgumentException(
-                    "같은 행동을 중복 저장할 수 없습니다."
-            );
-        }
-
-        // 추천 세션 저장
-        var session = sessionRepository.save(
+        // 추천 세션 생성
+        RecommendationSession session = sessionRepository.save(
                 RecommendationSession.create(
+                        userId,
                         moodEntry,
                         timeBucket,
                         recommendationType
@@ -128,14 +123,17 @@ public class RecommendationPersistenceService {
 
         List<RecommendationResponse.Item> items = new ArrayList<>();
 
-        // 추천 순서대로 개별 행동 저장
-        for (var item : selected) {
-            Action action = actionsByCode.get(item.actionCode());
+        for (int i = 0; i < selected.size(); i++) {
+            LlmRecommendedActionDto item = selected.get(i);
 
+            // 이름으로 Action 재사용 또는 신규 생성
+            Action action = findOrCreateAction(item);
+
+            // 순위는 1, 2, 3
             Recommendation recommendation = Recommendation.create(
                     session,
                     action,
-                    items.size() + 1,
+                    i + 1,
                     item.reason().strip()
             );
 
@@ -144,7 +142,7 @@ public class RecommendationPersistenceService {
 
             items.add(RecommendationResponse.Item.from(saved));
 
-            // 추천 횟수는 원래 일기 날짜가 속한 월에 반영
+            // 기존 행동별 추천 횟수 통계 기록
             userActionStatService.recordRecommendation(
                     userId,
                     action.getId(),
@@ -153,13 +151,70 @@ public class RecommendationPersistenceService {
             );
         }
 
-        // 일기의 추천 상태 변경
+        // 일기의 추천 요청 상태 변경
         moodEntry.markRecommendationRequested();
 
         return new RecommendationResponse(session.getId(), items);
     }
 
-    // 저장된 추천을 화면용 응답으로 변환
+    // 같은 이름의 행동은 기존 데이터를 재사용
+    private Action findOrCreateAction(LlmRecommendedActionDto item) {
+        String actionName = normalizeName(item.actionName());
+
+        return actionRepository.findByActionName(actionName)
+                .orElseGet(() -> actionRepository.save(
+                        Action.create(
+                                actionName,
+                                item.category(),
+                                item.durationMinutes(),
+                                item.environmentType(),
+                                item.socialType(),
+                                item.activityStyle(),
+                                item.locationRequired(),
+                                item.placeCategory()
+                        )
+                ));
+    }
+
+    // LLM 추천 행동 검증
+    private void validateAction(LlmRecommendedActionDto item) {
+        if (item == null
+                || item.actionName() == null
+                || item.actionName().isBlank()
+                || item.reason() == null
+                || item.reason().isBlank()
+                || item.category() == null
+                || !ACTION_CATEGORIES.contains(item.category())
+                || item.durationMinutes() == null
+                || item.durationMinutes() <= 0
+                || item.environmentType() == null
+                || item.socialType() == null
+                || item.activityStyle() == null) {
+            throw new IllegalArgumentException(
+                    "LLM 추천 행동 정보가 올바르지 않습니다."
+            );
+        }
+
+        if (normalizeName(item.actionName()).length() > 100) {
+            throw new IllegalArgumentException(
+                    "행동 이름은 100자를 초과할 수 없습니다."
+            );
+        }
+
+        if (item.placeCategory() != null
+                && item.placeCategory().length() > 50) {
+            throw new IllegalArgumentException(
+                    "장소 카테고리는 50자를 초과할 수 없습니다."
+            );
+        }
+    }
+
+    // 행동 이름의 앞뒤 공백 및 연속 공백 정리
+    private String normalizeName(String name) {
+        return name.strip().replaceAll("\\s+", " ");
+    }
+
+    // 저장된 추천을 응답 DTO로 변환
     private RecommendationResponse toResponse(
             RecommendationSession session
     ) {

@@ -1,3 +1,4 @@
+
 package com.moodandmove.recommendation.service;
 
 import com.moodandmove.recommendation.domain.dto.response.DislikeActionResponse;
@@ -24,6 +25,7 @@ public class UserActionDislikeService {
     private final ActionRepository actionRepository;
     private final UserActionDislikeRepository userActionDislikeRepository;
 
+    // 전체 행동 및 사용자 비선호 여부 조회
     @Transactional(readOnly = true)
     public List<DislikeActionResponse> getDislikeActions(Long userId) {
 
@@ -35,13 +37,13 @@ public class UserActionDislikeService {
                         .collect(Collectors.toSet());
 
         return actionRepository
-                .findAllByActiveTrue()
+                .findAll()
                 .stream()
                 .sorted(Comparator.comparing(Action::getId))
                 .map(action ->
                         new DislikeActionResponse(
                                 action.getId(),
-                                action.getName(),
+                                action.getActionName(),
                                 action.getCategory(),
                                 action.getDurationMinutes(),
                                 dislikedActionIds.contains(action.getId())
@@ -50,6 +52,7 @@ public class UserActionDislikeService {
                 .toList();
     }
 
+    // 비선호 행동 등록
     @Transactional
     public void addDislike(
             Long userId,
@@ -72,11 +75,8 @@ public class UserActionDislikeService {
                         )
                 );
 
-        if (!action.isActive()) {
-            throw new IllegalArgumentException(
-                    "현재 사용할 수 없는 행동입니다."
-            );
-        }
+        // V9에서 active 컬럼 삭제
+        // 기존 action.isActive() 검증 제거
 
         boolean alreadyExists =
                 userActionDislikeRepository
@@ -98,6 +98,7 @@ public class UserActionDislikeService {
         userActionDislikeRepository.save(dislike);
     }
 
+    // 비선호 행동 해제
     @Transactional
     public void removeDislike(
             Long userId,
