@@ -12,6 +12,8 @@ export default function DesktopSidebar() {
       <nav className="sidebar-menu">
         <NavLink to="/">홈</NavLink>
 
+        <NavLink to="/calendar">캘린더</NavLink>
+
         <RecordNavLink />
 
         <NavLink to="/stats">통계</NavLink>
