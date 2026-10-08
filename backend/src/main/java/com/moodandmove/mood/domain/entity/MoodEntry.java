@@ -96,4 +96,7 @@ public class MoodEntry {
 
         return moodEntry;
     }
+    public void markRecommendationRequested() {
+        this.recommendationStatus = RecommendationStatus.REQUESTED;
+    }
 }

@@ -654,4 +654,11 @@ public class UserActionStatService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public long getTotalSampleCount(Long userId) {
+        return userActionStatRepository.findAllByUser_Id(userId)
+                .stream()
+                .mapToLong(stat -> stat.getSampleCount())
+                .sum();
+    }
 }

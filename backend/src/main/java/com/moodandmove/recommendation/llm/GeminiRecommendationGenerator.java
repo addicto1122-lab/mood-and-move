@@ -135,6 +135,36 @@ public class GeminiRecommendationGenerator
 
             ===== 현재 상태 =====
             """);
+        prompt.append("\n\n===== 추천 방식 =====");
+        prompt.append("\n추천 유형: ")
+                .append(request.recommendationType());
+
+        switch (request.recommendationType()) {
+            case COLD_START -> prompt.append("""
+            
+            사용자 전체 재측정 표본이 0~3회인 단계입니다.
+            현재 감정, 활동, 일기, 시간대, 위치 사용 여부와
+            제공된 온보딩 선호를 중심으로 추천하세요.
+            개인화 점수를 주된 선택 근거로 사용하지 마세요.
+            """);
+
+            case HYBRID -> prompt.append("""
+            
+            사용자 전체 재측정 표본이 4~10회인 단계입니다.
+            현재 상황과 온보딩 선호에 개인화 점수를 함께 반영하세요.
+            행동별 재측정 표본이 적으면 효과를 단정하지 마세요.
+            표본이 없는 행동도 현재 상황에 적절하면 선택할 수 있습니다.
+            """);
+
+            case PERSONALIZED -> prompt.append("""
+            
+            사용자 전체 재측정 표본이 11회 이상인 단계입니다.
+            현재 상황에 적절한 행동 중 개인화 점수가 높고
+            행동별 재측정 표본이 충분한 행동을 우선 고려하세요.
+            사용자 전체 표본이 많아도 각 행동의 표본은 적을 수 있습니다.
+            개인화 점수보다 현재 활동의 안전성과 실행 가능성을 우선하세요.
+            """);
+        }
 
 
         prompt.append("\n감정: ")
@@ -217,17 +247,27 @@ public class GeminiRecommendationGenerator
         );
 
 
-        for (ActionCandidateDto candidate
-                : request.candidates()) {
+        prompt.append("""
+        
+        개인화 점수는 0~100 범위의 내부 계산 점수이며,
+        높을수록 과거 재측정 결과에 따른 평가가 좋습니다.
+        기분 점수(1~60)와는 다른 값입니다.
+        표본 수는 해당 사용자가 현재 감정에서
+        해당 행동을 실행하고 재측정까지 마친 횟수입니다.
+        표본 수가 0이면 점수 50은 기본값이며,
+        효과가 입증되었다는 뜻이 아닙니다.
+        점수는 개선 확률이 아니므로 퍼센트로 해석하지 마세요.
+        """);
 
+        for (ActionCandidateDto candidate : request.candidates()) {
             prompt.append("\n- ")
-                    .append(
-                            candidate.actionCode()
-                    )
+                    .append(candidate.actionCode())
                     .append(" : ")
-                    .append(
-                            candidate.actionName()
-                    );
+                    .append(candidate.actionName())
+                    .append(" | 개인화 점수: ")
+                    .append(candidate.score())
+                    .append(" | 재측정 표본 수: ")
+                    .append(candidate.sampleCount());
         }
 
 
