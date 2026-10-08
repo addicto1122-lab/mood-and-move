@@ -642,7 +642,7 @@ public class UserActionStatService {
 
                     return new ActionEffectResponse(
                             first.getAction().getId(),
-                            first.getAction().getName(),
+                            first.getAction().getActionName(),
                             recommendationCount,
                             executionCount,
                             sampleCount,
