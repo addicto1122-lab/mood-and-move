@@ -471,3 +471,27 @@ export async function updateLocationConsent(agreed) {
     throw new Error("위치정보 동의 상태 변경에 실패했습니다.");
   }
 }
+
+// 소셜 로그인 계정 복구
+export async function recoverSocialAccount() {
+  const response = await fetch(`${API_BASE_URL}/auth/social/recover`, {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    throw new Error("계정 복구에 실패했습니다. 다시 로그인해주세요.");
+  }
+}
+
+// 소셜 로그인 계정 복구 취소
+export async function cancelSocialRecovery() {
+  const response = await fetch(`${API_BASE_URL}/auth/social/recover/cancel`, {
+    method: "POST",
+    credentials: "include"
+  });
+
+  if (!response.ok) {
+    throw new Error("계정 복구 취소에 실패했습니다.");
+  }
+}

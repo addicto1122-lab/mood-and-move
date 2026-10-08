@@ -66,6 +66,10 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/check-email",
                                 "/api/auth/recover",
+                                //소셜로그인 복구
+                                "/api/auth/social/recover",
+                                //소셜 로그인 복구 취소
+                                "/api/auth/social/recover/cancel",
                                 //토큰 만료시 재발급
                                 "/api/auth/refresh",
                                 //카카오 로그인용

@@ -14,6 +14,7 @@ import MyPage from "../pages/MyPage.jsx";
 import ProfilePage from "../pages/ProfilePage.jsx";
 import PreferencePage from "../pages/PreferencePage.jsx";
 import DislikePage from "../pages/DislikePage.jsx";
+import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -22,6 +23,7 @@ export default function AppRouter() {
         {/* 로그인 없이 접근 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/account-recovery" element={<AccountRecoveryPage />} />
 
         {/* 로그인 필요 */}
         <Route element={<ProtectedRoute />}>

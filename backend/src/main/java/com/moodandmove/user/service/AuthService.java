@@ -283,7 +283,14 @@ public class AuthService {
                         )
                         .orElse(null);
 
-        if (socialAccount != null) {return socialAccount.getUser();}
+        if (socialAccount != null) {
+
+            Long userId = socialAccount.getUser().getId();
+
+            return userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다.")
+                    );
+        }
 
         User user = userRepository.findByEmail(email).orElse(null);
 
@@ -302,11 +309,43 @@ public class AuthService {
         return user;
     }
 
+    @Transactional(readOnly = true)
+    public User validateRecoveryToken(String recoveryToken){
+        if(recoveryToken == null || recoveryToken.isBlank()){
+            throw new IllegalArgumentException("복구 토큰이 없습니다.");
+        }
+
+        String tokenType = jwtProvider.getTokenType(recoveryToken);
+
+        if(!"RECOVERY".equals(tokenType)){
+            throw  new IllegalArgumentException("올바른 복구 토큰이 아닙니다.");
+        }
+
+        Long userId = jwtProvider.getUserId(recoveryToken);
+        int tokenVersion  = jwtProvider.getTokenVersion(recoveryToken);
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을수 없습니다"));
+
+        if(user.getTokenVersion() != tokenVersion){
+            throw new IllegalArgumentException("유효하지 않은 복구 토큰입니다.");
+        }
+
+        if(!userWithdrawalRequestRepository.existsByUser_Id(userId)){
+            throw new IllegalArgumentException("탈퇴 신청 상태가 아닙니다.");
+        }
+
+        return user;
+    }
     @Transactional
     public void recoverSocialAccount(Long userId) {
 
-        if (userWithdrawalRequestRepository.existsByUser_Id(userId)) {
-            userWithdrawalRequestRepository.deleteByUser_Id(userId);
+        if (!userWithdrawalRequestRepository.existsByUser_Id(userId)) {
+            throw new IllegalArgumentException(
+                    "탈퇴 신청 상태가 아닙니다."
+            );
         }
+
+        userWithdrawalRequestRepository.deleteByUser_Id(userId);
     }
+
 }
