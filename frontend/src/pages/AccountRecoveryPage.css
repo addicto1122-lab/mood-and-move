@@ -1,0 +1,133 @@
+.account-recovery-page {
+  min-height: 100vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+  box-sizing: border-box;
+
+  background: #fbfcfb;
+}
+
+.account-recovery-card {
+  width: 100%;
+  max-width: 420px;
+
+  padding: 38px 32px;
+  box-sizing: border-box;
+
+  border: 1px solid #dde6e0;
+  border-radius: 24px;
+
+  background: #ffffff;
+
+  text-align: center;
+
+  box-shadow: 0 14px 40px rgba(56, 78, 67, 0.08);
+}
+
+.account-recovery-icon {
+  width: 62px;
+  height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin: 0 auto 20px;
+
+  border-radius: 50%;
+
+  background: #edf7f1;
+
+  color: #557e6c;
+
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.account-recovery-card h1 {
+  margin: 0 0 14px;
+
+  color: #25372f;
+
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.account-recovery-card p {
+  margin: 0;
+
+  color: #87938e;
+
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.account-recovery-error {
+  display: block;
+
+  margin-top: 16px;
+
+  color: #c96868;
+
+  font-size: 12px;
+}
+
+.account-recovery-buttons {
+  display: flex;
+
+  gap: 10px;
+
+  margin-top: 28px;
+}
+
+.account-recovery-buttons button {
+  flex: 1;
+
+  height: 48px;
+
+  border: none;
+  border-radius: 14px;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.account-recovery-cancel {
+  background: #f0f3f1;
+
+  color: #66736d;
+}
+
+.account-recovery-confirm {
+  background: #719a86;
+
+  color: #ffffff;
+}
+
+.account-recovery-confirm:hover:not(:disabled) {
+  background: #638b77;
+}
+
+.account-recovery-buttons button:disabled {
+  opacity: 0.6;
+
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .account-recovery-page {
+    padding: 18px;
+  }
+
+  .account-recovery-card {
+    padding: 32px 22px;
+
+    border-radius: 20px;
+  }
+}
