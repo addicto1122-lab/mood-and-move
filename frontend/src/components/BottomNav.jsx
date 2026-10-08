@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import RecordNavLink from "../constants/RecordNavLink";
 
 export default function BottomNav() {
   return (
@@ -7,7 +8,7 @@ export default function BottomNav() {
 
       <NavLink to="/calendar">캘린더</NavLink>
 
-      <NavLink to="/mood">기록</NavLink>
+      <RecordNavLink />
 
       <NavLink to="/stats">통계</NavLink>
 
