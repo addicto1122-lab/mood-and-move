@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
-
 import LogoutButton from "./LogoutButton";
+import RecordNavLink from "../constants/RecordNavLink";
 
 export default function DesktopSidebar() {
   return (
@@ -12,7 +12,7 @@ export default function DesktopSidebar() {
       <nav className="sidebar-menu">
         <NavLink to="/">홈</NavLink>
 
-        <NavLink to="/mood">기록</NavLink>
+        <RecordNavLink />
 
         <NavLink to="/stats">통계</NavLink>
 

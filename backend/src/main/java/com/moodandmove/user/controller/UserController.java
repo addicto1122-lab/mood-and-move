@@ -8,6 +8,7 @@ import com.moodandmove.user.dto.response.WithdrawalStatusResponse;
 import com.moodandmove.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,8 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    @Value("${app.cookie-secure}")
+    private boolean cookieSecure;
 
     // 비밀번호 변경
     @PatchMapping("/me/password")
@@ -39,24 +42,28 @@ public class UserController {
                     request.newPassword()
             );
 
-            // 비밀번호 변경 성공 후 Access Token 쿠키 삭제
-            ResponseCookie cookie = ResponseCookie
+
+            ResponseCookie accessCookie = ResponseCookie
                     .from("accessToken", "")
                     .httpOnly(true)
+                    .secure(cookieSecure)
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(Duration.ZERO)
+                    .build();
 
-                    // 배포 HTTPS 환경에서는 true로 변경
-                    .secure(false)
-
+            ResponseCookie refreshCookie = ResponseCookie
+                    .from("refreshToken", "")
+                    .httpOnly(true)
+                    .secure(cookieSecure)
                     .sameSite("Lax")
                     .path("/")
                     .maxAge(Duration.ZERO)
                     .build();
 
             return ResponseEntity.ok()
-                    .header(
-                            HttpHeaders.SET_COOKIE,
-                            cookie.toString()
-                    )
+                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                     .build();
 
         } catch (IllegalArgumentException e) {
@@ -171,20 +178,27 @@ public class UserController {
                     request.currentPassword()
             );
 
-            ResponseCookie cookie = ResponseCookie
+            ResponseCookie accessCookie = ResponseCookie
                     .from("accessToken", "")
                     .httpOnly(true)
-                    .secure(false) // 배포 HTTPS에서는 true
+                    .secure(cookieSecure)
+                    .sameSite("Lax")
+                    .path("/")
+                    .maxAge(Duration.ZERO)
+                    .build();
+
+            ResponseCookie refreshCookie = ResponseCookie
+                    .from("refreshToken", "")
+                    .httpOnly(true)
+                    .secure(cookieSecure)
                     .sameSite("Lax")
                     .path("/")
                     .maxAge(Duration.ZERO)
                     .build();
 
             return ResponseEntity.ok()
-                    .header(
-                            HttpHeaders.SET_COOKIE,
-                            cookie.toString()
-                    )
+                    .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                     .build();
 
         } catch (IllegalArgumentException e) {

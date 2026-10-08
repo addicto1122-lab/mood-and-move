@@ -39,11 +39,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jwtProvider.parseToken(token);
 
                 Long userId = Long.valueOf(claims.getSubject());
+
                 int tokenVersion = claims.get("tokenVersion", Integer.class);
+
+                String tokenType = claims.get("tokenType", String.class);
 
                 User user = userRepository.findById(userId).orElse(null);
 
-                if (user != null && user.getTokenVersion() == tokenVersion) {
+                if (user != null && user.getTokenVersion() == tokenVersion && "ACCESS".equals(tokenType)) {
 
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
