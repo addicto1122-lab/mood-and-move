@@ -1,0 +1,704 @@
+/* =========================
+   Calendar Page
+========================= */
+
+.calendar-page {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+
+  margin: 0 auto;
+  padding: 28px 20px 110px;
+
+  background: var(--paper);
+}
+
+/* =========================
+   Page Header
+========================= */
+
+.calendar-page-title {
+  margin-bottom: 24px;
+}
+
+.calendar-page-title > span {
+  color: var(--sage);
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 0.12em;
+}
+
+.calendar-page-title h1 {
+  margin: 8px 0 0;
+
+  color: #18251f;
+
+  font-size: 28px;
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+.calendar-page-title p {
+  margin: 8px 0 0;
+
+  color: var(--muted);
+
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* =========================
+   Calendar Card
+========================= */
+
+.calendar-card {
+  padding: 18px;
+
+  border: 1px solid var(--line);
+  border-radius: 24px;
+
+  background: var(--white);
+
+  box-shadow: 0 7px 25px rgba(49, 75, 61, 0.05);
+}
+
+/* =========================
+   Calendar Header
+========================= */
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 20px;
+}
+
+.calendar-header h2 {
+  margin: 0;
+
+  color: #18251f;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.calendar-header button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 12px;
+
+  color: var(--sage-dark);
+  background: var(--mint);
+
+  font-size: 24px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.calendar-header button:hover {
+  filter: brightness(0.97);
+}
+
+/* =========================
+   Week
+========================= */
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.calendar-weekdays {
+  margin-bottom: 8px;
+}
+
+.calendar-weekdays span {
+  color: var(--muted);
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-align: center;
+}
+
+/* 일요일 */
+.calendar-weekdays span:first-child {
+  color: #e85d5d;
+}
+
+/* 토요일 */
+.calendar-weekdays span:last-child {
+  color: #5b8def;
+}
+
+/* =========================
+   Calendar Cell
+========================= */
+
+.calendar-cell {
+  position: relative;
+
+  min-width: 0;
+  min-height: 58px;
+
+  padding: 5px;
+
+  border: 0;
+  border-radius: 12px;
+
+  background: transparent;
+
+  color: inherit;
+
+  font-family: inherit;
+  text-align: center;
+
+  cursor: default;
+}
+
+.calendar-cell.empty {
+  visibility: hidden;
+}
+
+.calendar-cell.has-entry {
+  cursor: pointer;
+}
+
+.calendar-cell.has-entry:hover {
+  background: var(--mint);
+}
+
+.calendar-cell.has-entry:active {
+  transform: scale(0.97);
+}
+
+/* =========================
+   날짜
+========================= */
+
+.day-number {
+  display: block;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* =========================
+   감정 Emoji
+========================= */
+
+.calendar-mood {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-top: 3px;
+}
+
+.calendar-emoji {
+  display: block;
+
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+/* =========================
+   Loading
+========================= */
+
+.calendar-loading {
+  padding: 50px 0;
+
+  color: var(--muted);
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+/* =========================
+   Diary Detail
+========================= */
+
+.diary-detail {
+  margin-top: 20px;
+  padding: 20px;
+
+  border: 1px solid var(--line);
+  border-radius: 24px;
+
+  background: var(--white);
+
+  box-shadow: 0 7px 25px rgba(49, 75, 61, 0.04);
+}
+
+.diary-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.detail-date {
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+.diary-detail-header h2 {
+  margin: 6px 0 0;
+
+  color: #18251f;
+
+  font-size: 20px;
+}
+
+.detail-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  padding: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: var(--muted);
+  background: var(--mint);
+
+  font-size: 22px;
+
+  cursor: pointer;
+}
+
+.detail-close:hover {
+  color: var(--sage-dark);
+}
+
+/* =========================
+   기분 점수 / 감정 강도
+========================= */
+
+.detail-score {
+  display: flex;
+
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+.detail-score span {
+  flex: 1;
+
+  padding: 12px;
+
+  border-radius: 14px;
+
+  background: var(--mint);
+
+  color: var(--muted);
+
+  font-size: 12px;
+}
+
+.detail-score strong {
+  display: block;
+
+  margin-top: 4px;
+
+  color: var(--sage-dark);
+
+  font-size: 18px;
+}
+
+/* =========================
+   Diary Content
+========================= */
+
+.detail-content {
+  margin-top: 18px;
+}
+
+.detail-content > span {
+  color: var(--muted);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.detail-content p {
+  margin: 8px 0 0;
+
+  color: #34443c;
+
+  font-size: 14px;
+
+  line-height: 1.7;
+
+  white-space: pre-wrap;
+}
+
+/* =========================
+   이번 달 대표 감정
+========================= */
+
+.dominant-emotion-card {
+  margin-top: 24px;
+  padding: 22px;
+
+  border: 1px solid var(--line);
+  border-radius: 24px;
+
+  background: var(--white);
+
+  box-shadow: 0 7px 25px rgba(49, 75, 61, 0.05);
+}
+
+.dominant-title > span {
+  color: var(--sage-dark);
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dominant-title p {
+  margin: 6px 0 0;
+
+  color: var(--muted);
+
+  font-size: 12px;
+
+  line-height: 1.6;
+}
+
+.dominant-content {
+  display: flex;
+  align-items: center;
+
+  gap: 16px;
+
+  margin-top: 20px;
+  padding: 18px;
+
+  border-radius: 20px;
+
+  background: var(--mint);
+}
+
+.dominant-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.8);
+
+  font-size: 38px;
+}
+
+.dominant-content strong {
+  display: block;
+
+  color: #18251f;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.dominant-content p {
+  margin: 5px 0 0;
+
+  color: var(--muted);
+
+  font-size: 13px;
+}
+
+/* =========================
+   감정 분포 상세보기 버튼
+========================= */
+
+.distribution-button {
+  width: 100%;
+
+  margin-top: 16px;
+  padding: 13px 16px;
+
+  border: 0;
+  border-radius: 14px;
+
+  color: var(--sage-dark);
+  background: var(--mint);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.distribution-button:hover {
+  filter: brightness(0.97);
+}
+
+.distribution-button:active {
+  transform: scale(0.98);
+}
+
+/* =========================
+   감정 분포
+========================= */
+
+.emotion-summary {
+  margin-top: 20px;
+  padding: 22px;
+
+  border: 1px solid var(--line);
+  border-radius: 24px;
+
+  background: var(--white);
+
+  box-shadow: 0 7px 25px rgba(49, 75, 61, 0.04);
+}
+
+.emotion-summary h2 {
+  margin: 0 0 20px;
+
+  color: #18251f;
+
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* =========================
+   Donut
+========================= */
+
+.emotion-donut-card {
+  width: 100%;
+}
+
+.emotion-donut-chart {
+  position: relative;
+
+  width: 100%;
+  max-width: 420px;
+
+  margin: 0 auto 22px;
+}
+
+/* =========================
+   Donut Center
+========================= */
+
+.emotion-donut-center {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  transform: translate(-50%, -50%);
+
+  pointer-events: none;
+}
+
+.emotion-donut-center strong {
+  color: #18251f;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.emotion-donut-center span {
+  margin-top: 4px;
+
+  color: #7a857f;
+
+  font-size: 13px;
+}
+
+/* =========================
+   Emotion Legend
+========================= */
+
+.emotion-legend-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.emotion-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 14px 16px;
+
+  border-radius: 18px;
+}
+
+.emotion-legend-left {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.emotion-legend-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+
+  border-radius: 50%;
+
+  background: rgba(255, 255, 255, 0.65);
+
+  font-size: 28px;
+}
+
+.emotion-legend-left strong {
+  display: block;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.emotion-legend-left p {
+  margin: 3px 0 0;
+
+  color: #7a857f;
+
+  font-size: 13px;
+}
+
+.emotion-legend-rate {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+/* =========================
+   Mobile
+========================= */
+
+@media (max-width: 380px) {
+  .calendar-page {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .calendar-card {
+    padding: 14px;
+  }
+
+  .calendar-cell {
+    min-height: 54px;
+
+    padding: 3px;
+  }
+
+  .calendar-emoji {
+    font-size: 20px;
+  }
+
+  .dominant-emotion-card,
+  .emotion-summary,
+  .diary-detail {
+    padding: 18px;
+  }
+}
+
+/* =========================
+   Recharts Focus 제거
+========================= */
+
+.emotion-donut-chart *,
+.emotion-donut-chart *:focus,
+.emotion-donut-chart *:focus-visible {
+  outline: none !important;
+}
+
+.emotion-donut-chart svg,
+.emotion-donut-chart svg:focus,
+.emotion-donut-chart svg *:focus,
+.emotion-donut-chart svg *:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.emotion-donut-chart .recharts-sector {
+  cursor: default;
+}
+.stats-link-button {
+  width: 100%;
+
+  margin-top: 14px;
+  padding: 14px 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border: 1px solid var(--line);
+  border-radius: 16px;
+
+  color: var(--sage-dark);
+  background: var(--white);
+
+  font-size: 13px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.stats-link-button:hover {
+  background: var(--mint);
+}
+
+.stats-link-button:active {
+  transform: scale(0.99);
+}
+.calendar-cell.selected {
+  background: var(--mint);
+
+  box-shadow: inset 0 0 0 2px var(--sage);
+}

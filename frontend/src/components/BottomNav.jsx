@@ -5,6 +5,8 @@ export default function BottomNav() {
     <nav className="bottom-nav">
       <NavLink to="/">홈</NavLink>
 
+      <NavLink to="/calendar">캘린더</NavLink>
+
       <NavLink to="/mood">기록</NavLink>
 
       <NavLink to="/stats">통계</NavLink>
