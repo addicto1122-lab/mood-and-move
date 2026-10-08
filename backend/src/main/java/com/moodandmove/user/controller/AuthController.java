@@ -11,6 +11,7 @@ import com.moodandmove.user.service.AuthService;
 import com.moodandmove.user.service.KakaoOAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import com.moodandmove.user.dto.response.KakaoUserResponse;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
+import java.util.UUID;
 
 import java.time.Duration;
 
@@ -28,6 +28,12 @@ import java.time.Duration;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
+
+    @Value("${app.cookie-secure}")
+    private boolean cookieSecure;
 
     private final AuthService authService;
     private final JwtProvider jwtProvider;
@@ -84,7 +90,7 @@ public class AuthController {
                 ResponseCookie
                         .from("accessToken", accessToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMinutes(30))
@@ -94,7 +100,7 @@ public class AuthController {
                 ResponseCookie
                         .from("refreshToken", refreshToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMillis(jwtProvider.getRefreshTokenExpirationMillis()))
@@ -135,7 +141,7 @@ public class AuthController {
                 ResponseCookie
                         .from("accessToken", "")
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(0)
@@ -146,7 +152,7 @@ public class AuthController {
                 ResponseCookie
                         .from("refreshToken", "")
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(0)
@@ -180,7 +186,7 @@ public class AuthController {
                 ResponseCookie
                         .from("accessToken", accessToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMinutes(30))
@@ -191,7 +197,7 @@ public class AuthController {
                 ResponseCookie
                         .from("refreshToken", refreshToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMillis(jwtProvider.getRefreshTokenExpirationMillis()))
@@ -218,23 +224,15 @@ public class AuthController {
         String newRefreshToken = jwtProvider.createRefreshToken(user);
 
         LocalDateTime refreshExpiresAt =
-                LocalDateTime.ofInstant(
-                        jwtProvider
-                                .getExpiration(newRefreshToken)
-                                .toInstant(),
-                        ZoneId.systemDefault()
+                LocalDateTime.ofInstant(jwtProvider.getExpiration(newRefreshToken).toInstant(), ZoneId.systemDefault()
                 );
 
         authService.saveRefreshToken(user, newRefreshToken, refreshExpiresAt);
 
-        ResponseCookie accessCookie =
-                ResponseCookie
-                        .from(
-                                "accessToken",
-                                newAccessToken
-                        )
+        ResponseCookie accessCookie = ResponseCookie
+                        .from("accessToken", newAccessToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(
@@ -244,12 +242,9 @@ public class AuthController {
 
         ResponseCookie refreshCookie =
                 ResponseCookie
-                        .from(
-                                "refreshToken",
-                                newRefreshToken
-                        )
+                        .from("refreshToken", newRefreshToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(
@@ -292,12 +287,9 @@ public class AuthController {
         authService.saveRefreshToken(user, refreshToken, refreshExpiresAt);
         ResponseCookie accessCookie =
                 ResponseCookie
-                        .from(
-                                "accessToken",
-                                accessToken
-                        )
+                        .from("accessToken", accessToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(
@@ -308,7 +300,7 @@ public class AuthController {
         ResponseCookie refreshCookie = ResponseCookie
                         .from("refreshToken", refreshToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMillis(jwtProvider.getRefreshTokenExpirationMillis())
@@ -318,7 +310,7 @@ public class AuthController {
         ResponseCookie recoveryCookie = ResponseCookie
                         .from("recoveryToken", "")
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(0)
@@ -332,32 +324,75 @@ public class AuthController {
     }
 
     @GetMapping("/kakao/login")
-    public void kakaoLogin(HttpServletResponse response
-    ) throws IOException {
-        response.sendRedirect(kakaoOAuthService.getAuthorizationUrl());
+    public ResponseEntity<Void> kakaoLogin() {
+
+        String state = UUID.randomUUID().toString();
+
+        ResponseCookie stateCookie = ResponseCookie
+                        .from("kakaoOAuthState", state)
+                        .httpOnly(true)
+                        .secure(cookieSecure)
+                        .sameSite("Lax")
+                        .path("/api/auth/kakao")
+                        .maxAge(Duration.ofMinutes(5))
+                        .build();
+
+        String authorizationUrl = kakaoOAuthService.getAuthorizationUrl(state);
+
+        return ResponseEntity
+                .status(302)
+                .header(HttpHeaders.SET_COOKIE, stateCookie.toString())
+                .header(HttpHeaders.LOCATION, authorizationUrl)
+                .build();
     }
 
     @GetMapping("/kakao/callback")
-    public ResponseEntity<Void> kakaoCallback(@RequestParam String code) {
+    public ResponseEntity<Void> kakaoCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            @CookieValue(
+                    name = "kakaoOAuthState",
+                    required = false
+            ) String savedState ) {
+
+        // OAuth state 검증
+        if (savedState == null || !savedState.equals(state)) {
+            throw new IllegalArgumentException("잘못된 카카오 로그인 요청입니다.");
+        }
+
+        // 사용한 state 쿠키 삭제
+        ResponseCookie stateCookie = ResponseCookie
+                        .from("kakaoOAuthState", "")
+                        .httpOnly(true)
+                        .secure(cookieSecure)
+                        .sameSite("Lax")
+                        .path("/api/auth/kakao")
+                        .maxAge(0)
+                        .build();
+
         String kakaoAccessToken = kakaoOAuthService.getAccessToken(code);
 
         KakaoUserResponse kakaoUser = kakaoOAuthService.getUser(kakaoAccessToken);
 
         KakaoUserResponse.KakaoAccount account = kakaoUser.kakaoAccount();
 
-        if (account == null || account.email() == null ||
-                !Boolean.TRUE.equals(account.emailValid()) ||
-                !Boolean.TRUE.equals(account.emailVerified())) {
-            throw new IllegalArgumentException(
-                    "카카오 이메일 정보를 확인할 수 없습니다."
-            );
+        if (account == null || account.email() == null
+                || !Boolean.TRUE.equals(account.emailValid())
+                || !Boolean.TRUE.equals(account.emailVerified())) {
+
+            throw new IllegalArgumentException("카카오 이메일 정보를 확인할 수 없습니다.");
         }
 
-        String nickname = account.profile() != null && account.profile().nickname() != null
-                        ? account.profile().nickname() : "Mood&Move 사용자";
+        String nickname = account.profile() != null
+                        && account.profile().nickname() != null
+                        ? account.profile().nickname()
+                        : "Mood&Move 사용자";
 
         User user = authService.findOrCreateKakaoUser(kakaoUser.id(), account.email(), nickname);
 
+        /*
+         * 탈퇴 신청 중인 계정
+         */
         if (authService.isWithdrawalPending(user.getId())) {
 
             String recoveryToken = jwtProvider.createRecoveryToken(user);
@@ -365,25 +400,28 @@ public class AuthController {
             ResponseCookie recoveryCookie = ResponseCookie
                             .from("recoveryToken", recoveryToken)
                             .httpOnly(true)
-                            .secure(false)
+                            .secure(cookieSecure)
                             .sameSite("Lax")
                             .path("/")
-                            .maxAge(Duration.ofMillis(jwtProvider.getRecoveryTokenExpirationMillis()))
+                            .maxAge(Duration.ofMillis(
+                                    jwtProvider.getRecoveryTokenExpirationMillis()))
                             .build();
 
-            ResponseCookie accessCookie = ResponseCookie
+            ResponseCookie accessCookie =
+                    ResponseCookie
                             .from("accessToken", "")
                             .httpOnly(true)
-                            .secure(false)
+                            .secure(cookieSecure)
                             .sameSite("Lax")
                             .path("/")
                             .maxAge(0)
                             .build();
 
-            ResponseCookie refreshCookie = ResponseCookie
+            ResponseCookie refreshCookie =
+                    ResponseCookie
                             .from("refreshToken", "")
                             .httpOnly(true)
-                            .secure(false)
+                            .secure(cookieSecure)
                             .sameSite("Lax")
                             .path("/")
                             .maxAge(0)
@@ -391,12 +429,14 @@ public class AuthController {
 
             return ResponseEntity
                     .status(302)
+                    .header(HttpHeaders.SET_COOKIE, stateCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, recoveryCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                     .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                    .header(HttpHeaders.LOCATION, "http://localhost:5173/account-recovery")
+                    .header(HttpHeaders.LOCATION, frontendUrl + "/account-recovery")
                     .build();
         }
+
 
         user = authService.startLoginSession(user.getId());
 
@@ -404,35 +444,37 @@ public class AuthController {
 
         String refreshToken = jwtProvider.createRefreshToken(user);
 
-        LocalDateTime refreshExpiresAt = LocalDateTime.ofInstant(jwtProvider.getExpiration(refreshToken)
-                                .toInstant(), ZoneId.systemDefault());
+        LocalDateTime refreshExpiresAt = LocalDateTime.ofInstant(
+                        jwtProvider.getExpiration(refreshToken).toInstant(),
+                        ZoneId.systemDefault());
 
         authService.saveRefreshToken(user, refreshToken, refreshExpiresAt);
 
         ResponseCookie accessCookie = ResponseCookie
                         .from("accessToken", accessToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(Duration.ofMinutes(30))
                         .build();
 
-        ResponseCookie refreshCookie =
-                ResponseCookie
+        ResponseCookie refreshCookie = ResponseCookie
                         .from("refreshToken", refreshToken)
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
-                        .maxAge(Duration.ofMillis(jwtProvider.getRefreshTokenExpirationMillis()))
+                        .maxAge(Duration.ofMillis(
+                                jwtProvider.getRefreshTokenExpirationMillis()))
                         .build();
 
         return ResponseEntity
                 .status(302)
+                .header(HttpHeaders.SET_COOKIE, stateCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .header(HttpHeaders.LOCATION, "http://localhost:5173/")
+                .header(HttpHeaders.LOCATION, frontendUrl + "/")
                 .build();
     }
 
@@ -443,7 +485,7 @@ public class AuthController {
                 ResponseCookie
                         .from("recoveryToken", "")
                         .httpOnly(true)
-                        .secure(false)
+                        .secure(cookieSecure)
                         .sameSite("Lax")
                         .path("/")
                         .maxAge(0)

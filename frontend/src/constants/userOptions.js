@@ -21,7 +21,7 @@ export const GENDER_OPTIONS = [
   {
     value: "OTHER",
     label: "기타",
-    emoji: "🧑"
+    emoji: "✨"
   },
   {
     value: "PREFER_NOT_TO_SAY",

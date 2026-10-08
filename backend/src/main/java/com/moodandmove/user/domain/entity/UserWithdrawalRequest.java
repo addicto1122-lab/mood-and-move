@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "user_withdrawal_requests")
@@ -37,7 +38,7 @@ public class UserWithdrawalRequest {
     private LocalDateTime deletionScheduledAt;
 
     private UserWithdrawalRequest(User user) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
 
         this.user = user;
         this.requestedAt = now;
