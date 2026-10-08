@@ -42,4 +42,10 @@ public interface MoodEntryRepository extends JpaRepository<MoodEntry,Long> {
             @Param("moodEntryId") Long moodEntryId,
             @Param("userId") Long userId
     );
+
+    @EntityGraph(attributePaths = "emotion")
+    Optional<MoodEntry>
+    findFirstByUser_IdAndDeletedAtIsNullOrderByEntryDateDescRecordedAtDesc(
+            Long userId
+    );
 }

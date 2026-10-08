@@ -455,3 +455,10 @@
     padding: 22px;
   }
 }
+.mini-bars i {
+  opacity: 0.2;
+}
+
+.mini-bars i.active {
+  opacity: 1;
+}

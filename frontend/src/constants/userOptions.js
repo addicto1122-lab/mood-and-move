@@ -11,17 +11,17 @@ export const GENDER_OPTIONS = [
   {
     value: "MALE",
     label: "남성",
-    emoji: "🙂"
+    emoji: "👨"
   },
   {
     value: "FEMALE",
     label: "여성",
-    emoji: "🙂"
+    emoji: "👩"
   },
   {
     value: "OTHER",
     label: "기타",
-    emoji: "✨"
+    emoji: "🧑"
   },
   {
     value: "PREFER_NOT_TO_SAY",
