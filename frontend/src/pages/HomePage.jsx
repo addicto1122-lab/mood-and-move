@@ -123,6 +123,16 @@ export default function HomePage() {
 
   // 진행 중 행동이 있으면 우선 표시
   const displayedAction = currentExecution ?? todayRecommendation;
+  const handleMoodClick = () => {
+    const today = getDateKey(now);
+
+    if (latestMood?.entryDate === today) {
+      alert("오늘의 일기는 이미 작성했습니다.");
+      return;
+    }
+
+    navigate("/mood");
+  };
 
   return (
     <main className="home-page">
@@ -139,8 +149,8 @@ export default function HomePage() {
 
         <button
           type="button"
-          className="avatar"
-          onClick={() => navigate("/mypage")}
+          className="primary-button"
+          onClick={handleMoodClick}
         >
           {user?.nickname?.charAt(0) ?? "M"}
         </button>

@@ -17,6 +17,7 @@ import DislikePage from "../pages/DislikePage.jsx";
 import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
 import CalendarPage from "../pages/CalendarPage.jsx";
 import MoodRecheckPage from "../pages/MoodRecheckPage.jsx";
+import MoodRouteGuard from "./MoodRouteGuard.jsx";
 
 export default function AppRouter() {
   return (
@@ -33,11 +34,18 @@ export default function AppRouter() {
 
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />
+
+            {/* 행동 실행 후 감정 재측정 */}
             <Route
               path="/action-executions/:executionId/recheck"
               element={<MoodRecheckPage />}
             />
-            <Route path="/mood" element={<MoodWritePage />} />
+
+            {/* 감정 일기 작성 */}
+            <Route element={<MoodRouteGuard />}>
+              <Route path="/mood" element={<MoodWritePage />} />
+            </Route>
+
             <Route path="/recommendation" element={<RecommendationPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/mypage" element={<MyPage />} />

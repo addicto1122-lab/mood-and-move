@@ -23,13 +23,11 @@ public class MoodController {
     ) {
         User user = (User) authentication.getPrincipal();
 
-        try {
-            Long moodEntryId = moodService.createMood(user.getId(), request);
+        Long moodEntryId = moodService.createMood(
+                user.getId(),
+                request
+        );
 
-            return ResponseEntity.ok(moodEntryId);
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        return ResponseEntity.ok(moodEntryId);
     }
 }
