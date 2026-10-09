@@ -13,7 +13,8 @@ export default function HomePage() {
   const [user, setUser] = useState(null);
   const [homeData, setHomeData] = useState({
     latestMood: null,
-    todayRecommendation: null
+    todayRecommendation: null,
+    currentExecution: null,
   });
 
   const [now, setNow] = useState(new Date());
@@ -26,7 +27,7 @@ export default function HomePage() {
       try {
         const [userData, homeResponse] = await Promise.all([
           getMe(),
-          getHome()
+          getHome(),
         ]);
 
         setUser(userData);
@@ -117,6 +118,11 @@ export default function HomePage() {
   const latestMood = homeData.latestMood;
 
   const todayRecommendation = homeData.todayRecommendation;
+
+  const currentExecution = homeData.currentExecution;
+
+  // 진행 중 행동이 있으면 우선 표시
+  const displayedAction = currentExecution ?? todayRecommendation;
 
   return (
     <main className="home-page">
@@ -218,46 +224,69 @@ export default function HomePage() {
         </section>
       )}
 
-      {todayRecommendation && (
+      {displayedAction && (
         <>
           <div className="section-title">
             <h2>지금 필요한 한 걸음</h2>
           </div>
 
           <section className="card action-card">
-            <div className="action-icon">🌿</div>
-
-            <div className="action-copy">
-              <span>오늘의 추천</span>
-
-              <h3>
-                {todayRecommendation.durationMinutes
-                  ? `${todayRecommendation.durationMinutes}분 `
-                  : ""}
-                {todayRecommendation.actionName}
-              </h3>
-
-              <p>{todayRecommendation.reason}</p>
+            <div className="action-icon" aria-hidden="true">
+              {displayedAction.emoji?.trim() ||
+                displayedAction.categoryEmoji?.trim() ||
+                "✨"}
             </div>
 
-            <button
-              type="button"
-              className="round-arrow"
-              onClick={() =>
-                navigate("/recommendation", {
-                  state: {
-                    moodEntryId: latestMood?.moodEntryId
-                  }
-                })
-              }
-              aria-label="오늘의 추천 보기"
-            >
-              ›
-            </button>
+            <div className="action-copy">
+              <span>
+                {currentExecution ? "진행 중인 행동" : "오늘의 추천"}
+                {displayedAction.categoryName
+                  ? ` · ${displayedAction.categoryName}`
+                  : ""}
+              </span>
+
+              <h3>
+                {displayedAction.durationMinutes
+                  ? `${displayedAction.durationMinutes}분 `
+                  : ""}
+                {displayedAction.actionName}
+              </h3>
+
+              <p>{displayedAction.reason}</p>
+            </div>
+
+            {currentExecution ? (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() =>
+                  navigate(
+                    `/action-executions/${currentExecution.executionId}/recheck`,
+                  )
+                }
+              >
+                재측정하기
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="round-arrow"
+                onClick={() =>
+                  navigate(
+                    `/recommendation?moodEntryId=${latestMood.moodEntryId}`,
+                  )
+                }
+                aria-label="오늘의 추천 보기"
+              >
+                ›
+              </button>
+            )}
           </section>
 
           <p className="tiny-note">
-            ✧ 오늘의 기록을 남기면 더 잘 맞는 행동을 추천해요.
+            {currentExecution
+              ? "행동을 마쳤다면 지금의 기분을 기록해 주세요."
+              : "✧ 오늘의 기록을 남기면 더 잘 맞는 행동을 추천해요."}
           </p>
         </>
       )}

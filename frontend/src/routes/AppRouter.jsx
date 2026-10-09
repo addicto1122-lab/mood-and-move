@@ -16,6 +16,7 @@ import PreferencePage from "../pages/PreferencePage.jsx";
 import DislikePage from "../pages/DislikePage.jsx";
 import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
 import CalendarPage from "../pages/CalendarPage.jsx";
+import MoodRecheckPage from "../pages/MoodRecheckPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -32,6 +33,10 @@ export default function AppRouter() {
 
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />
+            <Route
+              path="/action-executions/:executionId/recheck"
+              element={<MoodRecheckPage />}
+            />
             <Route path="/mood" element={<MoodWritePage />} />
             <Route path="/recommendation" element={<RecommendationPage />} />
             <Route path="/stats" element={<StatsPage />} />

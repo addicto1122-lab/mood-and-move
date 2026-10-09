@@ -112,10 +112,10 @@ public class GeminiRecommendationGenerator
                 ===== 핵심 규칙 =====
 
                 1. 반드시 서로 다른 행동 3개를 추천하세요.
-                2. 기존 행동 후보는 참고 자료입니다.
-                3. 기존 행동이 적합하면 재추천할 수 있습니다.
-                4. 기존 행동에 적절한 것이 없으면
-                   새로운 행동을 생성할 수 있습니다.
+                2. 제공된 카테고리 통계는 개인화 참고 자료입니다.
+                3. 허용된 13개 카테고리 안에서 구체적인 행동을 생성하세요.
+                4. 카테고리 점수가 높아도 현재 상황에 맞지 않으면
+                   해당 카테고리의 행동을 우선하지 마세요.
                 5. 세 행동의 이름은 서로 달라야 합니다.
                 6. 현재 감정, 활동, 일기 내용과 연결되는
                    구체적이고 실천 가능한 행동을 추천하세요.
@@ -172,10 +172,10 @@ public class GeminiRecommendationGenerator
                     현재 상황과 사용자 선호에
                     개인화 점수를 함께 반영하세요.
 
-                    기존 행동의 효과를 참고하되
-                    새로운 행동도 추천할 수 있습니다.
-
-                    표본이 적은 행동의 효과를
+                    카테고리별 과거 효과를 참고해
+                    현재 상황에 맞는 구체적인 행동을 생성하세요.
+                    
+                    표본이 적은 카테고리의 효과를
                     단정하지 마세요.
                     """);
 
@@ -183,15 +183,13 @@ public class GeminiRecommendationGenerator
                     사용자 전체 유효 재측정 표본이
                     10개 이상인 단계입니다.
 
-                    현재 상황에 적합한 행동 중
-                    개인화 점수가 높고
-                    재측정 표본이 충분한 행동을
-                    우선 고려하세요.
-
-                    단, 기존 행동만 선택할 필요는 없습니다.
-
-                    개인화 점수보다
-                    안전성과 실행 가능성을 우선하세요.
+                    현재 상황에 적합한 카테고리 중
+                    개인화 점수가 높고 재측정 표본이 충분한
+                    카테고리를 우선 고려하세요.
+                    
+                    그 카테고리 안에서 현재 상황에 맞는
+                    구체적인 행동을 생성하세요.
+                    다른 카테고리도 상황에 적합하면 고려할 수 있습니다.
                     """);
         }
 
@@ -272,53 +270,54 @@ public class GeminiRecommendationGenerator
                     );
         }
 
-        // 6. 기존 행동 및 개인화 통계
-        prompt.append("\n\n===== 기존 행동 참고 자료 =====");
-
+        // 6. 사용자·카테고리별 개인화 통계
         prompt.append("""
-                
-                아래는 DB에 저장된 기존 행동과
-                해당 사용자에 대한 과거 통계입니다.
+        
+        ===== 카테고리별 개인화 참고 자료 =====
 
-                참고 자료일 뿐, 이 목록에서만
-                행동을 선택해야 하는 것은 아닙니다.
+        아래는 이 사용자의 카테고리별 개인화 점수와
+        재측정 완료 표본 수입니다.
 
-                표본 수는 현재 감정에서 해당 행동을
-                실행하고 유효 재측정을 완료한 횟수입니다.
+        개별 행동의 점수가 아니라,
+        해당 카테고리에 속한 행동들의 결과를 집계한 점수입니다.
 
-                표본 수가 0이라면 개인화 점수가
-                50이어도 효과가 입증된 것은 아닙니다.
-                """);
+        표본 수는 특정 감정에 한정하지 않고,
+        해당 카테고리에서 재측정을 완료한 전체 횟수입니다.
 
-        if (request.candidates() == null
-                || request.candidates().isEmpty()) {
+        개인화 점수는 0~100입니다.
+        점수가 높을수록 이 사용자에게 과거 기분 개선 효과가
+        상대적으로 좋게 평가된 카테고리입니다.
+        점수를 개선 확률이나 퍼센트로 해석하지 마세요.
+
+        표본 수가 0일 때의 50점은 기본값이며,
+        효과가 확인됐다는 뜻이 아닙니다.
+        표본이 적으면 점수만으로 효과를 단정하지 마세요.
+
+        카테고리 점수는 참고 자료입니다.
+        현재 감정, 활동, 일기, 선호, 위치 조건과
+        안전성을 함께 고려해 구체적인 행동을 생성하세요.
+        """);
+
+        if (request.categoryScores() == null
+                || request.categoryScores().isEmpty()) {
 
             prompt.append("""
-                    
-                    기존 행동 참고 자료가 없습니다.
-                    사용자의 현재 상황을 중심으로
-                    새로운 행동 3개를 생성하세요.
-                    """);
+            
+            카테고리 통계가 없습니다.
+            사용자의 현재 상황과 선호를 중심으로 추천하세요.
+            """);
 
         } else {
 
-            for (ActionCandidateDto candidate
-                    : request.candidates()) {
-
-                prompt.append("\n- 행동 ID: ")
-                        .append(candidate.actionId())
-
-                        .append(" | 행동 이름: ")
-                        .append(candidate.actionName())
-
+            for (CategoryScoreDto score : request.categoryScores()) {
+                prompt.append("\n- 카테고리: ")
+                        .append(score.category())
                         .append(" | 개인화 점수: ")
-                        .append(candidate.score())
-
-                        .append(" | 재측정 표본 수: ")
-                        .append(candidate.sampleCount());
+                        .append(score.personalScore())
+                        .append(" | 재측정 완료 표본 수: ")
+                        .append(score.sampleCount());
             }
         }
-
         // 7. 출력할 행동 속성의 허용값
         prompt.append("\n\n===== 행동 속성 규칙 =====");
 
@@ -377,7 +376,7 @@ public class GeminiRecommendationGenerator
                 recommendations 배열에는
                 정확히 3개의 행동을 넣으세요.
 
-                각 행동에는 아래 9개 필드를
+                각 행동에는 아래 10개 필드를
                 빠짐없이 포함하세요.
 
                 actionName: 행동 이름 (문자열)
@@ -389,50 +388,65 @@ public class GeminiRecommendationGenerator
                 locationRequired: 위치 필수 여부 (boolean)
                 placeCategory: 장소 분류 (문자열 또는 null)
                 reason: 추천 이유 (문자열)
+                emoji: 해당 행동을 나타내는 대표 이모지 하나 (문자열)
+                
 
-                응답 예시:
+                ===== 이모지 규칙 =====
 
+        행동의 구체적인 내용에 어울리는 이모지를 선택하세요.
+        같은 카테고리라도 행동에 따라 다른 이모지를 사용할 수 있습니다.
+        예: 음악 감상은 🎧, 노래 부르기는 🎤, 책 읽기는 📖.
+
+        emoji에는 이모지만 넣으세요.
+        설명 문장, HTML, 이미지 URL, :headphones: 같은 코드는 넣지 마세요.
+        서로 다른 행동에 같은 이모지가 적합하다면 중복 사용해도 됩니다.
+
+            응답 예시:
+    
+            {
+              "recommendations": [
                 {
-                  "recommendations": [
-                    {
-                      "actionName": "가벼운 스트레칭",
-                      "category": "STRETCHING",
-                      "durationMinutes": 10,
-                      "environmentType": "ANY",
-                      "socialType": "ANY",
-                      "activityStyle": "CALM",
-                      "locationRequired": false,
-                      "placeCategory": null,
-                      "reason": "몸을 가볍게 움직이며 긴장을 풀어보세요."
-                    },
-                    {
-                      "actionName": "좋아하는 음악 감상",
-                      "category": "MUSIC",
-                      "durationMinutes": 15,
-                      "environmentType": "ANY",
-                      "socialType": "ANY",
-                      "activityStyle": "CALM",
-                      "locationRequired": false,
-                      "placeCategory": null,
-                      "reason": "편안한 음악으로 기분을 환기해 보세요."
-                    },
-                    {
-                      "actionName": "짧은 독서",
-                      "category": "READING",
-                      "durationMinutes": 15,
-                      "environmentType": "ANY",
-                      "socialType": "ANY",
-                      "activityStyle": "CALM",
-                      "locationRequired": false,
-                      "placeCategory": null,
-                      "reason": "잠시 독서에 집중하면서 마음을 정리해 보세요."
-                    }
-                  ]
+                  "actionName": "가벼운 스트레칭",
+                  "category": "STRETCHING",
+                  "durationMinutes": 10,
+                  "environmentType": "ANY",
+                  "socialType": "ANY",
+                  "activityStyle": "CALM",
+                  "locationRequired": false,
+                  "placeCategory": null,
+                  "reason": "몸을 가볍게 움직이며 긴장을 풀어보세요.",
+                  "emoji": "🤸"
+                },
+                {
+                  "actionName": "좋아하는 음악 감상",
+                  "category": "MUSIC",
+                  "durationMinutes": 15,
+                  "environmentType": "ANY",
+                  "socialType": "ANY",
+                  "activityStyle": "CALM",
+                  "locationRequired": false,
+                  "placeCategory": null,
+                  "reason": "편안한 음악으로 기분을 환기해 보세요.",
+                  "emoji": "🎧"
+                },
+                {
+                  "actionName": "짧은 독서",
+                  "category": "READING",
+                  "durationMinutes": 15,
+                  "environmentType": "ANY",
+                  "socialType": "ANY",
+                  "activityStyle": "CALM",
+                  "locationRequired": false,
+                  "placeCategory": null,
+                  "reason": "잠시 독서에 집중하면서 마음을 정리해 보세요.",
+                  "emoji": "📖"
                 }
-
-                JSON 외의 문장, 설명, 마크다운은
-                출력하지 마세요.
-                """);
+              ]
+            }
+    
+            JSON 외의 문장, 설명, 마크다운은
+            출력하지 마세요.
+            """);
 
         return prompt.toString();
     }
