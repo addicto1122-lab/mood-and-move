@@ -14,6 +14,7 @@ public record LlmRecommendedActionDto(
         ActivityStyle activityStyle,
         boolean locationRequired,
         String placeCategory,
-        String reason
+        String reason,
+        String emoji
 ) {
 }

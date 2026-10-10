@@ -33,10 +33,6 @@ public class GeminiPlaceFilter implements PlaceFilter {
         this.objectMapper = objectMapper;
         this.model = model;
 
-        System.out.println(
-                "Gemini API Key loaded = "
-                        + (apiKey != null && !apiKey.isBlank())
-        );
 
         this.restClient = RestClient.builder()
                 .baseUrl(
@@ -65,28 +61,7 @@ public class GeminiPlaceFilter implements PlaceFilter {
         }
 
 
-        /*
-         * =========================
-         * Gemini 전달 전 후보
-         * =========================
-         */
-        System.out.println();
-        System.out.println(
-                "===== Gemini 전달 전 후보 ====="
-        );
 
-        candidates.forEach(place ->
-                System.out.println(
-                        place.placeId()
-                                + " / "
-                                + place.name()
-                                + " / "
-                                + place.category()
-                                + " / "
-                                + place.distance()
-                                + "m"
-                )
-        );
 
 
         String prompt =
@@ -140,14 +115,6 @@ public class GeminiPlaceFilter implements PlaceFilter {
                     extractOutputText(response);
 
 
-            System.out.println();
-            System.out.println(
-                    "===== Gemini 원본 응답 ====="
-            );
-
-            System.out.println(outputText);
-
-
             /*
              * JSON
              * →
@@ -170,18 +137,6 @@ public class GeminiPlaceFilter implements PlaceFilter {
                     );
 
 
-            System.out.println();
-            System.out.println(
-                    "===== Gemini 선택 placeId ====="
-            );
-
-            System.out.println(selectedIds);
-
-
-            /*
-             * Gemini가 선택한 ID와
-             * Kakao 원본 데이터 매칭
-             */
             List<PlaceResponse> filteredPlaces =
                     candidates.stream()
                             .filter(place ->
@@ -192,19 +147,6 @@ public class GeminiPlaceFilter implements PlaceFilter {
                             .limit(5)
                             .toList();
 
-
-            System.out.println();
-            System.out.println(
-                    "===== 최종 장소 결과 ====="
-            );
-
-            filteredPlaces.forEach(place ->
-                    System.out.println(
-                            place.name()
-                                    + " / "
-                                    + place.category()
-                    )
-            );
 
 
             return filteredPlaces;

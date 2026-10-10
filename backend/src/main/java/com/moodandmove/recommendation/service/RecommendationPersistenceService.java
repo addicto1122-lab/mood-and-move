@@ -10,6 +10,7 @@ import com.moodandmove.recommendation.domain.entity.Action;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 import com.moodandmove.recommendation.domain.entity.RecommendationSession;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
+import com.moodandmove.recommendation.repository.ActionCategoryRepository;
 import com.moodandmove.recommendation.repository.ActionRepository;
 import com.moodandmove.recommendation.repository.RecommendationRepository;
 import com.moodandmove.recommendation.repository.RecommendationSessionRepository;
@@ -35,6 +36,7 @@ public class RecommendationPersistenceService {
     private final RecommendationRepository recommendationRepository;
     private final ActionRepository actionRepository;
     private final UserActionStatService userActionStatService;
+    private final ActionCategoryRepository actionCategoryRepository;
 
     private static final Set<String> ACTION_CATEGORIES = Set.of(
             "WALK", "EXERCISE", "STRETCHING",
@@ -136,11 +138,14 @@ public class RecommendationPersistenceService {
                     i + 1,
                     item.reason().strip()
             );
+            // LLM이 반환한 행동별 이모지 설정
+            recommendation.assignEmoji(item.emoji());
+
 
             Recommendation saved =
                     recommendationRepository.save(recommendation);
 
-            items.add(RecommendationResponse.Item.from(saved));
+            items.add(toItem(saved));
 
             // 기존 행동별 추천 횟수 통계 기록
             userActionStatService.recordRecommendation(
@@ -222,9 +227,25 @@ public class RecommendationPersistenceService {
                 recommendationRepository
                         .findAllBySession_IdOrderByRankNoAsc(session.getId())
                         .stream()
-                        .map(RecommendationResponse.Item::from)
+                        .map(this::toItem)
                         .toList();
 
         return new RecommendationResponse(session.getId(), items);
+    }
+
+    // 추천과 카테고리 정보를 함께 응답으로 변환
+    private RecommendationResponse.Item toItem(
+            Recommendation recommendation
+    ) {
+        String categoryCode = recommendation.getAction().getCategory();
+
+        var actionCategory = actionCategoryRepository
+                .findById(categoryCode)
+                .orElse(null);
+
+        return RecommendationResponse.Item.from(
+                recommendation,
+                actionCategory
+        );
     }
 }

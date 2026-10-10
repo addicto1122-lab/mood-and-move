@@ -6,8 +6,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -51,23 +49,42 @@ public class ActionExecution {
     private ExecutionStatus status;
 
     // 실행 시작 시각
-    @CreationTimestamp
     @Column(name = "started_at", nullable = false, updatable = false)
     private LocalDateTime startedAt;
 
-    // 실행 완료 시각
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
 
     // 기분 재측정 완료 시각
     @Column(name = "rechecked_at")
     private LocalDateTime recheckedAt;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    // 행동 선택 즉시 실행 시작
+    public static ActionExecution select(
+            Long userId,
+            Recommendation recommendation
+    ) {
+        ActionExecution execution = new ActionExecution();
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+        execution.userId = userId;
+        execution.session = recommendation.getSession();
+        execution.recommendation = recommendation;
+        execution.status = ExecutionStatus.STARTED;
+        execution.startedAt = LocalDateTime.now();
+
+        return execution;
+    }
+
+    // 기분 재측정이 끝나면 실행 완료
+    public void complete(LocalDateTime recheckedAt) {
+        if (this.status != ExecutionStatus.STARTED) {
+            throw new IllegalStateException("진행 중인 행동만 완료할 수 있습니다.");
+        }
+
+        if (recheckedAt == null) {
+            throw new IllegalArgumentException("재측정 완료 시각이 필요합니다.");
+        }
+
+        this.status = ExecutionStatus.COMPLETED;
+        this.recheckedAt = recheckedAt;
+    }
+
 }
