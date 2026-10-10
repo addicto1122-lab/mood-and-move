@@ -86,4 +86,16 @@ public class ActionExecutionController {
                 )
         );
     }
+
+    @GetMapping("/action-executions/current")
+    public ResponseEntity<ActionExecutionResponse> getCurrent(
+            Authentication authentication
+    )
+    {
+        User user = (User) authentication.getPrincipal();
+
+        return actionExecutionService.findCurrent(user.getId())
+                .map(ResponseEntity::ok)
+                .orElseGet(()-> ResponseEntity.noContent().build());
+    }
 }

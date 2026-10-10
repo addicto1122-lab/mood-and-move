@@ -1,13 +1,35 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "./MoodRecheckPage.css";
 
 import {
   getActionExecution,
   recheckActionExecution,
 } from "../api/recommendationApi";
+import toast from "react-hot-toast";
 
 export default function MoodRecheckPage() {
+  const location = useLocation();
+  const toastShownRef = useRef(false);
+
+  useEffect(() => {
+    if (location.state?.showRecheckToast && !toastShownRef.current) {
+      toastShownRef.current = true;
+
+      toast("이전 행동의 기분 재측정을 먼저 완료해주세요.", {
+        icon: "🌱",
+        id: "pending-recheck",
+        style: {
+          background: "#4F7F68",
+          color: "#FFFFFF",
+          fontWeight: "600",
+          borderRadius: "14px",
+          padding: "14px 18px",
+        },
+      });
+    }
+  }, [location.state]);
+
   const navigate = useNavigate();
   const { executionId } = useParams();
 
@@ -116,6 +138,16 @@ export default function MoodRecheckPage() {
   const completed = execution.status === "COMPLETED";
   const canRecheck = execution.status === "STARTED";
 
+  const formatEntryDate = (entryDate) => {
+    if (!entryDate) {
+      return "";
+    }
+
+    const [, month, day] = entryDate.split("-");
+
+    return `${Number(month)}월 ${Number(day)}일의 추천 행동`;
+  };
+
   const emoji =
     execution.emoji?.trim() || execution.categoryEmoji?.trim() || "✨";
 
@@ -132,6 +164,11 @@ export default function MoodRecheckPage() {
 
         <h2>{execution.actionName}</h2>
 
+        {execution.entryDate && (
+          <p className="recheck-action-date">
+            {formatEntryDate(execution.entryDate)}
+          </p>
+        )}
         <p>
           {execution.categoryName ? `${execution.categoryName} · ` : ""}
           {execution.durationMinutes}분

@@ -5,12 +5,14 @@ import com.moodandmove.recommendation.domain.entity.ActionExecution;
 import com.moodandmove.recommendation.domain.type.ExecutionStatus;
 import com.moodandmove.recommendation.domain.entity.ActionCategory;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record ActionExecutionResponse(
         Long executionId,
         Long sessionId,
         Long moodEntryId,
+        LocalDate entryDate,
         Long recommendationId,
         String actionName,
         String category,
@@ -47,6 +49,7 @@ public record ActionExecutionResponse(
                 execution.getId(),
                 session.getId(),
                 session.getMoodEntry().getId(),
+                session.getMoodEntry().getEntryDate(),
                 recommendation.getId(),
                 action.getActionName(),
                 action.getCategory(),
