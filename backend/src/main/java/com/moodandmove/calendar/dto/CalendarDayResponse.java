@@ -12,5 +12,6 @@ public record CalendarDayResponse(
 
         Integer moodScore,
         Integer intensity,
-        Integer afterScore
+        Integer afterScore,
+        boolean skipped
 ){}

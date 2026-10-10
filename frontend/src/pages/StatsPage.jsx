@@ -15,6 +15,30 @@ import {
 
 import { authFetch } from "../api/authApi";
 
+function MoodChartTooltip({ active, payload }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const data = payload[0]?.payload;
+
+  return (
+    <div className="mood-chart-tooltip">
+      <strong>{data.fullDate}</strong>
+
+      {data.beforeScore != null && <p>행동 전: {data.beforeScore}점</p>}
+
+      {data.skipped ? (
+        <p>추천 행동: 건너뜀</p>
+      ) : data.afterScore != null ? (
+        <p>행동 후: {data.afterScore}점</p>
+      ) : (
+        <p>행동 후: 기록 없음</p>
+      )}
+    </div>
+  );
+}
+
 export default function StatsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -206,20 +230,60 @@ export default function StatsPage() {
     changeMonth(new Date(year, month, 1));
   };
 
+  const today = new Date();
+
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const isCurrentMonth =
+    year === today.getFullYear() && month === today.getMonth() + 1;
+
+  const chartEndDay = isCurrentMonth ? today.getDate() : daysInMonth;
+
   /*
-   * =========================
-   * 행동 전 / 후 그래프 데이터
-   * =========================
+   * 날짜로 빠르게 찾기 위한 Map
+   *
+   * 예:
+   * "2026-10-10" -> 해당 일기
    */
-  const moodChartData = moodEntries.map((entry) => ({
-    date: entry.date.substring(5),
+  const moodEntryMap = new Map(moodEntries.map((entry) => [entry.date, entry]));
 
-    beforeScore: Number(entry.moodScore),
+  /*
+   * 1일부터 해당 월의 마지막 날까지 생성
+   */
+  const moodChartData = Array.from({ length: chartEndDay }, (_, index) => {
+    const day = index + 1;
 
-    afterScore: entry.afterScore == null ? null : Number(entry.afterScore),
+    const dateKey = [
+      year,
+      String(month).padStart(2, "0"),
+      String(day).padStart(2, "0"),
+    ].join("-");
 
-    emotion: `${entry.emoji} ${entry.emotionName}`,
-  }));
+    const entry = moodEntryMap.get(dateKey);
+
+    return {
+      day,
+      fullDate: dateKey,
+
+      beforeScore: entry ? Number(entry.moodScore) : null,
+
+      afterScore: entry?.afterScore == null ? null : Number(entry.afterScore),
+
+      skipped: entry?.skipped ?? false,
+
+      emotion: entry ? `${entry.emoji} ${entry.emotionName}` : null,
+    };
+  });
+
+  const xAxisTicks = [];
+
+  for (let day = 1; day <= chartEndDay; day += 5) {
+    xAxisTicks.push(day);
+  }
+
+  if (!xAxisTicks.includes(chartEndDay)) {
+    xAxisTicks.push(chartEndDay);
+  }
 
   const CATEGORY_LABEL = {
     WALK: "산책",
@@ -371,13 +435,16 @@ export default function StatsPage() {
                   <LineChart data={moodChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
 
-                    <XAxis dataKey="date" />
+                    <XAxis
+                      dataKey="day"
+                      ticks={xAxisTicks}
+                      tickFormatter={(day) => `${day}일`}
+                      tick={{ fontSize: 10 }}
+                    />
 
                     <YAxis domain={[0, 60]} ticks={[0, 15, 30, 45, 60]} />
 
-                    <Tooltip
-                      formatter={(value, name) => [`${value}점`, name]}
-                    />
+                    <Tooltip content={<MoodChartTooltip />} />
 
                     <Legend />
 
@@ -387,13 +454,7 @@ export default function StatsPage() {
                       name="행동 전"
                       stroke="#3b82f6"
                       strokeWidth={3}
-                      dot={{
-                        r: 4,
-                        strokeWidth: 3,
-                      }}
-                      activeDot={{
-                        r: 6,
-                      }}
+                      connectNulls={true}
                     />
 
                     <Line
@@ -402,7 +463,7 @@ export default function StatsPage() {
                       name="행동 후"
                       stroke="#22c55e"
                       strokeWidth={3}
-                      connectNulls={false}
+                      connectNulls={true}
                     />
                   </LineChart>
                 </ResponsiveContainer>

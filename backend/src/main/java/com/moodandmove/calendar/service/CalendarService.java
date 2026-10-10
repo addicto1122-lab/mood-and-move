@@ -7,6 +7,7 @@ import com.moodandmove.calendar.dto.CalendarDetailResponse;
 import com.moodandmove.calendar.dto.MonthlyCalendarResponse;
 import com.moodandmove.mood.repository.MoodEntryRepository;
 import com.moodandmove.mood.domain.entity.MoodEntry;
+import com.moodandmove.recommendation.repository.RecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class CalendarService {
 
     private final MoodEntryRepository moodEntryRepository;
     private final MoodRecheckRepository moodRecheckRepository;
+    private final RecommendationRepository recommendationRepository;
 
     public MonthlyCalendarResponse getMonthlyCalendar(
             Long userId,
@@ -57,6 +59,14 @@ public class CalendarService {
             MoodEntry moodEntry
     )
     {
+        boolean skipped = recommendationRepository.findFirstBySession_MoodEntry_IdOrderByRankNoAsc(
+                moodEntry.getId()
+        )
+                .map(recommendation ->
+                        "SKIPPED".equals(recommendation.getStatus())
+                )
+                .orElse(false);
+
         Integer afterScore = moodRecheckRepository
                 .findAfterScoreByMoodEntryId(moodEntry.getId())
                 .orElse(null);
@@ -71,7 +81,8 @@ public class CalendarService {
 
                 moodEntry.getMoodScore(),
                 moodEntry.getIntensity(),
-                afterScore
+                afterScore,
+                skipped
         );
     }
 
