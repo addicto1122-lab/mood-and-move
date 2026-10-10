@@ -1238,3 +1238,260 @@
 .summary-links button:active {
   transform: scale(0.99);
 }
+/* =========================
+   행동 효과 - 최고 행동
+========================= */
+
+.best-action-card {
+  margin-top: 24px;
+  padding: 20px;
+
+  border-radius: 22px;
+  border: 1px solid var(--line);
+
+  background: linear-gradient(135deg, #f7fbf8 0%, #eef7f1 100%);
+}
+
+.best-action-badge {
+  margin-bottom: 14px;
+
+  color: var(--sage-dark);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.best-action-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.best-action-content > div:first-child {
+  min-width: 0;
+}
+
+.best-action-category {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: var(--muted);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.best-action-content strong {
+  display: block;
+
+  color: #18251f;
+
+  font-size: 16px;
+  line-height: 1.45;
+
+  word-break: keep-all;
+}
+
+.best-action-delta {
+  flex-shrink: 0;
+
+  padding: 10px 13px;
+
+  border-radius: 14px;
+
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.best-action-delta.positive {
+  color: #28734b;
+  background: #dff4e7;
+}
+
+.best-action-delta.negative {
+  color: #c84c4c;
+  background: #fde8e8;
+}
+
+.best-action-delta.neutral {
+  color: var(--muted);
+  background: #f1f3f2;
+}
+
+/* =========================
+   행동 효과 - 랭킹 공통
+========================= */
+
+.ranking-section {
+  margin-top: 30px;
+}
+
+.ranking-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.ranking-eyebrow {
+  display: block;
+
+  margin-bottom: 4px;
+
+  color: var(--sage);
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 0.12em;
+}
+
+.ranking-header h3 {
+  margin: 0;
+
+  color: #18251f;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.ranking-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =========================
+   랭킹 1개
+========================= */
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+
+  padding: 14px 15px;
+
+  border-radius: 18px;
+
+  background: #f7faf8;
+}
+
+.ranking-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 28px;
+  height: 28px;
+
+  margin-right: 10px;
+
+  border-radius: 50%;
+
+  color: var(--sage-dark);
+  background: #e6f2e9;
+
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.ranking-item:first-child .ranking-number {
+  background: #fff1c7;
+  color: #a46c00;
+}
+
+.ranking-category-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 40px;
+  height: 40px;
+
+  margin-right: 12px;
+
+  border-radius: 14px;
+
+  background: #ffffff;
+
+  font-size: 21px;
+}
+
+.ranking-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.ranking-name strong {
+  display: block;
+
+  color: #18251f;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ranking-name span {
+  display: block;
+
+  margin-top: 3px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+.ranking-value {
+  flex-shrink: 0;
+
+  margin-left: 10px;
+
+  color: var(--sage-dark);
+
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.ranking-value.positive {
+  color: #28734b;
+}
+
+.ranking-value.negative {
+  color: #c84c4c;
+}
+
+/* =========================
+   모바일
+========================= */
+
+@media (max-width: 480px) {
+  .best-action-card {
+    padding: 17px;
+  }
+
+  .best-action-content strong {
+    font-size: 15px;
+  }
+
+  .best-action-delta {
+    font-size: 16px;
+  }
+
+  .ranking-item {
+    padding: 12px;
+  }
+
+  .ranking-category-emoji {
+    width: 36px;
+    height: 36px;
+
+    font-size: 19px;
+  }
+}

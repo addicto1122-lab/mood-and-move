@@ -3,6 +3,7 @@ package com.moodandmove.analysis.service;
 import com.moodandmove.analysis.domain.entity.UserActionStat;
 import com.moodandmove.analysis.domain.type.ConfidenceLevel;
 import com.moodandmove.analysis.dto.*;
+import com.moodandmove.analysis.repository.MoodRecheckRepository;
 import com.moodandmove.analysis.repository.UserActionStatRepository;
 import com.moodandmove.mood.domain.entity.Emotion;
 import com.moodandmove.mood.domain.entity.MoodEntry;
@@ -34,6 +35,7 @@ public class UserActionStatService {
     private final ActionRepository actionRepository;
     private final EmotionRepository emotionRepository;
 
+    private final MoodRecheckRepository moodRecheckRepository;
 
     /*
      * 추천 발생
@@ -506,152 +508,96 @@ public class UserActionStatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ActionEffectResponse> getMonthlyActionEffects(
+    public MonthlyActionEffectResponse getMonthlyActionEffects(
             Long userId,
             int year,
             int month
     ){
-        List<UserActionStat> stats = userActionStatRepository
-                .findAllByUser_IdAndStatYearAndStatMonth(
-                        userId,
-                        year,
-                        month
-                );
-
         /*
-         * 같은 행동끼리 묶기
+         * 조회 기간
          *
          * 예:
-         * 산책 + SAD
-         * 산책 + ANXIOUS
-         * 산책 + JOY
-         *
-         * ↓
-         *
-         * 산책
+         * 2026-10-01 이상
+         * 2026-11-01 미만
          */
+        LocalDate startDate = LocalDate.of(
+                year,
+                month,
+                1
+        );
 
-        Map<Long, List<UserActionStat>> groupedStats = stats.stream()
-                .collect(
-                        Collectors.groupingBy(
-                                stat -> stat.getAction().getId()
+        LocalDate endDate = startDate.plusMonths(1);
+
+        /*
+         * =========================================
+         * 1. 이번 달 최고 단일 행동
+         * =========================================
+         */
+        BestActionResponse bestAction = moodRecheckRepository.findBestAction(
+                userId,
+                startDate,
+                endDate
+        )
+                .map(result ->
+                        new BestActionResponse(
+                                result.getActionId(),
+                                result.getActionName(),
+                                result.getCategory(),
+                                result.getDelta()
                         )
-                );
+                )
+                .orElse(null);
 
-        return groupedStats.values()
-                .stream()
-                .map(group -> {
-                    UserActionStat first = group.get(0);
-
-                    /*
-                     * 추천 횟수 합계
-                     */
-                    long recommendationCount = group.stream()
-                            .mapToLong(
-                                    UserActionStat::getRecommendationCount
-                            )
-                            .sum();
-
-                    /*
-                     * 실행 횟수 합계
-                     */
-                    long executionCount = group.stream()
-                            .mapToLong(
-                                    UserActionStat::getExecutionCount
-                            )
-                            .sum();
-
-                    /*
-                     * 재측정 완료 횟수
-                     */
-                    long sampleCount = group.stream()
-                            .mapToLong(
-                                    UserActionStat::getSampleCount
-                            )
-                            .sum();
-
-                    /*
-                     * 긍정 변화 횟수
-                     */
-                    long positiveCount = group.stream()
-                            .mapToLong(
-                                    UserActionStat::getPositiveCount
-                            )
-                            .sum();
-
-                    /*
-                     * 긍정 변화율
-                     */
-                    BigDecimal positiveRate;
-
-                    if(sampleCount == 0)
-                    {
-                        positiveRate = BigDecimal.ZERO;
-                    }else{
-                        positiveRate = BigDecimal.valueOf(positiveCount)
-                                .multiply(
-                                        BigDecimal.valueOf(100)
+        /*
+         * =========================================
+         * 2. 카테고리별 실행 횟수 랭킹
+         * =========================================
+         */
+        List<CategoryExecutionRankResponse> executionRanking =
+                moodRecheckRepository.findCategoryExecutionRanking(
+                        userId,
+                        startDate,
+                        endDate
+                )
+                        .stream()
+                        .map(result ->
+                                new CategoryExecutionRankResponse(
+                                        result.getCategory(),
+                                        result.getExecutionCount()
                                 )
-                                .divide(
-                                        BigDecimal.valueOf(sampleCount),
-                                        2,
-                                        RoundingMode.HALF_UP
-                                );
-                    }
+                        )
+                        .toList();
 
-                    /*
-                     * 평균 변화량
-                     *
-                     * 단순 평균 X
-                     *
-                     * aveDelta x sampleCount
-                     * 방식으로 가중 평균 계산
-                     */
-                    BigDecimal weightedDeltaSum = group.stream()
-                            .filter(
-                                    stat -> stat.getSampleCount() > 0
-                            )
-                            .filter(
-                                    stat -> stat.getAvgDelta() != null
-                            )
-                            .map(
-                                    stat -> stat.getAvgDelta()
-                                            .multiply(
-                                                    BigDecimal.valueOf(
-                                                            stat.getSampleCount()
-                                                    )
-                                            )
-                            )
-                            .reduce(
-                                    BigDecimal.ZERO,
-                                    BigDecimal::add
-                            );
-
-                    BigDecimal averageDelta;
-
-                    if(sampleCount == 0)
-                    {
-                        averageDelta = BigDecimal.ZERO;
-                    }else{
-                        averageDelta = weightedDeltaSum
-                                .divide(
-                                        BigDecimal.valueOf(sampleCount),
-                                        2,
-                                        RoundingMode.HALF_UP);
-                    }
-
-                    return new ActionEffectResponse(
-                            first.getAction().getId(),
-                            first.getAction().getActionName(),
-                            recommendationCount,
-                            executionCount,
-                            sampleCount,
-                            positiveCount,
-                            positiveRate,
-                            averageDelta
-                    );
-                })
+        /*
+         * =========================================
+         * 3. 카테고리별 효과 랭킹
+         * =========================================
+         */
+        List<CategoryEffectRankResponse> effectRanking = moodRecheckRepository.findCategoryEffectRanking(
+                userId,
+                startDate,
+                endDate
+        )
+                .stream()
+                .map(result ->
+                        new CategoryEffectRankResponse(
+                                result.getCategory(),
+                                result.getAverageDelta(),
+                                result.getSampleCount()
+                        )
+                )
                 .toList();
+
+        /*
+         * =========================================
+         * 최종 반환
+         * =========================================
+         */
+        return new MonthlyActionEffectResponse(
+                bestAction,
+                executionRanking,
+                effectRanking
+        );
     }
 
     @Transactional(readOnly = true)
