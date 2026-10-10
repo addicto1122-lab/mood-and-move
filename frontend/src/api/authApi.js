@@ -75,7 +75,8 @@ export async function signup({
   password,
   nickname,
   locationPolicyId,
-  locationConsent
+  locationConsent,
+  signupToken
 }) {
   const response = await fetch(`${API_BASE_URL}/auth/signup`, {
     method: "POST",
@@ -88,7 +89,8 @@ export async function signup({
       password,
       nickname,
       locationPolicyId,
-      locationConsent
+      locationConsent,
+      signupToken
     })
   });
 
@@ -97,6 +99,45 @@ export async function signup({
       await getErrorMessage(response, "회원가입에 실패했습니다.")
     );
   }
+}
+
+//메일 인증
+export async function sendEmailCode(email) {
+  const response = await fetch("/api/auth/email/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({ email })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "인증번호 발송에 실패했습니다.");
+  }
+
+  return data;
+}
+
+export async function verifyEmailCode(email, code) {
+  const response = await fetch("/api/auth/email/verify", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
+    body: JSON.stringify({ email, code })
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || "이메일 인증에 실패했습니다.");
+  }
+
+  return data;
 }
 
 // 이메일 중복확인

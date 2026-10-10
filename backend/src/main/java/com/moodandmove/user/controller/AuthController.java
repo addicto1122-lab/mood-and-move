@@ -21,6 +21,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import com.moodandmove.user.dto.response.KakaoUserResponse;
 import java.util.UUID;
+import com.moodandmove.mail.service.EmailVerificationService;
+import java.util.Locale;
 
 import java.time.Duration;
 

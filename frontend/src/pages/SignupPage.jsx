@@ -4,8 +4,11 @@ import {
   checkEmail,
   signup,
   login,
-  getCurrentLocationPolicy
+  getCurrentLocationPolicy,
+  sendEmailCode,
+  verifyEmailCode
 } from "../api/authApi";
+
 import "./SignupPage.css";
 
 export default function SignupPage() {
@@ -14,9 +17,21 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [emailChecked, setEmailChecked] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
+  // 이메일 인증
+  const [emailCode, setEmailCode] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [signupToken, setSignupToken] = useState("");
+
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [expiresIn, setExpiresIn] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   const [nickname, setNickname] = useState("");
-
   const [password, setPassword] = useState("");
   const [passwordCheck, setPasswordCheck] = useState("");
 
@@ -25,18 +40,14 @@ export default function SignupPage() {
   const [locationConsent, setLocationConsent] = useState(false);
   const [policyError, setPolicyError] = useState("");
 
-  /*
-   * 현재 활성화된 위치 기반 추천 약관 조회
-   */
+  // 약관 조회
   useEffect(() => {
     async function fetchLocationPolicy() {
       try {
         const data = await getCurrentLocationPolicy();
-
         setLocationPolicy(data);
       } catch (error) {
         console.error(error);
-
         setPolicyError(error.message || "약관 정보를 불러오지 못했습니다.");
       }
     }
@@ -44,40 +55,154 @@ export default function SignupPage() {
     fetchLocationPolicy();
   }, []);
 
+  // 인증번호 재발송 대기시간 / 유효시간
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCooldown((prev) => Math.max(0, prev - 1));
+      setExpiresIn((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds) => {
+    const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const remaining = String(seconds % 60).padStart(2, "0");
+    return `${minutes}:${remaining}`;
+  };
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // 이메일 변경 시 모든 인증 상태 초기화
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+
+    setEmailChecked(false);
+    setEmailAvailable(null);
+
+    setEmailCode("");
+    setEmailSent(false);
+    setEmailVerified(false);
+    setSignupToken("");
+
+    setCooldown(0);
+    setExpiresIn(0);
+  };
+
+  // 이메일 중복확인
   const checkEmailDuplicate = async () => {
-    if (!email.trim()) {
+    if (!normalizedEmail) {
       alert("이메일을 입력해주세요.");
       return;
     }
 
+    setCheckingEmail(true);
+
     try {
-      const data = await checkEmail(email);
+      const data = await checkEmail(normalizedEmail);
 
       setEmailChecked(true);
       setEmailAvailable(data.available);
+
+      if (!data.available) {
+        alert("이미 사용 중인 이메일입니다.");
+      }
     } catch (error) {
-      alert(error.message);
+      alert(error.message || "이메일 중복확인에 실패했습니다.");
+    } finally {
+      setCheckingEmail(false);
     }
   };
 
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
+  // 인증번호 발송
+  const handleSendCode = async () => {
+    if (!emailChecked || !emailAvailable) {
+      alert("이메일 중복확인을 먼저 해주세요.");
+      return;
+    }
 
-    // 이메일을 수정하면 중복확인 다시 해야 함
-    setEmailChecked(false);
-    setEmailAvailable(null);
+    if (cooldown > 0 || sendingCode) {
+      return;
+    }
+
+    setSendingCode(true);
+
+    try {
+      await sendEmailCode(normalizedEmail);
+
+      setEmailSent(true);
+      setEmailVerified(false);
+      setSignupToken("");
+      setEmailCode("");
+
+      setExpiresIn(300);
+      setCooldown(60);
+
+      alert("인증번호를 이메일로 발송했습니다.");
+    } catch (error) {
+      alert(error.message || "인증번호 발송에 실패했습니다.");
+    } finally {
+      setSendingCode(false);
+    }
   };
 
+  // 인증번호 입력
+  const handleCodeChange = (e) => {
+    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setEmailCode(value);
+  };
+
+  // 인증번호 검증
+  const handleVerifyCode = async () => {
+    if (emailCode.length !== 6) {
+      alert("6자리 인증번호를 입력해주세요.");
+      return;
+    }
+
+    if (expiresIn <= 0) {
+      alert("인증번호가 만료되었습니다. 다시 발송해주세요.");
+      return;
+    }
+
+    setVerifyingCode(true);
+
+    try {
+      const data = await verifyEmailCode(normalizedEmail, emailCode);
+
+      if (!data.signupToken) {
+        throw new Error("가입용 인증 토큰을 받지 못했습니다.");
+      }
+
+      setSignupToken(data.signupToken);
+      setEmailVerified(true);
+      setEmailCode("");
+
+      alert("이메일 인증이 완료되었습니다.");
+    } catch (error) {
+      alert(error.message || "이메일 인증에 실패했습니다.");
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
+
+  // 회원가입
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (submitting) return;
 
     if (!emailChecked || !emailAvailable) {
       alert("이메일 중복확인을 해주세요.");
       return;
     }
 
-    if (password.length < 8) {
-      alert("비밀번호는 8자 이상 입력해주세요.");
+    if (!emailVerified || !signupToken) {
+      alert("이메일 인증을 완료해주세요.");
+      return;
+    }
+
+    if (password.length < 8 || password.length > 50) {
+      alert("비밀번호는 8자 이상 50자 이하로 입력해주세요.");
       return;
     }
 
@@ -86,38 +211,50 @@ export default function SignupPage() {
       return;
     }
 
-    /*
-     * 사용자가 실제로 확인한 약관 ID를
-     * 회원가입 요청에 포함해야 하므로
-     * 약관 조회가 끝나지 않았다면 가입하지 않음
-     */
     if (!locationPolicy) {
-      alert("약관 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      alert("약관 정보를 불러오지 못했습니다.");
       return;
     }
 
+    setSubmitting(true);
+
+    // 회원가입
     try {
-      // 회원가입
       await signup({
-        email,
+        email: normalizedEmail,
         password,
         nickname,
         locationPolicyId: locationPolicy.id,
-        locationConsent
+        locationConsent,
+        signupToken
       });
+    } catch (error) {
+      alert(error.message || "회원가입에 실패했습니다.");
+      setSubmitting(false);
+      return;
+    }
 
-      // 회원가입 직후 자동 로그인
+    // 회원가입 성공 후 자동 로그인
+    try {
       await login({
-        email,
+        email: normalizedEmail,
         password
       });
 
-      // JWT 쿠키가 저장된 상태로 온보딩 이동
       navigate("/onboarding");
     } catch (error) {
-      alert(error.message);
+      console.error(error);
+      alert(
+        "회원가입은 완료되었지만 자동 로그인에 실패했습니다. 직접 로그인해주세요."
+      );
+
+      navigate("/login");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const emailBusy = checkingEmail || sendingCode || verifyingCode;
 
   return (
     <main className="signup-page">
@@ -148,6 +285,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={handleEmailChange}
                 placeholder="example@email.com"
+                disabled={emailBusy || submitting}
                 required
               />
 
@@ -155,8 +293,9 @@ export default function SignupPage() {
                 type="button"
                 className="email-check-button"
                 onClick={checkEmailDuplicate}
+                disabled={emailBusy || submitting}
               >
-                중복확인
+                {checkingEmail ? "확인 중..." : "중복확인"}
               </button>
             </div>
 
@@ -168,6 +307,81 @@ export default function SignupPage() {
               <p className="check-message error">
                 이미 사용 중인 이메일입니다.
               </p>
+            )}
+          </div>
+
+          {/* 이메일 인증 */}
+          <div className="signup-field email-verification">
+            <label>이메일 인증</label>
+
+            {emailVerified ? (
+              <div className="email-verified-box">
+                <span>✓</span>
+                이메일 인증이 완료되었습니다.
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="email-send-button"
+                  onClick={handleSendCode}
+                  disabled={
+                    !emailChecked ||
+                    !emailAvailable ||
+                    sendingCode ||
+                    verifyingCode ||
+                    cooldown > 0
+                  }
+                >
+                  {sendingCode
+                    ? "발송 중..."
+                    : cooldown > 0
+                      ? `재발송 ${cooldown}초`
+                      : emailSent
+                        ? "인증번호 재발송"
+                        : "인증번호 발송"}
+                </button>
+
+                {emailSent && (
+                  <>
+                    <div className="email-code-row">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={emailCode}
+                        onChange={handleCodeChange}
+                        placeholder="6자리 인증번호"
+                        maxLength={6}
+                        disabled={verifyingCode || submitting}
+                      />
+
+                      <button
+                        type="button"
+                        className="email-verify-button"
+                        onClick={handleVerifyCode}
+                        disabled={
+                          emailCode.length !== 6 ||
+                          expiresIn <= 0 ||
+                          verifyingCode
+                        }
+                      >
+                        {verifyingCode ? "확인 중..." : "인증확인"}
+                      </button>
+                    </div>
+
+                    {expiresIn > 0 ? (
+                      <p className="email-timer">
+                        인증번호 유효시간 {formatTime(expiresIn)}
+                      </p>
+                    ) : (
+                      <p className="check-message error">
+                        인증번호가 만료되었습니다. 재발송해주세요.
+                      </p>
+                    )}
+                  </>
+                )}
+              </>
             )}
           </div>
 
@@ -197,6 +411,7 @@ export default function SignupPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="8자 이상 입력해주세요"
               minLength={8}
+              maxLength={50}
               required
             />
           </div>
@@ -226,7 +441,7 @@ export default function SignupPage() {
             )}
           </div>
 
-          {/* 현재 위치 기반 추천 선택 약관 */}
+          {/* 위치정보 약관 */}
           {locationPolicy && (
             <div className="signup-consent">
               <label className="signup-consent-label">
@@ -255,9 +470,11 @@ export default function SignupPage() {
           <button
             className="signup-submit"
             type="submit"
-            disabled={!locationPolicy}
+            disabled={
+              !locationPolicy || !emailVerified || !signupToken || submitting
+            }
           >
-            회원가입
+            {submitting ? "가입 처리 중..." : "회원가입"}
           </button>
         </form>
 
