@@ -18,6 +18,8 @@ repositories {
 }
 
 dependencies {
+	// Caffeine
+	implementation 'com.github.ben-manes.caffeine:caffeine'
 	// mail
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	//jwt
