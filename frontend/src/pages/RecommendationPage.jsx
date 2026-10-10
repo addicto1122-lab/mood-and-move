@@ -1,116 +1,141 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { useLocation, useNavigate } from "react-router-dom";
-
-import { generateRecommendations } from "../api/recommendationApi";
+import {
+  getSavedRecommendations,
+  selectRecommendation,
+  skipRecommendations,
+} from "../api/recommendationApi";
 
 import "./RecommendationPage.css";
 
 const environmentNames = {
   INDOOR: "실내",
   OUTDOOR: "실외",
-  ANY: "어디서든"
+  ANY: "어디서든",
 };
 
 export default function RecommendationPage() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   /*
-   * MoodWritePage에서 전달된 값
+   * URL에서 moodEntryId 조회
+   *
+   * 예시:
+   * /recommendations?moodEntryId=42
    */
-  const { moodEntryId, locationMode, currentLocation } = location.state ?? {};
+  const moodEntryId = searchParams.get("moodEntryId");
 
   const [recommendations, setRecommendations] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
+  const [sessionId, setSessionId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState("");
+
+  const submittingRef = useRef(false);
 
   /*
-   * React StrictMode에서
-   * 추천 API 중복 호출 방지
-   */
-  const requestedRef = useRef(false);
-
-  /*
-   * 추천 생성
+   * 저장된 추천 조회
+   *
+   * - 추천 생성 POST 호출하지 않음
+   * - URL의 moodEntryId로 GET 요청
+   * - 새로고침해도 동일한 추천 조회
    */
   useEffect(() => {
     if (!moodEntryId) {
       return;
     }
 
-    if (requestedRef.current) {
-      return;
-    }
-
-    requestedRef.current = true;
+    let cancelled = false;
 
     async function loadRecommendations() {
       try {
         setLoading(true);
         setError("");
+        setActionError("");
+        setSessionId(null);
+        setRecommendations([]);
 
-        const data = await generateRecommendations({
-          moodEntryId,
-          locationMode,
-          currentLocation
-        });
+        const data = await getSavedRecommendations(moodEntryId);
 
+        if (cancelled) {
+          return;
+        }
+        setSessionId(data.sessionId);
         setRecommendations(data.recommendations ?? []);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error("추천 조회 실패:", err);
 
-        setError(error.message || "추천 행동을 불러오지 못했습니다.");
+        if (cancelled) {
+          return;
+        }
+
+        setError(err.message || "추천 행동을 불러오지 못했습니다.");
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     loadRecommendations();
-  }, [moodEntryId, locationMode, currentLocation]);
 
-  /*
-   * 추천 행동 시작
-   *
-   * 추후 ActionExecution API 연결
-   */
-  const handleStart = (item) => {
-    console.log("선택한 추천", {
-      recommendationId: item.recommendationId,
-      actionId: item.actionId,
-      actionName: item.actionName
-    });
+    return () => {
+      cancelled = true;
+    };
+  }, [moodEntryId]);
 
-    alert(`${item.actionName}을(를) 시작합니다.`);
-
-    /*
-     * TODO
-     *
-     * ActionExecution API 연결
-     */
-  };
-
-  /*
-   * 추천 건너뛰기
-   *
-   * 추후 RecommendationSession
-   * selectionStatus 변경 API 연결
-   */
-  const handleSkip = () => {
-    const skip = window.confirm("이번 추천을 건너뛸까요?");
-
-    if (!skip) {
+  // 선택 성공 후 메인으로 이동
+  const handleStart = async (item) => {
+    if (submittingRef.current || !sessionId) {
       return;
     }
 
-    navigate("/");
+    submittingRef.current = true;
+    setSubmitting(true);
+    setActionError("");
+
+    try {
+      await selectRecommendation(sessionId, item.recommendationId);
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      setActionError(err.message || "행동을 선택하지 못했습니다.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
   };
 
+  // 건너뛰기 저장에 성공한 뒤 메인으로 이동
+  const handleSkip = async () => {
+    if (submittingRef.current || !sessionId) {
+      return;
+    }
+
+    if (!window.confirm("이번 추천을 모두 건너뛸까요?")) {
+      return;
+    }
+
+    submittingRef.current = true;
+    setSubmitting(true);
+    setActionError("");
+
+    try {
+      await skipRecommendations(sessionId);
+
+      navigate("/", { replace: true });
+    } catch (err) {
+      setActionError(err.message || "추천을 건너뛰지 못했습니다.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
   /*
-   * 추천할 감정 기록 없이
-   * URL로 직접 진입한 경우
+   * moodEntryId 없이 직접 진입한 경우
    */
   if (!moodEntryId) {
     return (
@@ -133,7 +158,7 @@ export default function RecommendationPage() {
   }
 
   /*
-   * 추천 생성 중
+   * 저장된 추천 조회 중
    */
   if (loading) {
     return (
@@ -142,12 +167,12 @@ export default function RecommendationPage() {
           <div>
             <span className="recommendation-eyebrow">맞춤 행동 추천</span>
 
-            <h1>행동을 고르고 있어요...</h1>
+            <h1>추천 행동을 불러오고 있어요...</h1>
 
             <p>
-              지금의 감정과 상황을 살펴보고
+              저장된 추천 결과를 확인하고 있어요.
               <br />
-              부담 없이 할 수 있는 행동을 찾고 있어요.
+              잠시만 기다려주세요.
             </p>
           </div>
         </header>
@@ -156,7 +181,7 @@ export default function RecommendationPage() {
   }
 
   /*
-   * 추천 API 실패
+   * 추천 조회 실패
    */
   if (error) {
     return (
@@ -170,7 +195,7 @@ export default function RecommendationPage() {
             <p>{error}</p>
 
             <button type="button" onClick={() => navigate("/mood")}>
-              다시 작성하기
+              감정 기록으로 이동
             </button>
           </div>
         </header>
@@ -178,6 +203,32 @@ export default function RecommendationPage() {
     );
   }
 
+  /*
+   * 추천 결과가 비어 있는 경우
+   */
+  if (recommendations.length === 0) {
+    return (
+      <main className="recommendation-page">
+        <header className="recommendation-header">
+          <div>
+            <span className="recommendation-eyebrow">맞춤 행동 추천</span>
+
+            <h1>표시할 추천 행동이 없어요.</h1>
+
+            <p>저장된 추천 결과를 확인할 수 없습니다.</p>
+
+            <button type="button" onClick={() => navigate("/mood")}>
+              감정 기록으로 이동
+            </button>
+          </div>
+        </header>
+      </main>
+    );
+  }
+
+  /*
+   * 추천 결과 화면
+   */
   return (
     <main className="recommendation-page">
       <header className="recommendation-header">
@@ -202,7 +253,9 @@ export default function RecommendationPage() {
           </p>
         </div>
       </header>
+      {actionError && <p role="alert">{actionError}</p>}
 
+      <section className="recommendation-grid"></section>
       <section className="recommendation-grid">
         {recommendations.map((item) => (
           <article
@@ -214,8 +267,9 @@ export default function RecommendationPage() {
             }
           >
             <div className="card-top">
-              <div className="card-icon">✨</div>
-
+              <div className="card-icon" aria-hidden="true">
+                {item.emoji?.trim() || item.categoryEmoji?.trim() || "✨"}
+              </div>
               {item.rankNo === 1 && (
                 <span className="best-badge">✨ 가장 잘 맞아요</span>
               )}
@@ -223,6 +277,9 @@ export default function RecommendationPage() {
 
             <h2>{item.actionName}</h2>
 
+            {item.categoryName && (
+              <p className="card-category">{item.categoryName}</p>
+            )}
             <div className="card-meta">
               <span>◷ {item.durationMinutes}분</span>
 
@@ -237,8 +294,9 @@ export default function RecommendationPage() {
               type="button"
               className="card-start-button"
               onClick={() => handleStart(item)}
+              disabled={submitting || !sessionId}
             >
-              이 행동 하기
+              {submitting ? "처리 중..." : "이 행동 선택하기"}
             </button>
           </article>
         ))}
@@ -248,8 +306,9 @@ export default function RecommendationPage() {
         type="button"
         className="recommendation-skip-button"
         onClick={handleSkip}
+        disabled={submitting || !sessionId}
       >
-        이번 추천 건너뛰기
+        {submitting ? "처리 중..." : "이번 추천 건너뛰기"}
       </button>
     </main>
   );

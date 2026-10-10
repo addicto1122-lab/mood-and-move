@@ -2,14 +2,24 @@
 package com.moodandmove.home.dto.response;
 
 import com.moodandmove.mood.domain.entity.MoodEntry;
+import com.moodandmove.recommendation.domain.dto.response.ActionExecutionResponse;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 
 import java.time.LocalDate;
 
 public record HomeResponse(
         LatestMood latestMood,
-        TodayRecommendation todayRecommendation
+        TodayRecommendation todayRecommendation,
+        ActionExecutionResponse currentExecution
 ) {
+
+    // 기존 두 인자 생성 코드도 사용할 수 있도록 유지
+    public HomeResponse(
+            LatestMood latestMood,
+            TodayRecommendation todayRecommendation
+    ) {
+        this(latestMood, todayRecommendation, null);
+    }
 
     public record LatestMood(
             Long moodEntryId,

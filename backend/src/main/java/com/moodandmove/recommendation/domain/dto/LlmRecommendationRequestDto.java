@@ -8,21 +8,7 @@ public record LlmRecommendationRequestDto(
         CurrentStateDto currentState,
         RecommendationLocationDto location,
         UserPreferenceDto preference,
-        List<ActionCandidateDto> candidates,
+        List<CategoryScoreDto> categoryScores,
         RecommendationType recommendationType
 ) {
-    public LlmRecommendationRequestDto(
-            CurrentStateDto currentState,
-            RecommendationLocationDto location,
-            UserPreferenceDto preference,
-            List<ActionCandidateDto> candidates
-    ) {
-        this(
-                currentState,
-                location,
-                preference,
-                candidates,
-                RecommendationType.COLD_START
-        );
-    }
 }

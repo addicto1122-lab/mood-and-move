@@ -1,6 +1,5 @@
 package com.moodandmove.recommendation.service;
 
-import com.moodandmove.analysis.domain.type.ConfidenceLevel;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -53,18 +52,20 @@ public class PersonalScoreCalculator {
                 );
 
         /*
-         * 표본 신뢰도
+         * 표본 수에 따른 효과 점수 반영 비중
          *
-         * 1회  = 0.1
-         * 5회  = 0.5
-         * 10회 = 1.0
+         *  0회 → 기본 50점 유지 (메서드 앞부분에서 처리)
+         *  5회 → 약 33% 반영
+         * 10회 → 50% 반영
+         * 30회 → 75% 반영
+         *
+         * 통계적 확률이 아니라 점수 보정용 가중치다.
          */
-        BigDecimal reliability = BigDecimal.valueOf(
-                Math.min(sampleCount, 10)
+        BigDecimal sampleSize = BigDecimal.valueOf(sampleCount);
 
-        ).divide(
-                BigDecimal.TEN,
-                4,
+        BigDecimal reliability = sampleSize.divide(
+                sampleSize.add(BigDecimal.TEN),
+                6,
                 RoundingMode.HALF_UP
         );
 

@@ -38,6 +38,7 @@ public class RecommendationService {
     private final PersonalScoreCalculator personalScoreCalculator;
     private final RecommendationLlmGenerator recommendationLlmGenerator;
     private final RecommendationPersistenceService persistenceService;
+    private final CategoryScoreService categoryScoreService;
 
     private static final Set<String> ACTION_CATEGORIES = Set.of(
             "WALK",
@@ -172,29 +173,32 @@ public class RecommendationService {
         UserPreferenceDto preference =
                 createUserPreference(userId);
 
-        // 4. 기존 행동 및 개인화 점수
-        //    행동이 없어도 LLM 추천은 가능해야 함
-        List<ActionCandidateDto> candidates =
-                createActionCandidates(
-                        userId,
-                        currentState.emotion(),
-                        location.locationMode()
-                );
+        // 4. DB에 저장된 사용자·카테고리별 점수와 표본 수 조회
+        List<CategoryScoreDto> categoryScores =
+                categoryScoreService.getScores(userId);
 
-        // 5. 전체 유효 재측정 횟수
-        long totalSampleCount =
-                userActionStatService.getTotalSampleCount(userId);
+        // 카테고리 기본 데이터가 없으면 설정 오류로 처리
+        if (categoryScores.isEmpty()) {
+            throw new IllegalStateException(
+                    "카테고리 기본 데이터가 없습니다. V11 적용을 확인해주세요."
+            );
+        }
 
-        // 6. 추천 유형 결정
+        // 5. 모든 카테고리의 재측정 완료 표본 합산
+        long totalSampleCount = categoryScores.stream()
+                .mapToLong(CategoryScoreDto::sampleCount)
+                .sum();
+
+        // 6. 기존 분류 기준으로 추천 유형 결정
         RecommendationType recommendationType =
                 resolveRecommendationType(totalSampleCount);
 
-        // 7. LLM 요청 데이터 반환
+        // 7. 행동 후보 대신 카테고리 통계를 전달
         return new LlmRecommendationRequestDto(
                 currentState,
                 location,
                 preference,
-                candidates,
+                categoryScores,
                 recommendationType
         );
     }
@@ -370,7 +374,8 @@ public class RecommendationService {
                             item.activityStyle(),
                             item.locationRequired(),
                             item.placeCategory(),
-                            item.reason().strip()
+                            item.reason().strip(),
+                            item.emoji()
                     )
             );
 
