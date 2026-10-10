@@ -788,3 +788,9 @@
     grid-template-columns: 1fr;
   }
 }
+.recheck-action-date {
+  margin: 8px 0 4px;
+  color: #4f7f68;
+  font-size: 14px;
+  font-weight: 700;
+}
