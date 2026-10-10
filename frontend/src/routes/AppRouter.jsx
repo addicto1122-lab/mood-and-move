@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 import ProtectedRoute from "./ProtectedRoute.jsx";
 import AppLayout from "../components/AppLayout.jsx";
@@ -22,6 +23,12 @@ import MoodRouteGuard from "./MoodRouteGuard.jsx";
 export default function AppRouter() {
   return (
     <BrowserRouter>
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{ duration: 2000 }}
+      />
+
       <Routes>
         {/* 로그인 없이 접근 */}
         <Route path="/login" element={<LoginPage />} />

@@ -30,4 +30,16 @@ public class MoodController {
 
         return ResponseEntity.ok(moodEntryId);
     }
+
+    @GetMapping("/today/exists")
+    public boolean hasTodayMood(
+            Authentication authentication
+    )
+    {
+        User user =(User) authentication.getPrincipal();
+
+        return moodService.hasTodayMood(
+                user.getId()
+        );
+    }
 }

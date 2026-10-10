@@ -5,6 +5,8 @@ import com.moodandmove.mood.domain.entity.MoodEntry;
 import com.moodandmove.mood.dto.request.MoodCreateRequest;
 import com.moodandmove.mood.repository.EmotionRepository;
 import com.moodandmove.mood.repository.MoodEntryRepository;
+import com.moodandmove.recommendation.domain.type.ExecutionStatus;
+import com.moodandmove.recommendation.repository.ActionExecutionRepository;
 import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +23,25 @@ public class MoodService {
     private final EmotionRepository emotionRepository;
     private final UserRepository userRepository;
     private final MoodScoreCalculator moodScoreCalculator;
+    private final ActionExecutionRepository actionExecutionRepository;
 
     @Transactional
     public Long createMood(
             Long userId,
             MoodCreateRequest request
     ) {
+
+        boolean hasPendingRecheck = actionExecutionRepository.findFirstByUserIdAndStatusAndSession_MoodEntry_DeletedAtIsNullOrderByStartedAtDescIdDesc(
+                userId,
+                ExecutionStatus.STARTED
+        )
+                .isPresent();
+
+        if(hasPendingRecheck){
+            throw new IllegalStateException(
+                    "이전 행동의 기분 재측정을 먼저 완료해주세요."
+            );
+        }
 
         LocalDate today = LocalDate.now();
 
@@ -76,5 +91,16 @@ public class MoodService {
                 moodEntryRepository.save(moodEntry);
 
         return savedMood.getId();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasTodayMood(Long userId)
+    {
+        LocalDate today = LocalDate.now();
+
+        return moodEntryRepository.existsByUser_IdAndEntryDate(
+                userId,
+                today
+        );
     }
 }

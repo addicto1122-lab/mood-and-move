@@ -59,4 +59,31 @@ public class PlaceService {
             );
         };
     }
+
+    public List<PlaceResponse> findNearbyPlaceWithFallback(
+            PlaceType placeType,
+            double latitude,
+            double longitude
+    )
+    {
+        int[] radiuses = {3000,4000,5000};
+
+        for(int radius : radiuses)
+        {
+            System.out.println("장소 검색 반경 = " + radius + "m");
+
+            List<PlaceResponse> places = findNearbyPlaces(
+                    placeType,
+                    latitude,
+                    longitude,
+                    radius
+            );
+
+            if(!places.isEmpty())
+            {
+                return places;
+            }
+        }
+        return List.of();
+    }
 }
