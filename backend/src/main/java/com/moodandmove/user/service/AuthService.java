@@ -2,6 +2,7 @@ package com.moodandmove.user.service;
 
 import com.moodandmove.common.security.JwtProvider;
 import com.moodandmove.common.security.RefreshTokenHasher;
+import com.moodandmove.mail.service.EmailVerificationService;
 import com.moodandmove.user.domain.entity.*;
 import com.moodandmove.user.domain.type.ConsentType;
 import com.moodandmove.user.domain.type.SocialProvider;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -28,17 +30,24 @@ public class AuthService {
     private final RefreshTokenHasher refreshTokenHasher;
     private final JwtProvider jwtProvider;
     private final SocialAccountRepository socialAccountRepository;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public void signup(SignupRequest request) {
 
-        if (userRepository.existsByEmail(request.email())) {
+        // 1. 이메일 정규화
+        String email = request.email()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        // 2. 이메일 중복 확인
+        if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException(
                     "이미 사용 중인 이메일입니다."
             );
         }
 
-
+        // 3. 위치정보 약관 조회
         ConsentPolicy locationPolicy =
                 consentPolicyRepository
                         .findById(request.locationPolicyId())
@@ -48,9 +57,7 @@ public class AuthService {
                                 )
                         );
 
-        /*
-         * CURRENT_LOCATION 약관인지 확인
-         */
+        // 4. 약관 종류 확인
         if (locationPolicy.getConsentType()
                 != ConsentType.CURRENT_LOCATION) {
 
@@ -59,25 +66,33 @@ public class AuthService {
             );
         }
 
-
+        // 5. 약관 활성화 확인
         if (!locationPolicy.isActive()) {
             throw new IllegalArgumentException(
                     "현재 사용할 수 없는 약관입니다."
             );
         }
 
+        // 6. 이메일 인증 확인 및 토큰 사용 처리
+        emailVerificationService.consumeSignupToken(
+                email,
+                request.signupToken()
+        );
+
+        // 7. 비밀번호 암호화
         String encodedPassword =
                 passwordEncoder.encode(request.password());
 
+        // 8. 사용자 생성
         User user = User.create(
-                request.email(),
+                email,
                 encodedPassword,
                 request.nickname()
         );
 
         userRepository.save(user);
 
-
+        // 9. 위치정보 약관 동의 저장
         UserConsent userConsent =
                 UserConsent.create(
                         user,

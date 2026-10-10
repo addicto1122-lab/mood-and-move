@@ -22,7 +22,10 @@ public record SignupRequest(
         @NotNull(message = "약관 정보가 필요합니다.")
         Long locationPolicyId,
 
-        boolean locationConsent
+        boolean locationConsent,
+
+        @NotBlank(message = "이메일 인증이 필요합니다.")
+        String signupToken
 
 ) {
 }
