@@ -1,6 +1,7 @@
 package com.moodandmove.analysis.controller;
 
 import com.moodandmove.analysis.dto.ActionEffectResponse;
+import com.moodandmove.analysis.dto.MonthlyActionEffectResponse;
 import com.moodandmove.analysis.dto.MonthlyStatsResponse;
 import com.moodandmove.analysis.service.UserActionStatService;
 import com.moodandmove.user.domain.entity.User;
@@ -37,7 +38,7 @@ public class StatsController {
     }
 
     @GetMapping("/monthly/actions")
-    public List<ActionEffectResponse> getMonthlyActionEffects(
+    public MonthlyActionEffectResponse getMonthlyActionEffects(
             Authentication authentication,
             @RequestParam int year,
             @RequestParam int month

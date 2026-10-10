@@ -47,7 +47,11 @@ export default function StatsPage() {
   /*
    * 행동별 효과
    */
-  const [actionEffects, setActionEffects] = useState([]);
+  const [actionEffects, setActionEffects] = useState({
+    bestAction: null,
+    executionRanking: [],
+    effectRanking: [],
+  });
 
   /*
    * 로딩
@@ -156,10 +160,18 @@ export default function StatsPage() {
 
         const data = await response.json();
 
-        setActionEffects(data || []);
+        setActionEffects({
+          bestAction: data.bestAction ?? null,
+          executionRanking: data.executionRanking ?? [],
+          effectRanking: data.effectRanking ?? [],
+        });
       } catch (error) {
         console.error(error);
-        setActionEffects([]);
+        setActionEffects({
+          bestAction: null,
+          executionRanking: [],
+          effectRanking: [],
+        });
       }
     }
 
@@ -209,14 +221,24 @@ export default function StatsPage() {
     emotion: `${entry.emoji} ${entry.emotionName}`,
   }));
 
-  /*
-   * 행동 Emoji
-   */
-  const ACTION_EMOJI = {
-    1: "🚶",
-    2: "🤸",
-    3: "🎵",
-    4: "🌿",
+  const CATEGORY_LABEL = {
+    WALK: "산책",
+    SOCIAL: "소셜 활동",
+    EATING: "먹기",
+    EXERCISE: "운동",
+    REST: "휴식",
+    MUSIC: "음악",
+    STUDY: "공부",
+  };
+
+  const CATEGORY_EMOJI = {
+    WALK: "🚶",
+    SOCIAL: "💬",
+    EATING: "☕",
+    EXERCISE: "🏃",
+    REST: "🌿",
+    MUSIC: "🎵",
+    STUDY: "📚",
   };
 
   return (
@@ -400,85 +422,135 @@ export default function StatsPage() {
 
       {activeTab === "ACTION" && (
         <>
-          {actionEffects.length > 0 ? (
+          {actionEffects.bestAction ||
+          actionEffects.executionRanking.length > 0 ||
+          actionEffects.effectRanking.length > 0 ? (
             <section className="action-effect-section">
-              <h2>{month}월 행동별 효과</h2>
+              <h2>{month}월 행동 효과</h2>
 
               <p className="action-effect-description">
-                이번 달 실행한 행동이 기분에 어떤 변화를 주었는지 확인해보세요.
+                이번 달 어떤 행동이 마음에 도움이 되었는지 확인해보세요.
               </p>
 
-              <div className="action-effect-list">
-                {actionEffects.map((action) => (
-                  <div key={action.actionId} className="action-effect-card">
-                    <div className="action-effect-header">
-                      <div className="action-effect-title">
-                        <span className="action-effect-emoji">
-                          {ACTION_EMOJI[action.actionId] || "✨"}
-                        </span>
+              {/* =========================
+            최고 효과 행동
+        ========================= */}
+              {actionEffects.bestAction && (
+                <div className="best-action-card">
+                  <div className="best-action-badge">
+                    🏆 가장 효과가 좋았던 행동
+                  </div>
 
-                        <div>
-                          <strong>{action.actionName}</strong>
+                  <div className="best-action-content">
+                    <div>
+                      <span className="best-action-category">
+                        {CATEGORY_EMOJI[actionEffects.bestAction.category] ||
+                          "✨"}{" "}
+                        {CATEGORY_LABEL[actionEffects.bestAction.category] ||
+                          actionEffects.bestAction.category}
+                      </span>
 
-                          <span>실행 {action.executionCount}회</span>
-                        </div>
-                      </div>
-
-                      <div
-                        className={
-                          action.averageDelta > 0
-                            ? "delta positive"
-                            : action.averageDelta < 0
-                              ? "delta negative"
-                              : "delta neutral"
-                        }
-                      >
-                        {action.averageDelta > 0 ? "+" : ""}
-                        {action.averageDelta}
-                      </div>
+                      <strong>{actionEffects.bestAction.actionName}</strong>
                     </div>
 
-                    <div className="action-effect-stats">
-                      <div>
-                        <span>추천</span>
-
-                        <strong>{action.recommendationCount}회</strong>
-                      </div>
-
-                      <div>
-                        <span>실행</span>
-
-                        <strong>{action.executionCount}회</strong>
-                      </div>
-
-                      <div>
-                        <span>재측정</span>
-
-                        <strong>{action.sampleCount}회</strong>
-                      </div>
-                    </div>
-
-                    <div className="positive-rate-area">
-                      <div className="positive-rate-header">
-                        <span>긍정 변화율</span>
-
-                        <strong>{action.positiveRate}%</strong>
-                      </div>
-
-                      <div className="positive-rate-bar">
-                        <div
-                          className="positive-rate-fill"
-                          style={{
-                            width: `${Math.min(
-                              Number(action.positiveRate),
-                              100,
-                            )}%`,
-                          }}
-                        />
-                      </div>
+                    <div
+                      className={
+                        actionEffects.bestAction.delta > 0
+                          ? "best-action-delta positive"
+                          : actionEffects.bestAction.delta < 0
+                            ? "best-action-delta negative"
+                            : "best-action-delta neutral"
+                      }
+                    >
+                      {actionEffects.bestAction.delta > 0 ? "+" : ""}
+                      {actionEffects.bestAction.delta}점
                     </div>
                   </div>
-                ))}
+                </div>
+              )}
+
+              {/* =========================
+            실행 횟수 랭킹
+        ========================= */}
+              <div className="ranking-section">
+                <div className="ranking-header">
+                  <div>
+                    <span className="ranking-eyebrow">MOST ACTIVE</span>
+                    <h3>많이 실행한 활동</h3>
+                  </div>
+                </div>
+
+                <div className="ranking-list">
+                  {actionEffects.executionRanking
+                    .slice(0, 3)
+                    .map((item, index) => (
+                      <div key={item.category} className="ranking-item">
+                        <span className="ranking-number">{index + 1}</span>
+
+                        <span className="ranking-category-emoji">
+                          {CATEGORY_EMOJI[item.category] || "✨"}
+                        </span>
+
+                        <div className="ranking-name">
+                          <strong>
+                            {CATEGORY_LABEL[item.category] || item.category}
+                          </strong>
+                          <span>{item.category}</span>
+                        </div>
+
+                        <strong className="ranking-value">
+                          {item.executionCount}회
+                        </strong>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* =========================
+            효과 랭킹
+        ========================= */}
+              <div className="ranking-section">
+                <div className="ranking-header">
+                  <div>
+                    <span className="ranking-eyebrow">BEST EFFECT</span>
+                    <h3>효과가 좋았던 활동</h3>
+                  </div>
+                </div>
+
+                <div className="ranking-list">
+                  {actionEffects.effectRanking
+                    .slice(0, 3)
+                    .map((item, index) => (
+                      <div key={item.category} className="ranking-item">
+                        <span className="ranking-number">{index + 1}</span>
+
+                        <span className="ranking-category-emoji">
+                          {CATEGORY_EMOJI[item.category] || "✨"}
+                        </span>
+
+                        <div className="ranking-name">
+                          <strong>
+                            {CATEGORY_LABEL[item.category] || item.category}
+                          </strong>
+
+                          <span>재측정 {item.sampleCount}회</span>
+                        </div>
+
+                        <strong
+                          className={
+                            item.averageDelta > 0
+                              ? "ranking-value positive"
+                              : item.averageDelta < 0
+                                ? "ranking-value negative"
+                                : "ranking-value"
+                          }
+                        >
+                          {item.averageDelta > 0 ? "+" : ""}
+                          {item.averageDelta}점
+                        </strong>
+                      </div>
+                    ))}
+                </div>
               </div>
             </section>
           ) : (
@@ -490,7 +562,7 @@ export default function StatsPage() {
               <p>
                 추천 행동을 실행하고 기분을 다시 기록하면
                 <br />
-                어떤 행동이 도움이 되었는지 보여드릴게요.
+                어떤 활동이 도움이 되었는지 보여드릴게요.
               </p>
             </section>
           )}
