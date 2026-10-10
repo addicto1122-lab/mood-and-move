@@ -1,5 +1,7 @@
 package com.moodandmove.mail.controller;
 
+import com.moodandmove.mail.service.EmailSendRateLimiter;
+import jakarta.servlet.http.HttpServletRequest;
 import com.moodandmove.mail.service.EmailVerificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,24 +15,30 @@ import java.util.Map;
 public class EmailVerificationController {
 
     private final EmailVerificationService emailVerificationService;
+    private final EmailSendRateLimiter rateLimiter;
     public record EmailSendRequest(String email) { }
 
     // 이메일 인증번호 발송
     @PostMapping("/send")
     public ResponseEntity<?> sendCode(
-            @RequestBody EmailSendRequest request
+            @RequestBody EmailSendRequest request,
+            HttpServletRequest httpRequest
     ) {
         if (request.email() == null || request.email().isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "이메일을 입력해주세요."));
+            return ResponseEntity.badRequest().body(Map.of("message", "이메일을 입력해주세요."));
         }
 
         try {
+            // 요청자 IP 확인
+            String clientIp = httpRequest.getRemoteAddr();
+
+            // IP / 이메일 요청 제한
+            rateLimiter.check(clientIp, request.email());
+
+            // 기존 인증번호 발송 로직
             emailVerificationService.sendCode(request.email());
 
-            return ResponseEntity.ok(
-                    Map.of("message", "인증번호를 발송했습니다.")
-            );
+            return ResponseEntity.ok(Map.of("message", "인증번호를 발송했습니다."));
 
         } catch (IllegalStateException e) {
             return ResponseEntity.status(429)
