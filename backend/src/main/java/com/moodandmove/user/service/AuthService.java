@@ -32,6 +32,77 @@ public class AuthService {
     private final SocialAccountRepository socialAccountRepository;
     private final EmailVerificationService emailVerificationService;
 
+    public record RotatedTokens(
+            String accessToken,
+            String refreshToken
+    ) {}
+
+    @Transactional
+    public RotatedTokens rotateRefreshToken(String rawRefreshToken) {
+
+        if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
+            throw new IllegalArgumentException("Refresh Token이 없습니다.");
+        }
+
+        if (!"REFRESH".equals(jwtProvider.getTokenType(rawRefreshToken))) {
+            throw new IllegalArgumentException("올바른 Refresh Token이 아닙니다.");
+        }
+
+        Long userId = jwtProvider.getUserId(rawRefreshToken);
+        int tokenVersion = jwtProvider.getTokenVersion(rawRefreshToken);
+
+        User user = userRepository.findForUpdate(userId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("사용자를 찾을 수 없습니다.")
+                );
+
+        String tokenHash = refreshTokenHasher.hash(rawRefreshToken);
+
+        RefreshToken savedToken = refreshTokenRepository
+                .findByTokenHash(tokenHash)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("유효하지 않은 Refresh Token입니다.")
+                );
+
+        if (savedToken.isRevoked() || savedToken.isExpired()) {
+            throw new IllegalArgumentException("사용할 수 없는 Refresh Token입니다.");
+        }
+
+        if (!savedToken.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("사용자 정보가 일치하지 않습니다.");
+        }
+
+        if (user.getTokenVersion() != tokenVersion ||
+                savedToken.getTokenVersion() != tokenVersion) {
+            throw new IllegalArgumentException("토큰 버전이 일치하지 않습니다.");
+        }
+
+        if (userWithdrawalRequestRepository.existsByUser_Id(userId)) {
+            throw new IllegalArgumentException("탈퇴 신청 상태입니다.");
+        }
+
+        String newAccessToken = jwtProvider.createAccessToken(user);
+        String newRefreshToken = jwtProvider.createRefreshToken(user);
+
+        LocalDateTime expiresAt = LocalDateTime.ofInstant(
+                jwtProvider.getExpiration(newRefreshToken).toInstant(),
+                java.time.ZoneId.systemDefault()
+        );
+
+        refreshTokenRepository.deleteAllByUser_Id(userId);
+        refreshTokenRepository.flush();
+
+        RefreshToken newToken = RefreshToken.create(
+                user,
+                refreshTokenHasher.hash(newRefreshToken),
+                expiresAt
+        );
+
+        refreshTokenRepository.save(newToken);
+
+        return new RotatedTokens(newAccessToken, newRefreshToken);
+    }
+
     @Transactional
     public void signup(SignupRequest request) {
 

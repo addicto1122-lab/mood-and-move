@@ -1,39 +1,42 @@
--- =========================================================
--- Mood&Move
--- V1__init_schema.sql
--- MySQL 8.x
--- =========================================================
+-- ============================================================
+
+-- Mood&Move | V1__init_schema.sql (consolidated from V1-V12)
+
+-- MySQL 8.0.16+ / InnoDB / UTF-8
+
+-- Fresh local DBs only: all developers must DROP/CREATE their DB
+
+-- before changing shared Flyway migration history.
+
+-- All existing final V12 columns, constraints, and indexes kept;
+
+-- FK-only fix: 3 direct user FKs + 1 dependent recommendation FK
+
+-- use ON DELETE CASCADE for account deletion.
+
+-- No DELETE/INSERT/data operations in this file.
+
+-- ============================================================
 
 
--- =========================================================
--- 1. USERS
--- 담당: 이래원
--- =========================================================
+-- [01/23] users | V1 + V3(age_group/gender) + V7(local_login_enabled)
 CREATE TABLE users (
-                       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                       email VARCHAR(255) NOT NULL,
-                       password_hash VARCHAR(255) NOT NULL,
-                       nickname VARCHAR(50) NOT NULL,
-
-                       onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
-
-                       token_version INT UNSIGNED NOT NULL DEFAULT 0,
-
-                       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                           ON UPDATE CURRENT_TIMESTAMP,
-
-                       CONSTRAINT uq_users_email
-                           UNIQUE (email)
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    local_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    nickname VARCHAR(50) NOT NULL,
+    onboarding_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    token_version INT UNSIGNED NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    age_group VARCHAR(20) NULL,
+    gender VARCHAR(20) NULL,
+    CONSTRAINT uq_users_email UNIQUE (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 2. REFRESH_TOKENS
--- 담당: 이래원
--- =========================================================
+-- [02/23] refresh_tokens | V1
 CREATE TABLE refresh_tokens (
                                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
@@ -76,75 +79,33 @@ CREATE TABLE refresh_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 3. USER_PREFERENCES
--- 담당: 이래원
--- 온보딩 / Cold Start 기준
--- =========================================================
+-- [03/23] user_preferences | V1 + V5(default region)
 CREATE TABLE user_preferences (
-                                  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                                  user_id BIGINT UNSIGNED NOT NULL,
-
-    -- ACTIVE / CALM / ANY
-                                  activity_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
-
-    -- INDOOR / OUTDOOR / ANY
-                                  activity_environment VARCHAR(20) NOT NULL DEFAULT 'ANY',
-
-    -- ALONE / SOCIAL / ANY
-                                  social_preference VARCHAR(20) NOT NULL DEFAULT 'ANY',
-
-                                  default_available_minutes INT UNSIGNED,
-
-                                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                      ON UPDATE CURRENT_TIMESTAMP,
-
-                                  CONSTRAINT uq_user_preferences_user_id
-                                      UNIQUE (user_id),
-
-                                  CONSTRAINT chk_user_preferences_activity_style
-                                      CHECK (
-                                          activity_style IN (
-                                                             'ACTIVE',
-                                                             'CALM',
-                                                             'ANY'
-                                              )
-                                          ),
-
-                                  CONSTRAINT chk_user_preferences_environment
-                                      CHECK (
-                                          activity_environment IN (
-                                                                   'INDOOR',
-                                                                   'OUTDOOR',
-                                                                   'ANY'
-                                              )
-                                          ),
-
-                                  CONSTRAINT chk_user_preferences_social
-                                      CHECK (
-                                          social_preference IN (
-                                                                'ALONE',
-                                                                'SOCIAL',
-                                                                'ANY'
-                                              )
-                                          ),
-
-                                  CONSTRAINT fk_user_preferences_user
-                                      FOREIGN KEY (user_id)
-                                          REFERENCES users(id)
-                                          ON DELETE CASCADE
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    activity_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    activity_environment VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    social_preference VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    default_available_minutes INT UNSIGNED,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    default_region_name VARCHAR(100) NULL,
+    default_region_code VARCHAR(30) NULL,
+    default_region_latitude DECIMAL(10, 7) NULL,
+    default_region_longitude DECIMAL(10, 7) NULL,
+    CONSTRAINT uq_user_preferences_user_id UNIQUE (user_id),
+    CONSTRAINT chk_user_preferences_activity_style
+        CHECK (activity_style IN ('ACTIVE', 'CALM', 'ANY')),
+    CONSTRAINT chk_user_preferences_environment
+        CHECK (activity_environment IN ('INDOOR', 'OUTDOOR', 'ANY')),
+    CONSTRAINT chk_user_preferences_social
+        CHECK (social_preference IN ('ALONE', 'SOCIAL', 'ANY')),
+    CONSTRAINT fk_user_preferences_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 4. HOBBIES
--- 담당: 이래원
--- 취미 Master
--- =========================================================
+-- [04/23] hobbies | V1
 CREATE TABLE hobbies (
                          id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
@@ -160,12 +121,7 @@ CREATE TABLE hobbies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 5. USER_HOBBIES
--- 담당: 이래원
--- 사용자 <-> 취미 N:M
--- =========================================================
+-- [05/23] user_hobbies | V1
 CREATE TABLE user_hobbies (
                               user_id BIGINT UNSIGNED NOT NULL,
                               hobby_id BIGINT UNSIGNED NOT NULL,
@@ -185,12 +141,7 @@ CREATE TABLE user_hobbies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 6. EMOTIONS
--- 담당: 이래원
--- 감정 종류 Master
--- =========================================================
+-- [06/23] emotions | V1
 CREATE TABLE emotions (
                           emotion_code VARCHAR(30) NOT NULL,
 
@@ -215,163 +166,65 @@ CREATE TABLE emotions (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
--- =========================================================
--- 7. MOOD_ENTRIES
--- 담당: 이래원
---
--- 정책
--- - 사용자당 하루 1회
--- - 사용자 수정 불가
--- - Soft Delete 가능
--- - 삭제 후 같은 날짜 재작성 불가
--- =========================================================
+
+-- [07/23] mood_entries | V1 + V6(current_activity)
 CREATE TABLE mood_entries (
-                              id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    entry_date DATE NOT NULL,
+    emotion_code VARCHAR(30) NOT NULL,
+    intensity INT UNSIGNED NOT NULL,
+    mood_score INT UNSIGNED NOT NULL,
+    current_activity VARCHAR(100) NOT NULL,
+    diary_content TEXT,
+    recommendation_status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE',
+    recommendation_eligible_until DATETIME NULL,
+    recorded_at DATETIME NOT NULL,
+    deleted_at DATETIME NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_mood_entries_user_date UNIQUE (user_id, entry_date),
+    CONSTRAINT chk_mood_entries_intensity CHECK (intensity BETWEEN 1 AND 10),
+    CONSTRAINT chk_mood_entries_score CHECK (mood_score BETWEEN 1 AND 60),
+    CONSTRAINT chk_mood_entries_recommendation_status
+        CHECK (recommendation_status IN ('AVAILABLE', 'REQUESTED', 'DECLINED', 'EXPIRED', 'DELETED')),
+    CONSTRAINT fk_mood_entries_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_mood_entries_emotion
+        FOREIGN KEY (emotion_code) REFERENCES emotions(emotion_code),
+    INDEX idx_mood_entries_user_entry_date (user_id, entry_date),
+    INDEX idx_mood_entries_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-                              user_id BIGINT UNSIGNED NOT NULL,
 
-                              entry_date DATE NOT NULL,
-
-                              emotion_code VARCHAR(30) NOT NULL,
-
-                              intensity INT UNSIGNED NOT NULL,
-
-                              mood_score INT UNSIGNED NOT NULL,
-
-                              diary_content TEXT,
-
-                              recommendation_status VARCHAR(20)
-                                  NOT NULL DEFAULT 'AVAILABLE',
-
-                              recommendation_eligible_until DATETIME NULL,
-
-                              recorded_at DATETIME NOT NULL,
-
-                              deleted_at DATETIME NULL,
-
-                              created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                              CONSTRAINT uq_mood_entries_user_date
-                                  UNIQUE (user_id, entry_date),
-
-                              CONSTRAINT chk_mood_entries_intensity
-                                  CHECK (
-                                      intensity BETWEEN 1 AND 10
-                                      ),
-
-                              CONSTRAINT chk_mood_entries_score
-                                  CHECK (
-                                      mood_score BETWEEN 1 AND 60
-                                      ),
-
-                              CONSTRAINT chk_mood_entries_recommendation_status
-                                  CHECK (
-                                      recommendation_status IN (
-                                                                'AVAILABLE',
-                                                                'REQUESTED',
-                                                                'DECLINED',
-                                                                'EXPIRED',
-                                                                'DELETED'
-                                          )
-                                      ),
-
-                              CONSTRAINT fk_mood_entries_user
-                                  FOREIGN KEY (user_id)
-                                      REFERENCES users(id)
-                                      ON DELETE CASCADE,
-
-                              CONSTRAINT fk_mood_entries_emotion
-                                  FOREIGN KEY (emotion_code)
-                                      REFERENCES emotions(emotion_code),
-
-                              INDEX idx_mood_entries_user_entry_date
-                                  (user_id, entry_date),
-
-                              INDEX idx_mood_entries_deleted_at
-                                  (deleted_at)
-
-) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_unicode_ci;
-
--- =========================================================
--- 8. ACTIONS
--- 담당: 장준호
--- 추천 가능한 행동 Master
--- =========================================================
+-- [08/23] actions | V1 + V9(final action model)
 CREATE TABLE actions (
-                         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                         action_code VARCHAR(50) NOT NULL,
-
-                         name VARCHAR(100) NOT NULL,
-
-                         category VARCHAR(30) NOT NULL,
-
-                         duration_minutes INT UNSIGNED NOT NULL,
-
-    -- INDOOR / OUTDOOR / ANY
-                         environment_type VARCHAR(20)
-                                                 NOT NULL DEFAULT 'ANY',
-
-    -- ALONE / SOCIAL / ANY
-                         social_type VARCHAR(20)
-                                                 NOT NULL DEFAULT 'ANY',
-
-    -- ACTIVE / CALM / ANY
-                         activity_style VARCHAR(20)
-                                                 NOT NULL DEFAULT 'ANY',
-
-                         location_required BOOLEAN
-                                                 NOT NULL DEFAULT FALSE,
-
-                         place_category VARCHAR(50),
-
-                         active BOOLEAN NOT NULL DEFAULT TRUE,
-
-                         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-                             ON UPDATE CURRENT_TIMESTAMP,
-
-                         CONSTRAINT uq_actions_action_code
-                             UNIQUE (action_code),
-
-                         CONSTRAINT chk_actions_environment_type
-                             CHECK (
-                                 environment_type IN (
-                                                      'INDOOR',
-                                                      'OUTDOOR',
-                                                      'ANY'
-                                     )
-                                 ),
-
-                         CONSTRAINT chk_actions_social_type
-                             CHECK (
-                                 social_type IN (
-                                                 'ALONE',
-                                                 'SOCIAL',
-                                                 'ANY'
-                                     )
-                                 ),
-
-                         CONSTRAINT chk_actions_activity_style
-                             CHECK (
-                                 activity_style IN (
-                                                    'ACTIVE',
-                                                    'CALM',
-                                                    'ANY'
-                                     )
-                                 )
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    action_name VARCHAR(100) NOT NULL,
+    category VARCHAR(30) NOT NULL,
+    duration_minutes INT UNSIGNED NOT NULL,
+    environment_type VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    social_type VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    activity_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
+    location_required BOOLEAN NOT NULL DEFAULT FALSE,
+    place_category VARCHAR(50),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_actions_action_name UNIQUE (action_name),
+    CONSTRAINT chk_actions_environment_type CHECK (environment_type IN ('INDOOR', 'OUTDOOR', 'ANY')),
+    CONSTRAINT chk_actions_social_type CHECK (social_type IN ('ALONE', 'SOCIAL', 'ANY')),
+    CONSTRAINT chk_actions_activity_style CHECK (activity_style IN ('ACTIVE', 'CALM', 'ANY')),
+    CONSTRAINT chk_actions_category CHECK (
+        category IN (
+            'WALK', 'EXERCISE', 'STRETCHING', 'MEDITATION', 'SLEEP',
+            'MUSIC', 'READING', 'ENTERTAINMENT', 'SOCIAL', 'OUTDOOR',
+            'EATING', 'SELF_CARE', 'CLEANING'
+        )
+    ),
+    CONSTRAINT chk_actions_duration CHECK (duration_minutes > 0),
+    CONSTRAINT chk_actions_location_required CHECK (location_required IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 9. ACTION_HOBBIES
--- 담당: 장준호
--- 행동 <-> 취미 N:M
--- =========================================================
+-- [09/23] action_hobbies | V1
 CREATE TABLE action_hobbies (
                                 action_id BIGINT UNSIGNED NOT NULL,
 
@@ -393,12 +246,7 @@ CREATE TABLE action_hobbies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 10. USER_ACTION_DISLIKES
--- 담당: 이래원
--- 추천 엔진에서 제외할 비선호 행동
--- =========================================================
+-- [10/23] user_action_dislikes | V1
 CREATE TABLE user_action_dislikes (
                                       user_id BIGINT UNSIGNED NOT NULL,
 
@@ -422,146 +270,65 @@ CREATE TABLE user_action_dislikes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 11. RECOMMENDATION_SESSIONS
--- 담당: 장준호
---
--- 한 감정일기당 최대 한 번의 추천 요청
--- 날씨 등 추천 당시 공통 Context 저장
--- =========================================================
+-- [11/23] recommendation_sessions | V1 + V9, with user-deletion FK fix
 CREATE TABLE recommendation_sessions (
-                                         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                                         mood_entry_id BIGINT UNSIGNED NOT NULL,
-
-    -- COLD_START / HYBRID / PERSONALIZED
-                                         recommendation_type VARCHAR(20) NOT NULL,
-
-    -- MORNING / AFTERNOON / EVENING / NIGHT
-                                         time_bucket VARCHAR(20),
-
-                                         available_minutes INT UNSIGNED,
-
-                                         weather_condition VARCHAR(30),
-
-                                         temperature_celsius DECIMAL(4,1),
-
-                                         precipitation_mm DECIMAL(6,2),
-
-                                         weather_observed_at DATETIME,
-
-    -- GENERATED / SELECTED / SKIPPED
-                                         selection_status VARCHAR(20)
-                                                                         NOT NULL DEFAULT 'GENERATED',
-
-                                         requested_at DATETIME
-                                                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    -- 한 일기당 Session 최대 한 개
-                                         CONSTRAINT uq_recommendation_sessions_mood_entry
-                                             UNIQUE (mood_entry_id),
-
-                                         CONSTRAINT fk_recommendation_sessions_mood
-                                             FOREIGN KEY (mood_entry_id)
-                                                 REFERENCES mood_entries(id)
-                                                 ON DELETE CASCADE,
-
-                                         CONSTRAINT chk_recommendation_type
-                                             CHECK (
-                                                 recommendation_type IN (
-                                                                         'COLD_START',
-                                                                         'HYBRID',
-                                                                         'PERSONALIZED'
-                                                     )
-                                                 ),
-
-                                         CONSTRAINT chk_recommendation_time_bucket
-                                             CHECK (
-                                                 time_bucket IS NULL
-                                                     OR time_bucket IN (
-                                                                        'MORNING',
-                                                                        'AFTERNOON',
-                                                                        'EVENING',
-                                                                        'NIGHT'
-                                                     )
-                                                 ),
-
-                                         CONSTRAINT chk_recommendation_selection_status
-                                             CHECK (
-                                                 selection_status IN (
-                                                                      'GENERATED',
-                                                                      'SELECTED',
-                                                                      'SKIPPED'
-                                                     )
-                                                 )
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    mood_entry_id BIGINT UNSIGNED NOT NULL,
+    recommendation_type VARCHAR(20) NOT NULL,
+    time_bucket VARCHAR(20) NOT NULL,
+    requested_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_recommendation_sessions_mood_entry UNIQUE (mood_entry_id),
+    CONSTRAINT fk_recommendation_sessions_mood
+        FOREIGN KEY (mood_entry_id) REFERENCES mood_entries(id) ON DELETE CASCADE,
+    -- 회원탈퇴 FK 보완: V9에서는 ON DELETE 동작이 지정되지 않았음
+    CONSTRAINT fk_recommendation_sessions_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_recommendation_type
+        CHECK (recommendation_type IN ('COLD_START', 'HYBRID', 'PERSONALIZED')),
+    CONSTRAINT chk_recommendation_sessions_time_bucket
+        CHECK (time_bucket IN ('MORNING', 'AFTERNOON', 'EVENING', 'NIGHT'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 12. RECOMMENDATIONS
--- 담당: 장준호
--- Rule Engine 실제 추천 결과
--- =========================================================
+-- [12/23] recommendations | V1 + V8(reason) + V9 + V11(emoji)
 CREATE TABLE recommendations (
-                                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                                 session_id BIGINT UNSIGNED NOT NULL,
-
-                                 action_id BIGINT UNSIGNED NOT NULL,
-
-                                 score DECIMAL(6,2) NOT NULL,
-
-                                 rank_no INT UNSIGNED NOT NULL,
-
-                                 reason_code VARCHAR(100),
-
-                                 created_at DATETIME
-                                                    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                                 CONSTRAINT fk_recommendations_session
-                                     FOREIGN KEY (session_id)
-                                         REFERENCES recommendation_sessions(id)
-                                         ON DELETE CASCADE,
-
-                                 CONSTRAINT fk_recommendations_action
-                                     FOREIGN KEY (action_id)
-                                         REFERENCES actions(id),
-
-    -- 한 Session 내 동일 순위 금지
-                                 CONSTRAINT uq_recommendations_session_rank
-                                     UNIQUE (session_id, rank_no),
-
-    -- 같은 행동 중복 추천 금지
-                                 CONSTRAINT uq_recommendations_session_action
-                                     UNIQUE (session_id, action_id),
-
-    -- ACTION_EXECUTIONS에서
-    -- 같은 Session의 Recommendation인지 검증
-                                 CONSTRAINT uq_recommendations_session_id
-                                     UNIQUE (session_id, id),
-
-    -- ACTION_EXECUTIONS에서
-    -- 선택한 Recommendation의 Action과
-    -- 실제 수행 Action 일치 여부 검증
-                                 CONSTRAINT uq_recommendations_id_action
-                                     UNIQUE (id, action_id),
-
-                                 INDEX idx_recommendations_action_id
-                                     (action_id)
-
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT UNSIGNED NOT NULL,
+    action_id BIGINT UNSIGNED NOT NULL,
+    rank_no INT UNSIGNED NOT NULL,
+    reason TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    recheck_completed TINYINT(1) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    selected_at DATETIME NULL DEFAULT NULL,
+    selected_session_id BIGINT UNSIGNED
+        GENERATED ALWAYS AS (
+            CASE WHEN status = 'SELECTED' THEN session_id ELSE NULL END
+        ) VIRTUAL,
+    emoji VARCHAR(32) CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT fk_recommendations_session
+        FOREIGN KEY (session_id) REFERENCES recommendation_sessions(id) ON DELETE CASCADE,
+    CONSTRAINT fk_recommendations_action
+        FOREIGN KEY (action_id) REFERENCES actions(id),
+    CONSTRAINT uq_recommendations_session_rank UNIQUE (session_id, rank_no),
+    CONSTRAINT uq_recommendations_session_action UNIQUE (session_id, action_id),
+    CONSTRAINT uq_recommendations_session_id UNIQUE (session_id, id),
+    CONSTRAINT uq_recommendations_id_action UNIQUE (id, action_id),
+    CONSTRAINT uq_recommendations_one_selected UNIQUE (selected_session_id),
+    CONSTRAINT chk_recommendations_rank CHECK (rank_no BETWEEN 1 AND 3),
+    CONSTRAINT chk_recommendations_status CHECK (status IN ('PENDING', 'SELECTED', 'UNSELECTED', 'SKIPPED')),
+    CONSTRAINT chk_recommendations_recheck
+        CHECK (recheck_completed IN (0, 1) AND (recheck_completed = 0 OR status = 'SELECTED')),
+    CONSTRAINT chk_recommendations_selected_at CHECK (
+        (status = 'SELECTED' AND selected_at IS NOT NULL)
+        OR (status <> 'SELECTED' AND selected_at IS NULL)
+    ),
+    INDEX idx_recommendations_action_id (action_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- =========================================================
--- 13. RECOMMENDATION_PLACES
--- 담당: 장준호
---
--- MVP:
--- Recommendation 1개당 실제 장소 최대 1개
--- 장소 필요 없는 행동은 Row 없음
--- =========================================================
+-- [13/23] recommendation_places | V1
 CREATE TABLE recommendation_places (
                                        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
@@ -596,172 +363,49 @@ CREATE TABLE recommendation_places (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 14. ACTION_EXECUTIONS
--- 담당: 장준호
---
--- Session 하나에서 행동 하나만 수행
--- 다른 Session Recommendation 선택 방지
--- =========================================================
+-- [14/23] action_executions | V1 + V9 + V10, with account-deletion FK fixes
 CREATE TABLE action_executions (
-                                   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                                   session_id BIGINT UNSIGNED NOT NULL,
-
-    -- 추천된 행동 선택 시 Recommendation ID
-    -- ALTERNATIVE이면 NULL
-                                   selected_recommendation_id BIGINT UNSIGNED NULL,
-
-    -- 실제로 수행한 ACTION
-                                   performed_action_id BIGINT UNSIGNED NOT NULL,
-
-    -- RECOMMENDED / ALTERNATIVE
-                                   execution_type VARCHAR(20) NOT NULL,
-
-    -- STARTED / COMPLETED / CANCELLED
-                                   status VARCHAR(20) NOT NULL,
-
-                                   started_at DATETIME NULL,
-
-                                   completed_at DATETIME NULL,
-
-                                   recheck_available_at DATETIME NULL,
-
-                                   recheck_expires_at DATETIME NULL,
-
-                                   created_at DATETIME
-                                                              NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                                   updated_at DATETIME
-                                                              NOT NULL DEFAULT CURRENT_TIMESTAMP
-                                       ON UPDATE CURRENT_TIMESTAMP,
-
-    -- Session 하나에 실제 수행 행동 하나
-                                   CONSTRAINT uq_action_executions_session
-                                       UNIQUE (session_id),
-
-                                   CONSTRAINT fk_action_executions_session
-                                       FOREIGN KEY (session_id)
-                                           REFERENCES recommendation_sessions(id)
-                                           ON DELETE CASCADE,
-
-    -- 1.
-    -- 선택한 Recommendation이
-    -- 해당 Session 소속인지 검증
-                                   CONSTRAINT fk_action_execution_selected_recommendation
-                                       FOREIGN KEY (
-                                                    session_id,
-                                                    selected_recommendation_id
-                                           )
-                                           REFERENCES recommendations (
-                                                                       session_id,
-                                                                       id
-                                               ),
-
-    -- 2.
-    -- RECOMMENDED 실행 시
-    -- 선택한 Recommendation의 action_id와
-    -- 실제 수행한 performed_action_id가 같은지 검증
-                                   CONSTRAINT fk_action_execution_recommended_action
-                                       FOREIGN KEY (
-                                                    selected_recommendation_id,
-                                                    performed_action_id
-                                           )
-                                           REFERENCES recommendations (
-                                                                       id,
-                                                                       action_id
-                                               ),
-
-    -- 실제 수행 Action 존재 여부
-                                   CONSTRAINT fk_action_executions_action
-                                       FOREIGN KEY (performed_action_id)
-                                           REFERENCES actions(id),
-
-                                   CONSTRAINT chk_action_execution_type
-                                       CHECK (
-                                           execution_type IN (
-                                                              'RECOMMENDED',
-                                                              'ALTERNATIVE'
-                                               )
-                                           ),
-
-                                   CONSTRAINT chk_action_execution_selected
-                                       CHECK (
-                                           (
-                                               execution_type = 'RECOMMENDED'
-                                                   AND selected_recommendation_id IS NOT NULL
-                                               )
-                                               OR
-                                           (
-                                               execution_type = 'ALTERNATIVE'
-                                                   AND selected_recommendation_id IS NULL
-                                               )
-                                           ),
-
-                                   CONSTRAINT chk_action_execution_status
-                                       CHECK (
-                                           status IN (
-                                                      'STARTED',
-                                                      'COMPLETED',
-                                                      'CANCELLED'
-                                               )
-                                           ),
-
-                                   INDEX idx_action_executions_action
-                                       (performed_action_id)
-
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    session_id BIGINT UNSIGNED NOT NULL,
+    recommendation_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'STARTED',
+    started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    rechecked_at DATETIME NULL DEFAULT NULL,
+    CONSTRAINT uq_action_executions_session UNIQUE (session_id),
+    CONSTRAINT uq_action_executions_recommendation UNIQUE (recommendation_id),
+    CONSTRAINT fk_action_executions_session
+        FOREIGN KEY (session_id) REFERENCES recommendation_sessions(id) ON DELETE CASCADE,
+    -- 회원탈퇴 FK 보완: V9에서는 ON DELETE 동작이 지정되지 않았음
+    CONSTRAINT fk_action_executions_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    -- 회원탈퇴 FK 보완: 추천 삭제 시 연결된 실행 기록도 삭제
+    CONSTRAINT fk_action_executions_session_recommendation
+        FOREIGN KEY (session_id, recommendation_id) REFERENCES recommendations(session_id, id) ON DELETE CASCADE,
+    CONSTRAINT chk_action_executions_status
+        CHECK (status IN ('STARTED', 'COMPLETED', 'CANCELED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 15. MOOD_RECHECKS
--- 담당: 장준호
--- 행동 완료 후 감정 재측정
--- =========================================================
+-- [15/23] mood_rechecks | V1 + V10
 CREATE TABLE mood_rechecks (
-                               id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-
-                               action_execution_id BIGINT UNSIGNED NOT NULL,
-
-                               before_score INT UNSIGNED NOT NULL,
-
-                               after_score INT UNSIGNED NOT NULL,
-
-                               delta INT
-                                   GENERATED ALWAYS AS
-                                       (after_score - before_score) STORED,
-
-                               checked_at DATETIME
-                                   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                               CONSTRAINT uq_mood_rechecks_execution
-                                   UNIQUE (action_execution_id),
-
-                               CONSTRAINT chk_mood_rechecks_before
-                                   CHECK (
-                                       before_score BETWEEN 1 AND 60
-                                       ),
-
-                               CONSTRAINT chk_mood_rechecks_after
-                                   CHECK (
-                                       after_score BETWEEN 1 AND 60
-                                       ),
-
-                               CONSTRAINT fk_mood_rechecks_execution
-                                   FOREIGN KEY (action_execution_id)
-                                       REFERENCES action_executions(id)
-                                       ON DELETE CASCADE
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    action_execution_id BIGINT UNSIGNED NOT NULL,
+    before_score INT UNSIGNED NOT NULL,
+    after_score INT UNSIGNED NULL DEFAULT NULL,
+    delta INT GENERATED ALWAYS AS (
+        CAST(after_score AS SIGNED) - CAST(before_score AS SIGNED)
+    ) STORED,
+    checked_at DATETIME NULL DEFAULT NULL,
+    CONSTRAINT uq_mood_rechecks_execution UNIQUE (action_execution_id),
+    CONSTRAINT chk_mood_rechecks_before CHECK (before_score BETWEEN 1 AND 60),
+    CONSTRAINT chk_mood_rechecks_after CHECK (after_score BETWEEN 1 AND 60),
+    CONSTRAINT fk_mood_rechecks_execution
+        FOREIGN KEY (action_execution_id) REFERENCES action_executions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
--- =========================================================
--- 16. USER_ACTION_STATS
--- 담당: 백기완
--- 사용자별 행동 효과 Summary
--- =========================================================
+-- [16/23] user_action_stats | V1
 CREATE TABLE user_action_stats (
                                    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 
@@ -862,3 +506,177 @@ CREATE TABLE user_action_stats (
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COLLATE=utf8mb4_unicode_ci;
+
+
+-- [17/23] user_withdrawal_requests | V4
+CREATE TABLE user_withdrawal_requests (
+                                          user_id BIGINT UNSIGNED NOT NULL,
+
+                                          requested_at DATETIME NOT NULL
+                                              DEFAULT CURRENT_TIMESTAMP,
+
+                                          deletion_scheduled_at DATETIME NOT NULL,
+
+                                          PRIMARY KEY (user_id),
+
+                                          CONSTRAINT fk_user_withdrawal_requests_user
+                                              FOREIGN KEY (user_id)
+                                                  REFERENCES users(id)
+                                                  ON DELETE CASCADE
+);
+
+
+-- [18/23] consent_policies | V5
+CREATE TABLE consent_policies (
+                                  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+                                  consent_type VARCHAR(50) NOT NULL,
+                                  version VARCHAR(20) NOT NULL,
+
+                                  title VARCHAR(100) NOT NULL,
+                                  content TEXT NOT NULL,
+
+                                  required BOOLEAN NOT NULL DEFAULT FALSE,
+                                  active BOOLEAN NOT NULL DEFAULT TRUE,
+
+                                  effective_at DATETIME NOT NULL,
+                                  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                                  PRIMARY KEY (id),
+
+                                  CONSTRAINT uk_consent_policies_type_version
+                                      UNIQUE (consent_type, version)
+);
+
+CREATE INDEX idx_consent_policies_type_active
+    ON consent_policies (consent_type, active);
+
+
+-- [19/23] user_consents | V5
+CREATE TABLE user_consents (
+                               id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+
+                               user_id BIGINT UNSIGNED NOT NULL,
+                               policy_id BIGINT UNSIGNED NOT NULL,
+
+                               agreed BOOLEAN NOT NULL DEFAULT FALSE,
+
+                               agreed_at DATETIME NULL,
+                               revoked_at DATETIME NULL,
+
+                               created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                   ON UPDATE CURRENT_TIMESTAMP,
+
+                               PRIMARY KEY (id),
+
+                               CONSTRAINT uk_user_consents_user_policy
+                                   UNIQUE (user_id, policy_id),
+
+                               CONSTRAINT fk_user_consents_user
+                                   FOREIGN KEY (user_id)
+                                       REFERENCES users(id)
+                                       ON DELETE CASCADE,
+
+                               CONSTRAINT fk_user_consents_policy
+                                   FOREIGN KEY (policy_id)
+                                       REFERENCES consent_policies(id)
+);
+
+
+-- [20/23] social_accounts | V7
+CREATE TABLE social_accounts (
+                                 id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+                                 user_id BIGINT UNSIGNED NOT NULL,
+
+                                 provider VARCHAR(20) NOT NULL,
+
+                                 provider_user_id VARCHAR(100) NOT NULL,
+
+                                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                                 CONSTRAINT uq_social_accounts_provider_user
+                                     UNIQUE (provider, provider_user_id),
+
+                                 CONSTRAINT uq_social_accounts_user_provider
+                                     UNIQUE (user_id, provider),
+
+                                 CONSTRAINT fk_social_accounts_user
+                                     FOREIGN KEY (user_id)
+                                         REFERENCES users(id)
+                                         ON DELETE CASCADE,
+
+                                 INDEX idx_social_accounts_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- [21/23] action_category_scores | V9, with user-deletion FK fix
+CREATE TABLE action_category_scores (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id BIGINT UNSIGNED NOT NULL,
+    category VARCHAR(30) NOT NULL,
+    personal_score DECIMAL(5,2) NOT NULL DEFAULT 50.00,
+    avg_delta DECIMAL(6,2) NULL DEFAULT NULL,
+    positive_count INT UNSIGNED NOT NULL DEFAULT 0,
+    sample_count INT UNSIGNED NOT NULL DEFAULT 0,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT uq_action_category_scores_user_category UNIQUE (user_id, category),
+    -- 회원탈퇴 FK 보완: V9에서는 ON DELETE 동작이 지정되지 않았음
+    CONSTRAINT fk_action_category_scores_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT chk_action_category_scores_category CHECK (
+        category IN (
+            'WALK', 'EXERCISE', 'STRETCHING', 'MEDITATION', 'SLEEP',
+            'MUSIC', 'READING', 'ENTERTAINMENT', 'SOCIAL', 'OUTDOOR',
+            'EATING', 'SELF_CARE', 'CLEANING'
+        )
+    ),
+    CONSTRAINT chk_action_category_scores_score CHECK (personal_score BETWEEN 0 AND 100),
+    CONSTRAINT chk_action_category_scores_delta CHECK (avg_delta BETWEEN -59 AND 59),
+    CONSTRAINT chk_action_category_scores_counts CHECK (positive_count <= sample_count)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- [22/23] action_categories | V11
+CREATE TABLE action_categories (
+                                   category_code VARCHAR(30) NOT NULL,
+                                   category_name VARCHAR(50) NOT NULL,
+                                   emoji VARCHAR(32) NOT NULL,
+
+                                   PRIMARY KEY (category_code)
+) DEFAULT CHARACTER SET utf8mb4;
+
+
+-- [23/23] email_verifications | V12
+CREATE TABLE email_verifications (
+                                     id BIGINT NOT NULL AUTO_INCREMENT,
+
+                                     email VARCHAR(255) NOT NULL,
+                                     code_hash VARCHAR(255) NOT NULL,
+
+                                     expires_at DATETIME(6) NOT NULL,
+                                     attempt_count INT NOT NULL DEFAULT 0,
+
+                                     verified_at DATETIME(6) NULL,
+
+                                     signup_token_hash CHAR(64) NULL,
+                                     signup_token_expires_at DATETIME(6) NULL,
+
+                                     used_at DATETIME(6) NULL,
+                                     last_sent_at DATETIME(6) NOT NULL,
+
+                                     created_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6),
+
+                                     updated_at DATETIME(6) NOT NULL
+        DEFAULT CURRENT_TIMESTAMP(6)
+        ON UPDATE CURRENT_TIMESTAMP(6),
+
+                                     PRIMARY KEY (id),
+                                     UNIQUE KEY uk_email_verifications_email (email),
+                                     INDEX idx_email_verifications_expires (expires_at)
+
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4;
