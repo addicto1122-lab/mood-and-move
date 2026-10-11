@@ -87,6 +87,7 @@ export default function StatsPage() {
    * SUMMARY / TREND / ACTION
    */
   const [activeTab, setActiveTab] = useState("SUMMARY");
+  const [rankingModal, setRankingModal] = useState(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -539,6 +540,16 @@ export default function StatsPage() {
                     <span className="ranking-eyebrow">MOST ACTIVE</span>
                     <h3>많이 실행한 활동</h3>
                   </div>
+                  {actionEffects.executionRanking.length > 3 && (
+                    <button
+                      type="button"
+                      className="ranking-more-button"
+                      onClick={() => setRankingModal("EXECUTION")}
+                    >
+                      전체보기
+                      <span>›</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="ranking-list">
@@ -576,6 +587,17 @@ export default function StatsPage() {
                     <span className="ranking-eyebrow">BEST EFFECT</span>
                     <h3>효과가 좋았던 활동</h3>
                   </div>
+
+                  {actionEffects.effectRanking.length > 3 && (
+                    <button
+                      type="button"
+                      className="ranking-more-button"
+                      onClick={() => setRankingModal("EFFECT")}
+                    >
+                      전체보기
+                      <span>›</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="ranking-list">
@@ -628,6 +650,104 @@ export default function StatsPage() {
             </section>
           )}
         </>
+      )}
+      {rankingModal && (
+        <div
+          className="ranking-modal-overlay"
+          onClick={() => setRankingModal(null)}
+        >
+          <section
+            className="ranking-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ranking-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="ranking-modal-header">
+              <div>
+                <span className="ranking-eyebrow">
+                  {rankingModal === "EXECUTION" ? "MOST ACTIVE" : "BEST EFFECT"}
+                </span>
+
+                <h2 id="ranking-modal-title">
+                  {rankingModal === "EXECUTION"
+                    ? `${month}월 활동 전체 순위`
+                    : `${month}월 효과 전체 순위`}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                className="ranking-modal-close"
+                onClick={() => setRankingModal(null)}
+                aria-label="닫기"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="ranking-modal-list">
+              {rankingModal === "EXECUTION"
+                ? actionEffects.executionRanking.map((item, index) => (
+                    <div
+                      key={item.category}
+                      className="ranking-item ranking-modal-item"
+                    >
+                      <span className="ranking-number">{index + 1}</span>
+
+                      <span className="ranking-category-emoji">
+                        {CATEGORY_EMOJI[item.category] || "✨"}
+                      </span>
+
+                      <div className="ranking-name">
+                        <strong>
+                          {CATEGORY_LABEL[item.category] || item.category}
+                        </strong>
+
+                        <span>{item.category}</span>
+                      </div>
+
+                      <strong className="ranking-value">
+                        {item.executionCount}회
+                      </strong>
+                    </div>
+                  ))
+                : actionEffects.effectRanking.map((item, index) => (
+                    <div
+                      key={item.category}
+                      className="ranking-item ranking-modal-item"
+                    >
+                      <span className="ranking-number">{index + 1}</span>
+
+                      <span className="ranking-category-emoji">
+                        {CATEGORY_EMOJI[item.category] || "✨"}
+                      </span>
+
+                      <div className="ranking-name">
+                        <strong>
+                          {CATEGORY_LABEL[item.category] || item.category}
+                        </strong>
+
+                        <span>재측정 {item.sampleCount}회</span>
+                      </div>
+
+                      <strong
+                        className={
+                          item.averageDelta > 0
+                            ? "ranking-value positive"
+                            : item.averageDelta < 0
+                              ? "ranking-value negative"
+                              : "ranking-value"
+                        }
+                      >
+                        {item.averageDelta > 0 ? "+" : ""}
+                        {item.averageDelta}점
+                      </strong>
+                    </div>
+                  ))}
+            </div>
+          </section>
+        </div>
       )}
     </main>
   );
