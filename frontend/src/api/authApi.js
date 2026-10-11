@@ -13,36 +13,68 @@ export async function getErrorMessage(response, fallbackMessage) {
 
 let handlingUnauthorized = false;
 
+// 동시에 발생하는 Refresh 요청 공유
+let refreshPromise = null;
+
+// 재발급 성공 여부를 구분하기 위한 버전
+let refreshVersion = 0;
+
 // Access Token 재발급
 async function refreshAccessToken() {
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+  // 이미 재발급 중이라면 같은 Promise를 사용
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include"
-  });
+  })
+    .then((response) => {
+      if (response.ok) {
+        refreshVersion += 1;
+        return true;
+      }
 
-  return response.ok;
+      return false;
+    })
+    .catch(() => false)
+    .finally(() => {
+      // 재발급 완료 후 공유 Promise 초기화
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
 }
 
 // 인증 요청 공통 처리
 export async function authFetch(url, options = {}) {
+  // 요청 시작 시점의 재발급 버전
+  const requestVersion = refreshVersion;
+
   const response = await fetch(url, {
     ...options,
     credentials: "include"
   });
 
+  // 인증 오류가 없으면 그대로 반환
   if (response.status !== 401) {
     return response;
   }
 
-  const refreshed = await refreshAccessToken();
+  // 다른 요청이 이미 재발급을 완료했다면 다시 재발급하지 않음
+  const refreshed =
+    requestVersion !== refreshVersion || (await refreshAccessToken());
 
   if (refreshed) {
+    // 새 Access Token 쿠키로 원래 요청 재시도
     return fetch(url, {
       ...options,
       credentials: "include"
     });
   }
 
+  // 재발급 실패 시 경고와 로그인 이동은 한 번만 실행
   if (!handlingUnauthorized) {
     handlingUnauthorized = true;
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import "./CalendarPage.css";
+import { authFetch } from "../api/authApi";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { useNavigate } from "react-router-dom";
@@ -8,38 +9,38 @@ const EMOTION_STYLE = {
   JOY: {
     color: "#F6C445",
     bg: "#FFF6D8",
-    text: "#8A6200",
+    text: "#8A6200"
   },
 
   CALM: {
     color: "#7BC96F",
     bg: "#EAF7E7",
-    text: "#2E6B2E",
+    text: "#2E6B2E"
   },
 
   NEUTRAL: {
     color: "#B8BDC7",
     bg: "#F3F4F6",
-    text: "#4B5563",
+    text: "#4B5563"
   },
 
   SAD: {
     color: "#5B8DEF",
     bg: "#EAF1FF",
-    text: "#244C9A",
+    text: "#244C9A"
   },
 
   ANXIOUS: {
     color: "#F39C4A",
     bg: "#FFF1E5",
-    text: "#9A4F12",
+    text: "#9A4F12"
   },
 
   ANGRY: {
     color: "#E85D5D",
     bg: "#FFEAEA",
-    text: "#992B2B",
-  },
+    text: "#992B2B"
+  }
 };
 
 function renderEmotionLabel({
@@ -48,7 +49,7 @@ function renderEmotionLabel({
   midAngle,
   innerRadius,
   outerRadius,
-  payload,
+  payload
 }) {
   const RADIAN = Math.PI / 180;
 
@@ -111,12 +112,11 @@ function CalendarPage() {
       try {
         setLoading(true);
 
-        const response = await fetch(
+        const response = await authFetch(
           `/api/calendar?year=${year}&month=${month}`,
           {
-            method: "GET",
-            credentials: "include",
-          },
+            method: "GET"
+          }
         );
 
         if (!response.ok) {
@@ -146,12 +146,11 @@ function CalendarPage() {
   useEffect(() => {
     async function fetchMonthlyStats() {
       try {
-        const response = await fetch(
+        const response = await authFetch(
           `/api/stats/monthly?year=${year}&month=${month}`,
           {
-            method: "GET",
-            credentials: "include",
-          },
+            method: "GET"
+          }
         );
 
         if (!response.ok) {
@@ -178,9 +177,8 @@ function CalendarPage() {
    */
   async function fetchCalendarDetail(moodEntryId) {
     try {
-      const response = await fetch(`/api/calendar/${moodEntryId}`, {
-        method: "GET",
-        credentials: "include",
+      const response = await authFetch(`/api/calendar/${moodEntryId}`, {
+        method: "GET"
       });
 
       if (!response.ok) {
@@ -256,7 +254,7 @@ function CalendarPage() {
    */
   for (let i = 0; i < firstDay; i++) {
     calendarCells.push(
-      <div key={`empty-${i}`} className="calendar-cell empty" />,
+      <div key={`empty-${i}`} className="calendar-cell empty" />
     );
   }
 
@@ -285,7 +283,7 @@ function CalendarPage() {
             <span className="calendar-emoji">{entry.emoji}</span>
           </span>
         )}
-      </button>,
+      </button>
     );
   }
 
@@ -300,7 +298,7 @@ function CalendarPage() {
       const style = EMOTION_STYLE[emotion.emotionCode] || {
         color: "#B8BDC7",
         bg: "#F3F4F6",
-        text: "#4B5563",
+        text: "#4B5563"
       };
 
       return {
@@ -318,7 +316,7 @@ function CalendarPage() {
 
         bg: style.bg,
 
-        text: style.text,
+        text: style.text
       };
     }) || [];
 
@@ -511,7 +509,7 @@ function CalendarPage() {
                   <Tooltip
                     formatter={(value, name, props) => [
                       `${value}회 (${props.payload.rate}%)`,
-                      `${props.payload.emoji} ${name}`,
+                      `${props.payload.emoji} ${name}`
                     ]}
                   />
                 </PieChart>
@@ -532,7 +530,7 @@ function CalendarPage() {
                   style={{
                     backgroundColor: emotion.bg,
 
-                    borderLeft: `5px solid ${emotion.fill}`,
+                    borderLeft: `5px solid ${emotion.fill}`
                   }}
                 >
                   <div className="emotion-legend-left">
@@ -543,7 +541,7 @@ function CalendarPage() {
                     <div>
                       <strong
                         style={{
-                          color: emotion.text,
+                          color: emotion.text
                         }}
                       >
                         {emotion.name}
@@ -556,7 +554,7 @@ function CalendarPage() {
                   <strong
                     className="emotion-legend-rate"
                     style={{
-                      color: emotion.text,
+                      color: emotion.text
                     }}
                   >
                     {emotion.rate}%
