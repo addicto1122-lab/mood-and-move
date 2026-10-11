@@ -1,3 +1,0 @@
-ALTER TABLE users
-    ADD COLUMN age_group VARCHAR(20) NULL,
-ADD COLUMN gender VARCHAR(20) NULL;

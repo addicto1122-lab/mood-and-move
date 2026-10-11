@@ -1,13 +1,18 @@
--- =========================================================
--- Mood&Move
--- V2__seed_master_data.sql
--- =========================================================
+-- ============================================================
+
+-- Mood&Move | V2__seed_master_data.sql (consolidated from V1-V12)
+
+-- For the consolidated V1 schema only. Contains data inserts, no DDL.
+
+-- Old V2 actions/action_hobbies were deleted in V9, so those
+
+-- obsolete rows are intentionally NOT reintroduced.
+
+-- ============================================================
 
 
--- =========================================================
--- 1. 감정 종류 Master
--- 담당: 이래원
--- =========================================================
+-- 1. Emotion master data (original V2)
+
 INSERT INTO emotions (
     emotion_code,
     name,
@@ -23,11 +28,8 @@ VALUES
     ('JOY',     '기쁨',   '😄', 50);
 
 
+-- 2. Hobby master data (original V2)
 
--- =========================================================
--- 2. 취미 Master
--- 담당: 이래원
--- =========================================================
 INSERT INTO hobbies (
     name,
     category
@@ -39,108 +41,46 @@ VALUES
     ('게임', 'ENTERTAINMENT'),
     ('운동', 'ACTIVITY');
 
--- =========================================================
--- 3. 추천 행동 Master
--- 담당: 장준호
--- =========================================================
-INSERT INTO actions (
-    action_code,
-    name,
-    category,
-    duration_minutes,
-    environment_type,
-    social_type,
-    activity_style,
-    location_required,
-    place_category
+
+-- 3. Current-location consent policy (original V5)
+
+INSERT INTO consent_policies (
+    consent_type,
+    version,
+    title,
+    content,
+    required,
+    active,
+    effective_at
 )
-VALUES
-    (
-        'WALK_PARK',
-        '공원 산책',
-        'WALK',
-        15,
-        'OUTDOOR',
-        'ANY',
-        'ACTIVE',
-        TRUE,
-        'PARK'
-    ),
-    (
-        'STRETCH',
-        '가벼운 스트레칭',
-        'EXERCISE',
-        5,
-        'INDOOR',
-        'ALONE',
-        'ACTIVE',
-        FALSE,
-        NULL
-    ),
-    (
-        'LISTEN_MUSIC',
-        '음악 듣기',
-        'REST',
-        10,
-        'ANY',
-        'ALONE',
-        'CALM',
-        FALSE,
-        NULL
-    ),
-    (
-        'DEEP_BREATH',
-        '심호흡하기',
-        'REST',
-        5,
-        'ANY',
-        'ALONE',
-        'CALM',
-        FALSE,
-        NULL
-    );
+VALUES (
+           'CURRENT_LOCATION',
+           '1.0',
+           '현재 위치 기반 추천 동의',
+           '현재 위치를 이용하여 주변의 활동 장소를 추천합니다. 현재 위치는 장소 추천을 위한 요청 시 사용하며 기본 활동 지역으로 저장하지 않습니다.',
+           FALSE,
+           TRUE,
+           NOW()
+       );
 
 
+-- 4. Action category master data (original V11)
 
--- =========================================================
--- 4. ACTION <-> HOBBY 매핑
--- 담당: 장준호
--- =========================================================
-
-INSERT INTO action_hobbies (
-    action_id,
-    hobby_id
-)
-SELECT
-    a.id,
-    h.id
-FROM actions a
-         JOIN hobbies h
-              ON h.name = '산책'
-WHERE a.action_code = 'WALK_PARK';
-
-
-INSERT INTO action_hobbies (
-    action_id,
-    hobby_id
-)
-SELECT
-    a.id,
-    h.id
-FROM actions a
-         JOIN hobbies h
-              ON h.name = '음악'
-WHERE a.action_code = 'LISTEN_MUSIC';
-
-
-INSERT INTO action_hobbies (
-    action_id,
-    hobby_id
-)
-SELECT
-    a.id,
-    h.id
-FROM actions a
-         JOIN hobbies h
-              ON h.name = '운동'
-WHERE a.action_code = 'STRETCH';
+INSERT INTO action_categories (
+    category_code,
+    category_name,
+    emoji
+) VALUES
+      ('WALK',          '산책',        '🚶'),
+      ('EXERCISE',      '운동',        '💪'),
+      ('STRETCHING',    '스트레칭',    '🤸'),
+      ('MEDITATION',    '명상',        '🧘'),
+      ('SLEEP',         '수면 관리',   '😴'),
+      ('MUSIC',         '음악',        '🎵'),
+      ('READING',       '독서',        '📖'),
+      ('ENTERTAINMENT', '오락',        '🎮'),
+      ('SOCIAL',        '사회적 교류', '💬'),
+      ('OUTDOOR',       '야외 활동',   '🌳'),
+      ('EATING',        '음식 섭취',   '🍽️'),
+      ('SELF_CARE',     '자기 관리',   '🛁'),
+      ('CLEANING',      '정리·청소',   '🧹');

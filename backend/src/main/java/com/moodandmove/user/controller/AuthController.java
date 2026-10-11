@@ -219,17 +219,11 @@ public class AuthController {
             ) String refreshToken
     ) {
 
-        User user = authService.validateRefreshToken(refreshToken);
+        AuthService.RotatedTokens tokens =
+                authService.rotateRefreshToken(refreshToken);
 
-        String newAccessToken = jwtProvider.createAccessToken(user);
-
-        String newRefreshToken = jwtProvider.createRefreshToken(user);
-
-        LocalDateTime refreshExpiresAt =
-                LocalDateTime.ofInstant(jwtProvider.getExpiration(newRefreshToken).toInstant(), ZoneId.systemDefault()
-                );
-
-        authService.saveRefreshToken(user, newRefreshToken, refreshExpiresAt);
+        String newAccessToken = tokens.accessToken();
+        String newRefreshToken = tokens.refreshToken();
 
         ResponseCookie accessCookie = ResponseCookie
                         .from("accessToken", newAccessToken)

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 public class JwtProvider {
@@ -59,7 +60,9 @@ public class JwtProvider {
 
         Date now = new Date();
 
-        Date expiration = new Date(now.getTime() + refreshTokenExpiration);
+        Date expiration = new Date(
+                now.getTime() + refreshTokenExpiration
+        );
 
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
@@ -71,6 +74,8 @@ public class JwtProvider {
                         "tokenType",
                         "REFRESH"
                 )
+                // 재발급할 때마다 고유 ID 생성
+                .id(UUID.randomUUID().toString())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey)
