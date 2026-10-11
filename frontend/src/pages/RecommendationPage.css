@@ -517,3 +517,390 @@
     padding: 22px;
   }
 }
+/* =========================
+   주변 장소
+========================= */
+
+.place-search-button {
+  width: 100%;
+
+  margin-top: 14px;
+  padding: 11px 14px;
+
+  border: 1px solid var(--line);
+  border-radius: 13px;
+
+  color: var(--sage-dark);
+  background: var(--white);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.nearby-place-area {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  margin-top: 12px;
+}
+
+.nearby-place-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.nearby-place-card {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 11px 12px;
+
+  border-radius: 14px;
+
+  background: var(--mint);
+}
+
+.nearby-place-rank {
+  width: 26px;
+  height: 26px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  color: var(--sage-dark);
+  background: var(--white);
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.nearby-place-info {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.nearby-place-info strong {
+  color: var(--ink);
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.nearby-place-info span {
+  overflow: hidden;
+
+  color: var(--muted);
+
+  font-size: 10px;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.nearby-place-distance {
+  flex-shrink: 0;
+
+  color: var(--sage-dark);
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.kakao-map-open-button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 12px 14px;
+
+  border: 1px solid #d7e5dc;
+  border-radius: 15px;
+
+  color: var(--sage-dark);
+  background: #f7fbf8;
+
+  text-align: left;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.kakao-map-open-button:hover {
+  background: var(--mint);
+  border-color: #bfd5c7;
+
+  transform: translateY(-1px);
+}
+
+.map-button-icon {
+  width: 36px;
+  height: 36px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: #ffffff;
+
+  font-size: 18px;
+}
+
+.map-button-text {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.map-button-text strong {
+  color: var(--sage-dark);
+
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.map-button-text small {
+  color: var(--muted);
+
+  font-size: 10px;
+}
+
+.map-button-arrow {
+  flex-shrink: 0;
+
+  color: var(--sage);
+
+  font-size: 23px;
+  font-weight: 500;
+}
+
+/* =========================
+   카카오맵 모달
+========================= */
+
+.place-map-overlay {
+  position: fixed;
+  inset: 0;
+
+  z-index: 5000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(24, 37, 31, 0.55);
+}
+
+.place-map-modal {
+  width: 100%;
+  max-width: 520px;
+
+  padding: 18px;
+
+  border-radius: 24px;
+
+  background: var(--white);
+
+  box-shadow: 0 20px 50px rgba(24, 37, 31, 0.2);
+}
+
+.place-map-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 14px;
+}
+
+.place-map-header span {
+  color: var(--sage);
+
+  font-size: 10px;
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+}
+
+.place-map-header h2 {
+  margin-top: 4px;
+
+  font-size: 20px;
+}
+
+.place-map-close {
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border: 0;
+  border-radius: 50%;
+
+  color: var(--sage-dark);
+  background: var(--mint);
+
+  font-size: 23px;
+}
+
+.place-map-canvas {
+  width: 100%;
+  height: 420px;
+
+  overflow: hidden;
+
+  border-radius: 18px;
+}
+
+.place-map-error {
+  padding: 30px 10px;
+
+  color: #c84c4c;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .place-map-overlay {
+    align-items: flex-end;
+
+    padding: 12px;
+  }
+
+  .place-map-modal {
+    border-radius: 24px 24px 18px 18px;
+  }
+
+  .place-map-canvas {
+    height: 55dvh;
+  }
+}
+/* =========================
+   지도 마커 번호
+========================= */
+
+.map-marker-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 24px;
+  height: 24px;
+
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  box-shadow: 0 3px 10px rgba(39, 49, 45, 0.25);
+
+  font-size: 11px;
+  font-weight: 900;
+}
+
+/* =========================
+   지도 마커 정보
+========================= */
+
+.map-place-info {
+  min-width: 150px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  padding: 10px 12px;
+
+  color: var(--ink);
+  background: #ffffff;
+
+  font-family: Pretendard, "Apple SD Gothic Neo", sans-serif;
+}
+
+.map-place-info strong {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.map-place-info span {
+  color: var(--muted);
+
+  font-size: 10px;
+}
+.place-map-legend {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 7px;
+
+  margin-top: 12px;
+}
+
+.place-map-legend-item {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+}
+
+.place-map-legend-item span {
+  width: 22px;
+  height: 22px;
+
+  flex-shrink: 0;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  color: #ffffff;
+  background: var(--sage-dark);
+
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.place-map-legend-item strong {
+  overflow: hidden;
+
+  font-size: 10px;
+  font-weight: 700;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

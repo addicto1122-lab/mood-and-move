@@ -8,6 +8,8 @@ import {
 } from "../api/recommendationApi";
 
 import "./RecommendationPage.css";
+import { getNearbyPlaces } from "../api/placeApi";
+import NearbyPlaceMapModal from "../components/NearbyPlaceMapModal.jsx";
 
 const environmentNames = {
   INDOOR: "실내",
@@ -35,6 +37,136 @@ export default function RecommendationPage() {
   const [actionError, setActionError] = useState("");
 
   const submittingRef = useRef(false);
+
+  const [placeRecommendationId, setPlaceRecommendationId] = useState(null);
+  const [nearbyPlaces, setNearbyPlaces] = useState([]);
+  const [placeLoading, setPlaceLoading] = useState(false);
+  const [placeError, setPlaceError] = useState("");
+
+  const [showPlaceMap, setShowPlaceMap] = useState(false);
+
+  // const handleFindPlaces = (item) => {
+  //   if (!item.locationRequired || item.placeCategory) {
+  //     return;
+  //   }
+
+  //   if (!navigator.geolocation) {
+  //     setPlaceError("현재 브라우저에서는 위치 기능을 사용할 수 없습니다.");
+  //     return;
+  //   }
+
+  //   setPlaceLoading(true);
+  //   setPlaceError("");
+  //   setNearbyPlaces([]);
+  //   setPlaceRecommendationId(item.recommendationId);
+
+  //   navigator.geolocation.getCurrentPosition(
+  //     async (position) => {
+  //       try {
+  //         const places = await getNearbyPlaces({
+  //           type: item.placeCategory,
+  //           latitude: position.coords.latitude,
+  //           longitude: position.coords.longitude,
+  //         });
+
+  //         setNearbyPlaces(places);
+  //       } catch (error) {
+  //         console.error(error);
+
+  //         setPlaceError("주변에서 적절한 장소를 찾지 못했습니다.");
+  //       } finally {
+  //         setPlaceLoading(false);
+  //       }
+  //     },
+  //     () => {
+  //       setPlaceError("주변 장소를 추천하려면 위치 사용을 허용해주세요.");
+
+  //       setPlaceLoading(false);
+  //     },
+  //   );
+  // };
+  const handleFindPlaces = (item) => {
+    console.log("===== 장소 버튼 클릭 =====");
+    console.log("추천 item:", item);
+
+    if (!item.locationRequired || !item.placeCategory) {
+      console.log("장소 검색 조건 불충족", {
+        locationRequired: item.locationRequired,
+        placeCategory: item.placeCategory,
+      });
+
+      return;
+    }
+
+    console.log("장소 검색 조건 통과");
+    console.log("placeCategory:", item.placeCategory);
+
+    if (!navigator.geolocation) {
+      setPlaceError("현재 브라우저에서는 위치 기능을 사용할 수 없습니다.");
+      return;
+    }
+
+    setPlaceLoading(true);
+    setPlaceError("");
+    setNearbyPlaces([]);
+    setShowPlaceMap(false);
+    setPlaceRecommendationId(item.recommendationId);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        console.log("===== 현재 위치 획득 성공 =====");
+        console.log({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+
+        try {
+          console.log("===== 장소 API 호출 직전 =====");
+          console.log({
+            type: item.placeCategory,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+
+          const places = await getNearbyPlaces({
+            type: item.placeCategory,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+
+          console.log("===== 장소 API 응답 =====");
+          console.log(places);
+
+          setNearbyPlaces(places);
+        } catch (error) {
+          console.error("===== 장소 API 호출 실패 =====");
+          console.error(error);
+
+          setPlaceError("주변에서 적절한 장소를 찾지 못했습니다.");
+        } finally {
+          setPlaceLoading(false);
+        }
+      },
+
+      (error) => {
+        console.error("===== 현재 위치 획득 실패 =====");
+        console.error({
+          code: error.code,
+          message: error.message,
+        });
+
+        setPlaceError("현재 위치를 확인하지 못했습니다.");
+
+        setPlaceLoading(false);
+      },
+
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000,
+      },
+    );
+  };
 
   /*
    * 저장된 추천 조회
@@ -289,6 +421,64 @@ export default function RecommendationPage() {
             </div>
 
             <p className="card-reason">{item.reason}</p>
+            {item.locationRequired && item.placeCategory && (
+              <button
+                type="button"
+                className="place-search-button"
+                onClick={() => {
+                  console.log("🔥 버튼 자체 클릭됨");
+                  handleFindPlaces(item);
+                }}
+              >
+                📍 내 주변 장소 보기
+              </button>
+            )}
+
+            {placeRecommendationId === item.recommendationId && (
+              <>
+                {placeLoading && (
+                  <p className="place-loading">주변 장소를 찾고 있어요...</p>
+                )}
+
+                {placeError && <p className="place-error">{placeError}</p>}
+
+                {!placeLoading && !placeError && nearbyPlaces.length > 0 && (
+                  <>
+                    <div className="nearby-place-list">
+                      {nearbyPlaces.map((place, index) => (
+                        <div key={place.placeId} className="nearby-place-card">
+                          <div className="nearby-place-rank">{index + 1}</div>
+
+                          <div className="nearby-place-info">
+                            <strong>{place.name}</strong>
+
+                            <span>{place.roadAddress || place.address}</span>
+                          </div>
+
+                          <span className="nearby-place-distance">
+                            {place.distance}m
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="kakao-map-open-button"
+                      onClick={() => setShowPlaceMap(true)}
+                    >
+                      🗺 카카오맵에서 보기
+                    </button>
+                  </>
+                )}
+
+                {!placeLoading && !placeError && nearbyPlaces.length === 0 && (
+                  <p className="place-empty">
+                    주변에서 적절한 장소를 찾지 못했어요.
+                  </p>
+                )}
+              </>
+            )}
 
             <button
               type="button"
@@ -310,6 +500,12 @@ export default function RecommendationPage() {
       >
         {submitting ? "처리 중..." : "이번 추천 건너뛰기"}
       </button>
+      {showPlaceMap && nearbyPlaces.length > 0 && (
+        <NearbyPlaceMapModal
+          places={nearbyPlaces}
+          onClose={() => setShowPlaceMap(false)}
+        />
+      )}
     </main>
   );
 }
