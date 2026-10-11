@@ -56,14 +56,6 @@ public class RecommendationService {
             "CLEANING"
     );
 
-    private static final Set<String> PLACE_CATEGORIES = Set.of(
-            "PARK",
-            "CAFE",
-            "SHOPPING",
-            "LIBRARY",
-            "CINEMA"
-    );
-
     // 개인화 점수 계산
     public BigDecimal calculatePersonalScore(
             ActionPersonalStatResponse emotionStat
@@ -359,25 +351,6 @@ public class RecommendationService {
                 continue;
             }
 
-            String normalizedPlaceCategory = null;
-
-            if (item.locationRequired()) {
-
-                if (item.placeCategory() == null
-                        || item.placeCategory().isBlank()) {
-                    continue;
-                }
-
-                normalizedPlaceCategory =
-                        item.placeCategory()
-                                .strip()
-                                .toUpperCase(Locale.ROOT);
-
-                if (!PLACE_CATEGORIES.contains(normalizedPlaceCategory)) {
-                    continue;
-                }
-            }
-
             // 위치를 사용하지 않는다면 장소 필수 행동 제외
             if (locationMode == LocationMode.NONE
                     && item.locationRequired()) {
@@ -400,7 +373,7 @@ public class RecommendationService {
                             item.socialType(),
                             item.activityStyle(),
                             item.locationRequired(),
-                            normalizedPlaceCategory,
+                            item.placeCategory(),
                             item.reason().strip(),
                             item.emoji()
                     )

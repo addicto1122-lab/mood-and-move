@@ -63,7 +63,7 @@ public class KakaoPlaceClient {
                         )
                         .queryParam(
                                 "size",
-                                15
+                                5
                         )
                         .build()
                 )

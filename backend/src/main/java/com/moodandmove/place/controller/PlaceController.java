@@ -21,12 +21,15 @@ public class PlaceController {
     public List<PlaceResponse> getNearbyPlaces(
             @RequestParam PlaceType type,
             @RequestParam double latitude,
-            @RequestParam double longitude
+            @RequestParam double longitude,
+            @RequestParam(defaultValue = "3000")
+            int radius
     ){
-        return placeService.findNearbyPlaceWithFallback(
+        return placeService.findNearbyPlaces(
                 type,
                 latitude,
-                longitude
+                longitude,
+                radius
         );
     }
 }

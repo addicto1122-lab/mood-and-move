@@ -351,32 +351,15 @@ public class GeminiRecommendationGenerator
 
                 durationMinutes는 0보다 큰 정수입니다.
                 actionName은 100자를 초과하지 마세요.
-                placeCategory는 아래 값 중 하나만 사용할 수 있습니다.
-                
-                PARK
-                CAFE
-                SHOPPING
-                LIBRARY
-                CINEMA
-                
-                장소 검색이 필요하지 않다면 null로 설정하세요.
-                
-                장소 의미에 따라 다음 기준을 사용하세요.
-                
-                - 공원, 산책로, 야외 걷기, 야외 운동 장소 → PARK
-                - 카페, 커피숍 → CAFE
-                - 쇼핑몰, 쇼핑 → SHOPPING
-                - 도서관 → LIBRARY
-                - 영화관 → CINEMA
-                
-                "공원", "산책로", "공원 또는 산책로" 같은
-                자연어 문장을 placeCategory에 넣지 마세요.
-                
-                locationRequired가 true이면
-                placeCategory는 반드시 위 5개 값 중 하나여야 합니다.
-                
-                locationRequired가 false이면
-                placeCategory는 null로 설정하세요.
+                placeCategory는 50자를 초과하지 마세요.
+
+                locationRequired는 boolean 값입니다.
+
+                위치 정보가 반드시 필요한 행동만
+                locationRequired를 true로 설정하세요.
+
+                특정 장소 분류가 필요하지 않다면
+                placeCategory를 null로 설정하세요.
 
                 category와 enum 속성은
                 반드시 위 허용값만 사용하세요.
@@ -403,7 +386,7 @@ public class GeminiRecommendationGenerator
                 socialType: 사회적 선호 유형 (문자열)
                 activityStyle: 활동 성향 (문자열)
                 locationRequired: 위치 필수 여부 (boolean)
-                placeCategory: 장소 분류 (PARK, CAFE, SHOPPING, LIBRARY, CINEMA 중 하나 또는 null)
+                placeCategory: 장소 분류 (문자열 또는 null)
                 reason: 추천 이유 (문자열)
                 emoji: 해당 행동을 나타내는 대표 이모지 하나 (문자열)
                 
