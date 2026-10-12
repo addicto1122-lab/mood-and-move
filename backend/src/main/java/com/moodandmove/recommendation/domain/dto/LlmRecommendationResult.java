@@ -3,6 +3,11 @@ package com.moodandmove.recommendation.domain.dto;
 import java.util.List;
 
 public record LlmRecommendationResult(
-        List<LlmRecommendedActionDto> recommendations
+        List<LlmRecommendedActionDto> recommendations,
+        String requestId
 ) {
+
+    public LlmRecommendationResult (List<LlmRecommendedActionDto> recommendations) {
+        this(recommendations, null);
+    }
 }
