@@ -4,6 +4,7 @@ package com.moodandmove.recommendation.service;
 import com.moodandmove.analysis.service.UserActionStatService;
 import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.repository.MoodEntryRepository;
+import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.recommendation.domain.dto.LlmRecommendedActionDto;
 import com.moodandmove.recommendation.domain.dto.response.RecommendationResponse;
 import com.moodandmove.recommendation.domain.entity.Action;
@@ -71,6 +72,7 @@ public class RecommendationPersistenceService {
             Long moodEntryId,
             TimeBucket timeBucket,
             RecommendationType recommendationType,
+            LocationMode locationMode,
             List<LlmRecommendedActionDto> selected
     ) {
         // 동일 일기에서 중복 추천 세션 생성 방지
@@ -90,6 +92,7 @@ public class RecommendationPersistenceService {
 
         if (timeBucket == null
                 || recommendationType == null
+                || locationMode == null
                 || selected == null
                 || selected.size() != 3) {
             throw new IllegalArgumentException(
@@ -119,7 +122,8 @@ public class RecommendationPersistenceService {
                         userId,
                         moodEntry,
                         timeBucket,
-                        recommendationType
+                        recommendationType,
+                        locationMode
                 )
         );
 
@@ -159,7 +163,7 @@ public class RecommendationPersistenceService {
         // 일기의 추천 요청 상태 변경
         moodEntry.markRecommendationRequested();
 
-        return new RecommendationResponse(session.getId(), items);
+        return new RecommendationResponse(session.getId(),session.getLocationMode() ,items);
     }
 
     // 같은 이름의 행동은 기존 데이터를 재사용
@@ -230,7 +234,7 @@ public class RecommendationPersistenceService {
                         .map(this::toItem)
                         .toList();
 
-        return new RecommendationResponse(session.getId(), items);
+        return new RecommendationResponse(session.getId(),session.getLocationMode() ,items);
     }
 
     // 추천과 카테고리 정보를 함께 응답으로 변환

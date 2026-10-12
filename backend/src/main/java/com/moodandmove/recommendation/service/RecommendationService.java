@@ -324,6 +324,7 @@ public class RecommendationService {
                     moodEntryId,
                     llmRequest.currentState().timeBucket(),
                     llmRequest.recommendationType(),
+                    llmRequest.location().locationMode(),
                     validated
             );
         }catch (RuntimeException e) {

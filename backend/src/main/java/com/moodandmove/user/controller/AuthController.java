@@ -126,7 +126,8 @@ public class AuthController {
                 user.getAgeGroup(),
                 user.getGender(),
                 user.isOnboardingCompleted(),
-                user.isLocalLoginEnabled()
+                user.isLocalLoginEnabled(),
+                user.getCreatedAt().toLocalDate()
         );
 
         return ResponseEntity.ok(response);
