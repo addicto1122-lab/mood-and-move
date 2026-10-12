@@ -4,7 +4,9 @@ package com.moodandmove.recommendation.llm;
 import com.moodandmove.common.domain.type.ActivityStyle;
 import com.moodandmove.common.domain.type.EnvironmentType;
 import com.moodandmove.common.domain.type.SocialType;
+import com.moodandmove.recommendation.domain.document.RecommendationGenerationLog;
 import com.moodandmove.recommendation.domain.dto.*;
+import com.moodandmove.recommendation.service.RecommendationGenerationLogService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
@@ -12,8 +14,8 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.util.Arrays;
-import java.util.List;
+import java.time.Instant;
+import java.util.*;
 
 @Component
 public class GeminiRecommendationGenerator
@@ -22,6 +24,9 @@ public class GeminiRecommendationGenerator
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
     private final String model;
+
+    private final RecommendationGenerationLogService generationLogService;
+    private static final String PROMPT_VERSION = "category-score-emoji-v1";
 
     private static final String ACTION_CATEGORIES = """
             WALK, EXERCISE, STRETCHING, MEDITATION,
@@ -32,10 +37,13 @@ public class GeminiRecommendationGenerator
     public GeminiRecommendationGenerator(
             ObjectMapper objectMapper,
             @Value("${gemini.api-key}") String apiKey,
-            @Value("${gemini.model}") String model
+            @Value("${gemini.model}") String model,
+            RecommendationGenerationLogService generationLogService
+
     ) {
         this.objectMapper = objectMapper;
         this.model = model;
+        this.generationLogService = generationLogService;
 
         this.restClient = RestClient.builder()
                 .baseUrl(
@@ -56,39 +64,157 @@ public class GeminiRecommendationGenerator
     public LlmRecommendationResult generate(
             LlmRecommendationRequestDto request
     ) {
-        String prompt = buildPrompt(request);
+        String requestId = UUID.randomUUID().toString();
+        Instant createdAt = Instant.now();
 
-        GeminiRequest geminiRequest = new GeminiRequest(
-                List.of(
-                        new Content(
-                                List.of(new Part(prompt))
-                        )
-                ),
-                new GenerationConfig("application/json")
-        );
+        String rawResponse = null;
+        Map<String, Object> output = null;
 
-        JsonNode response = restClient.post()
-                .uri(
-                        "/v1beta/models/"
-                                + model
-                                + ":generateContent"
-                )
-                .body(geminiRequest)
-                .retrieve()
-                .body(JsonNode.class);
+        String status = "FAILED";
+        String errorStage = null;
+        String errorMessage = null;
 
-        String outputText = extractOutputText(response);
+        String stage = "BUILD_PROMPT";
+        Long latencyMs = null;
+        long callStartedAt = 0L;
+        boolean callStarted = false;
 
         try {
-            return objectMapper.readValue(
-                    outputText,
+            String prompt = buildPrompt(request);
+
+            GeminiRequest geminiRequest = new GeminiRequest(
+                    List.of(
+                            new Content(
+                                    List.of(new Part(prompt))
+                            )
+                    ),
+                    new GenerationConfig("application/json")
+            );
+
+            stage = "LLM_CALL";
+            callStartedAt = System.nanoTime();
+            callStarted = true;
+
+            JsonNode response = restClient.post()
+                    .uri("/v1beta/models/" + model + ":generateContent")
+                    .body(geminiRequest)
+                    .retrieve()
+                    .body(JsonNode.class);
+
+            latencyMs = (System.nanoTime() - callStartedAt) / 1_000_000;
+
+            stage = "EXTRACT_RESPONSE";
+            rawResponse = extractOutputText(response);
+
+            stage = "PARSE_RESPONSE";
+            LlmRecommendationResult result = objectMapper.readValue(
+                    rawResponse,
                     LlmRecommendationResult.class
             );
+
+            if (result == null || result.recommendations() == null) {
+                throw new IllegalStateException("추천 응답 내용이 없습니다.");
+            }
+
+            // MongoDB에 저장할 중첩 문서 구성
+            Map<String, Object> parsedOutput = new LinkedHashMap<>();
+
+            var recommendations = result.recommendations().stream()
+                    .map(item -> {
+                        Map<String, Object> action = new LinkedHashMap<>();
+
+                        if (item == null) {
+                            return action;
+                        }
+
+                        action.put("actionName", item.actionName());
+                        action.put("category", item.category());
+                        action.put("durationMinutes", item.durationMinutes());
+                        action.put(
+                                "environmentType",
+                                item.environmentType() != null
+                                        ? item.environmentType().name()
+                                        : null
+                        );
+                        action.put(
+                                "socialType",
+                                item.socialType() != null
+                                        ? item.socialType().name()
+                                        : null
+                        );
+                        action.put(
+                                "activityStyle",
+                                item.activityStyle() != null
+                                        ? item.activityStyle().name()
+                                        : null
+                        );
+                        action.put("locationRequired", item.locationRequired());
+                        action.put("placeCategory", item.placeCategory());
+                        action.put("reason", item.reason());
+                        action.put("emoji", item.emoji());
+
+                        return action;
+                    })
+                    .toList();
+
+            parsedOutput.put("recommendations", recommendations);
+            output = parsedOutput;
+
+            // LLM 응답 수신·파싱까지 성공한 상태
+            status = "LLM_SUCCESS";
+
+            // 서버가 생성한 로그 식별값을 다음 처리 단계로 전달
+            return new LlmRecommendationResult(
+                    result.recommendations(),
+                    requestId);
+
         } catch (Exception e) {
+            if (callStarted && latencyMs == null) {
+                latencyMs = (System.nanoTime() - callStartedAt) / 1_000_000;
+            }
+
+            errorStage = stage;
+
+            // 예외 메시지에 요청 원문 등이 포함될 수 있어 타입만 기록
+            errorMessage = e.getClass().getSimpleName();
+
             throw new IllegalStateException(
-                    "LLM 추천 응답 변환에 실패했습니다.",
+                    "LLM 추천 생성에 실패했습니다. requestId=" + requestId,
                     e
             );
+
+        } finally {
+            // 로그 구성·저장 실패가 추천 결과를 덮어쓰지 않도록 분리
+            try {
+                var generationLog = RecommendationGenerationLog.builder()
+                        .requestId(requestId)
+                        .recommendationType(
+                                request.recommendationType().name()
+                        )
+                        .model(model)
+                        .promptVersion(PROMPT_VERSION)
+                        .input(createLogInput(request))
+                        .output(output)
+                        .rawResponse(rawResponse)
+                        .status(status)
+                        .errorStage(errorStage)
+                        .errorMessage(errorMessage)
+                        .latencyMs(latencyMs)
+                        .createdAt(createdAt)
+                        .build();
+
+                generationLogService.save(generationLog);
+
+            } catch (Exception loggingException) {
+                // 추천 결과는 유지하고 로그 처리 오류만 출력
+                org.slf4j.LoggerFactory
+                        .getLogger(GeminiRecommendationGenerator.class)
+                        .warn(
+                                "추천 로그 처리 실패: requestId={}, errorType={}",
+                                requestId,
+                                loggingException.getClass().getSimpleName()
+                        );
+            }
         }
     }
 
@@ -530,5 +656,79 @@ public class GeminiRecommendationGenerator
     private record GenerationConfig(
             String responseMimeType
     ) {
+    }
+    // 추천 당시 입력 정보를 로그용으로 구성
+    private Map<String, Object> createLogInput(
+            LlmRecommendationRequestDto request
+    ) {
+        Map<String, Object> input = new LinkedHashMap<>();
+
+        var state = request.currentState();
+
+        input.put("emotion", state.emotion());
+        input.put("intensity", state.intensity());
+        input.put("moodScore", state.moodScore());
+        input.put("currentActivity", state.currentActivity());
+        input.put("diaryContent", state.diaryContent());
+        input.put(
+                "timeBucket",
+                state.timeBucket() != null
+                        ? state.timeBucket().name()
+                        : null
+        );
+
+        if (request.location() != null) {
+            input.put(
+                    "locationMode",
+                    request.location().locationMode() != null
+                            ? request.location().locationMode().name()
+                            : null
+            );
+        }
+
+        var preference = request.preference();
+
+        if (preference != null) {
+            Map<String, Object> preferences = new LinkedHashMap<>();
+
+            preferences.put(
+                    "environmentType",
+                    preference.environmentType() != null
+                            ? preference.environmentType().name()
+                            : null
+            );
+
+            preferences.put(
+                    "activityStyle",
+                    preference.activityStyle() != null
+                            ? preference.activityStyle().name()
+                            : null
+            );
+
+            preferences.put(
+                    "socialType",
+                    preference.socialType() != null
+                            ? preference.socialType().name()
+                            : null
+            );
+
+            input.put("preference", preferences);
+        }
+
+        if (request.categoryScores() != null) {
+            var categoryScores = request.categoryScores().stream()
+                    .map(score -> {
+                        Map<String, Object> item = new LinkedHashMap<>();
+                        item.put("category", score.category());
+                        item.put("personalScore", score.personalScore());
+                        item.put("sampleCount", score.sampleCount());
+                        return item;
+                    })
+                    .toList();
+
+            input.put("categoryScores", categoryScores);
+        }
+
+        return input;
     }
 }

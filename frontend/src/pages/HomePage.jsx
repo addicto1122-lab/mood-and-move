@@ -122,7 +122,6 @@ export default function HomePage() {
   const currentExecution = homeData.currentExecution;
 
   // 진행 중 행동이 있으면 우선 표시
-  const displayedAction = currentExecution ?? todayRecommendation;
   const handleMoodClick = () => {
     navigate("/mood");
   };
@@ -227,38 +226,38 @@ export default function HomePage() {
         </section>
       )}
 
-      {displayedAction && (
+      {(currentExecution || todayRecommendation) && (
         <>
           <div className="section-title">
             <h2>지금 필요한 한 걸음</h2>
           </div>
 
-          <section className="card action-card">
-            <div className="action-icon" aria-hidden="true">
-              {displayedAction.emoji?.trim() ||
-                displayedAction.categoryEmoji?.trim() ||
-                "✨"}
-            </div>
+          {currentExecution ? (
+            <section className="card action-card">
+              <div className="action-icon" aria-hidden="true">
+                {currentExecution.emoji?.trim() ||
+                  currentExecution.categoryEmoji?.trim() ||
+                  "✨"}
+              </div>
 
-            <div className="action-copy">
-              <span>
-                {currentExecution ? "진행 중인 행동" : "오늘의 추천"}
-                {displayedAction.categoryName
-                  ? ` · ${displayedAction.categoryName}`
-                  : ""}
-              </span>
+              <div className="action-copy">
+                <span>
+                  진행 중인 행동
+                  {currentExecution.categoryName
+                    ? ` · ${currentExecution.categoryName}`
+                    : ""}
+                </span>
 
-              <h3>
-                {displayedAction.durationMinutes
-                  ? `${displayedAction.durationMinutes}분 `
-                  : ""}
-                {displayedAction.actionName}
-              </h3>
+                <h3>
+                  {currentExecution.durationMinutes
+                    ? `${currentExecution.durationMinutes}분 `
+                    : ""}
+                  {currentExecution.actionName}
+                </h3>
 
-              <p>{displayedAction.reason}</p>
-            </div>
+                <p>{currentExecution.reason}</p>
+              </div>
 
-            {currentExecution ? (
               <button
                 type="button"
                 className="primary-button"
@@ -270,26 +269,40 @@ export default function HomePage() {
               >
                 재측정하기
               </button>
-            ) : (
-              <button
-                type="button"
-                className="round-arrow"
-                onClick={() =>
-                  navigate(
-                    `/recommendation?moodEntryId=${latestMood.moodEntryId}`,
-                  )
-                }
-                aria-label="오늘의 추천 보기"
-              >
-                ›
-              </button>
-            )}
-          </section>
+            </section>
+          ) : (
+            <section className="card action-card">
+              <div className="action-icon" aria-hidden="true">
+                🌱
+              </div>
+
+              <div className="action-copy">
+                <span>선택 대기 중</span>
+
+                <h3>아직 행동을 선택하지 않았어요</h3>
+
+                <p>추천받은 3가지 행동 중 하나를 골라보세요.</p>
+
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!latestMood?.moodEntryId}
+                  onClick={() =>
+                    navigate(
+                      `/recommendation?moodEntryId=${latestMood.moodEntryId}`,
+                    )
+                  }
+                >
+                  추천 행동 선택하러 가기
+                </button>
+              </div>
+            </section>
+          )}
 
           <p className="tiny-note">
             {currentExecution
               ? "행동을 마쳤다면 지금의 기분을 기록해 주세요."
-              : "✧ 오늘의 기록을 남기면 더 잘 맞는 행동을 추천해요."}
+              : "저장된 추천을 이어서 확인할 수 있어요."}
           </p>
         </>
       )}

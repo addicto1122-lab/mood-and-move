@@ -40,6 +40,8 @@ public class RecommendationService {
     private final RecommendationPersistenceService persistenceService;
     private final CategoryScoreService categoryScoreService;
 
+    private final RecommendationGenerationLogService generationLogService;
+
     private static final Set<String> ACTION_CATEGORIES = Set.of(
             "WALK",
             "EXERCISE",
@@ -300,21 +302,41 @@ public class RecommendationService {
         LlmRecommendationResult result =
                 recommendationLlmGenerator.generate(llmRequest);
 
-        // 4. 생성 결과 검증
-        List<LlmRecommendedActionDto> validated =
-                validateRecommendations(
-                        result,
-                        llmRequest.location().locationMode()
-                );
+        String requestId = result.requestId();
+        String stage = "VALIDATE_RECOMMENDATIONS";
 
-        // 5. 추천 및 행동 저장
-        return persistenceService.save(
-                userId,
-                moodEntryId,
-                llmRequest.currentState().timeBucket(),
-                llmRequest.recommendationType(),
-                validated
-        );
+        RecommendationResponse response;
+
+        try {
+            // 4. 생성 결과 검증
+            List<LlmRecommendedActionDto> validated =
+                    validateRecommendations(
+                            result,
+                            llmRequest.location().locationMode()
+                    );
+
+            // 5. 추천 및 행동 저장
+
+            stage = "MYSQL_SAVE";
+
+            response = persistenceService.save(
+                    userId,
+                    moodEntryId,
+                    llmRequest.currentState().timeBucket(),
+                    llmRequest.recommendationType(),
+                    validated
+            );
+        }catch (RuntimeException e) {
+            //검증 실패 또는 MySQL 저장 실패를 로그에 반영
+            generationLogService.markFailure(requestId,stage,e);
+
+            throw e;
+        }
+
+        // 6. MySQL 저장 완료 후 MongoDB 로그 연결
+        generationLogService.markSuccess(
+                requestId,response.sessionId());
+        return response;
     }
 
     // LLM 추천 결과 검증
