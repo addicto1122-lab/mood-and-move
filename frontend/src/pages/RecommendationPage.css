@@ -834,7 +834,7 @@
 ========================= */
 
 .map-place-info {
-  min-width: 150px;
+  min-width: 160px;
 
   display: flex;
   flex-direction: column;
@@ -843,22 +843,20 @@
 
   padding: 10px 12px;
 
-  color: var(--ink);
-  background: #ffffff;
+  font-size: 12px;
+  line-height: 1.4;
 
-  font-family: Pretendard, "Apple SD Gothic Neo", sans-serif;
+  color: #263a30;
 }
 
 .map-place-info strong {
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 14px;
 }
 
 .map-place-info span {
-  color: var(--muted);
-
-  font-size: 10px;
+  color: #66756d;
 }
+
 .place-map-legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -903,4 +901,26 @@
 
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.place-map-legend-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.place-map-legend-info strong {
+  font-size: 13px;
+  color: #263a30;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.place-map-legend-info small {
+  font-size: 11px;
+  color: #87938c;
 }

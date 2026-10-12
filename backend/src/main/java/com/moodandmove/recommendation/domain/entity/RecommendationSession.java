@@ -3,6 +3,7 @@ package com.moodandmove.recommendation.domain.entity;
 
 import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
+import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -63,17 +64,27 @@ public class RecommendationSession {
     )
     private LocalDateTime requestedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(
+            name = "location_mode",
+            nullable = false,
+            length = 20
+    )
+    private LocationMode locationMode;
+
     // 추천 세션 생성
     public static RecommendationSession create(
             Long userId,
             MoodEntry moodEntry,
             TimeBucket timeBucket,
-            RecommendationType recommendationType
+            RecommendationType recommendationType,
+            LocationMode locationMode
     ) {
         Objects.requireNonNull(userId, "사용자 ID는 필수입니다.");
         Objects.requireNonNull(moodEntry, "기분 입력은 필수입니다.");
         Objects.requireNonNull(timeBucket, "시간대는 필수입니다.");
         Objects.requireNonNull(recommendationType, "추천 유형은 필수입니다.");
+        Objects.requireNonNull(locationMode,"위치 사용 방식은 필수입니다.");
 
         RecommendationSession session = new RecommendationSession();
 
@@ -81,6 +92,7 @@ public class RecommendationSession {
         session.moodEntry = moodEntry;
         session.timeBucket = timeBucket;
         session.recommendationType = recommendationType;
+        session.locationMode = locationMode;
 
         return session;
     }

@@ -132,55 +132,85 @@ public class ActionExecutionService {
     }
 
     @Transactional
-    public RecommendationResponse skip(Long userId, Long sessionId) {
+    public RecommendationResponse skip(
+            Long userId,
+            Long sessionId
+    ) {
         // 1. 같은 사용자의 선택·건너뛰기 요청을 순서대로 처리
         lockUser(userId);
 
         // 2. 본인 소유의 유효한 추천 세션인지 확인
-        ownedSession(userId, sessionId);
+        // locationMode도 필요하므로 반환값을 변수에 저장
+        var session = ownedSession(userId, sessionId);
 
         // 3. 이미 행동을 선택했다면 전체 건너뛰기 불가
-        if (actionExecutionRepository.findBySession_Id(sessionId).isPresent()) {
-            throw conflict("행동을 선택한 뒤에는 추천 전체를 건너뛸 수 없습니다.");
+        if (actionExecutionRepository
+                .findBySession_Id(sessionId)
+                .isPresent()) {
+
+            throw conflict(
+                    "행동을 선택한 뒤에는 추천 전체를 건너뛸 수 없습니다."
+            );
         }
 
-        var candidates = recommendationRepository
-                .findAllBySession_IdOrderByRankNoAsc(sessionId);
+        var candidates =
+                recommendationRepository
+                        .findAllBySession_IdOrderByRankNoAsc(
+                                sessionId
+                        );
 
         if (candidates.size() != 3) {
-            throw conflict("추천 목록이 올바르지 않습니다.");
+            throw conflict(
+                    "추천 목록이 올바르지 않습니다."
+            );
         }
 
         // 4. 이미 모두 건너뛴 경우에는 기존 결과 반환
-        boolean alreadySkipped = candidates.stream()
-                .allMatch(item ->
-                        item.getStatus() == RecommendationStatus.SKIPPED);
+        boolean alreadySkipped =
+                candidates.stream()
+                        .allMatch(item ->
+                                item.getStatus()
+                                        == RecommendationStatus.SKIPPED
+                        );
 
         if (alreadySkipped) {
             return new RecommendationResponse(
                     sessionId,
+                    session.getLocationMode(),
                     candidates.stream()
-                            .map(RecommendationResponse.Item::from)
+                            .map(
+                                    RecommendationResponse.Item::from
+                            )
                             .toList()
             );
         }
 
         // 5. 모두 대기 상태일 때만 건너뛰기 가능
-        boolean hasNonPending = candidates.stream()
-                .anyMatch(item ->
-                        item.getStatus() != RecommendationStatus.PENDING);
+        boolean hasNonPending =
+                candidates.stream()
+                        .anyMatch(item ->
+                                item.getStatus()
+                                        != RecommendationStatus.PENDING
+                        );
 
         if (hasNonPending) {
-            throw conflict("건너뛸 수 있는 추천 상태가 아닙니다.");
+            throw conflict(
+                    "건너뛸 수 있는 추천 상태가 아닙니다."
+            );
         }
 
         // 6. 추천 3개를 모두 SKIPPED로 변경
-        candidates.forEach(Recommendation::skip);
+        candidates.forEach(
+                Recommendation::skip
+        );
 
         return new RecommendationResponse(
                 sessionId,
+                session.getLocationMode(),
                 candidates.stream()
-                        .map(RecommendationResponse.Item::from)
+                        .map(
+                                RecommendationResponse.Item::from
+                        )
                         .toList()
         );
     }

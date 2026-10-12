@@ -1,6 +1,7 @@
 package com.moodandmove.recommendation.domain.dto.response;
 
 import com.moodandmove.common.domain.type.EnvironmentType;
+import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.recommendation.domain.entity.ActionCategory;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 public record RecommendationResponse(
         Long sessionId,
+        LocationMode locationMode,
         List<Item> recommendations
 ) {
 
