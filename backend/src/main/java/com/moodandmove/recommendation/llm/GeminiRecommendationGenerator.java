@@ -397,6 +397,51 @@ public class GeminiRecommendationGenerator
         }
 
         // 6. 사용자·카테고리별 개인화 통계
+        // 카테고리 분류 기준
+        prompt.append("""
+        
+        ===== 카테고리 분류 규칙 =====
+
+        카테고리는 장소가 아니라 행동의 핵심 활동으로 결정하세요.
+        실내·야외 여부는 environmentType에 별도로 지정하세요.
+
+        - WALK: 산책, 가볍게 걷기.
+          공원 산책, 숲길 걷기, 야경 산책도 WALK입니다.
+
+        - EXERCISE: 달리기, 근력 운동, 홈트레이닝.
+          야외에서 수행해도 EXERCISE입니다.
+
+        - STRETCHING: 스트레칭, 이완 중심의 가벼운 요가.
+        - MEDITATION: 호흡 명상, 마음챙김.
+        - SLEEP: 취침 준비, 수면 루틴.
+        - MUSIC: 음악 감상, 노래 부르기.
+        - READING: 책 읽기, 시 읽기.
+        - ENTERTAINMENT: 영화, 예능, 게임.
+        - SOCIAL: 친구와 대화, 가족과 교류.
+        - EATING: 음식이나 음료 섭취.
+        - SELF_CARE: 반신욕, 스킨케어, 셀프 마사지.
+        - CLEANING: 정리, 청소.
+
+        - OUTDOOR: 햇볕 쬐기, 피크닉, 자연 관찰처럼
+          다른 구체적인 카테고리에 해당하지 않는 야외 체류 활동.
+          산책, 달리기, 독서, 명상을 OUTDOOR로 분류하지 마세요.
+
+        여러 카테고리가 겹치면 행동의 주목적을 기준으로 선택하세요.
+        구체적인 활동 카테고리가 있으면 OUTDOOR보다 우선하세요.
+
+        예시:
+        - 공원 산책 → WALK / environmentType: OUTDOOR
+        - 야외 달리기 → EXERCISE / environmentType: OUTDOOR
+        - 공원에서 책 읽기 → READING / environmentType: OUTDOOR
+        - 야외 호흡 명상 → MEDITATION / environmentType: OUTDOOR
+        - 벤치에 앉아 햇볕 쬐기 → OUTDOOR / environmentType: OUTDOOR
+
+        한 추천에는 핵심 행동을 하나만 제시하세요.
+        카테고리를 먼저 정확히 분류하고 해당 카테고리의 점수를 참고하세요.
+        낮은 점수의 활동을 다른 카테고리로 바꾸어 추천하지 마세요.
+
+        """);
+        // 카테고리별 개인화 점수 해석 기준
         prompt.append("""
         
         ===== 카테고리별 개인화 참고 자료 =====
@@ -411,7 +456,7 @@ public class GeminiRecommendationGenerator
         해당 카테고리에서 재측정을 완료한 전체 횟수입니다.
 
         개인화 점수는 0~100입니다.
-        점수가 높을수록 이 사용자에게 과거 기분 개선 효과가
+        점수가 높을수록 과거 기분 개선 효과가
         상대적으로 좋게 평가된 카테고리입니다.
         점수를 개선 확률이나 퍼센트로 해석하지 마세요.
 
@@ -419,9 +464,10 @@ public class GeminiRecommendationGenerator
         효과가 확인됐다는 뜻이 아닙니다.
         표본이 적으면 점수만으로 효과를 단정하지 마세요.
 
-        카테고리 점수는 참고 자료입니다.
+        추천 유형별 지침에 따라 이 점수를 활용하세요.
         현재 감정, 활동, 일기, 선호, 위치 조건과
         안전성을 함께 고려해 구체적인 행동을 생성하세요.
+
         """);
 
         if (request.categoryScores() == null
