@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { getPreferences } from "../api/authApi";
-
+import { formatDuration } from "../utils/formatDuration";
 import {
   getSavedRecommendations,
   selectRecommendation,
@@ -851,7 +851,7 @@ export default function RecommendationPage() {
 
               {/* 행동 정보 */}
               <div className="card-meta">
-                <span>◷ {item.durationMinutes}분</span>
+                <span>◷ {formatDuration(item)}</span>
 
                 <span>
                   ⌖ {environmentNames[item.environmentType] ?? "어디서든"}

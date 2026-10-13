@@ -35,11 +35,16 @@ INSERT INTO hobbies (
     category
 )
 VALUES
-    ('산책', 'WALK'),
-    ('독서', 'READING'),
-    ('음악', 'MUSIC'),
-    ('오락', 'ENTERTAINMENT'),
-    ('운동', 'ACTIVITY');
+    ('운동',     'EXERCISE'),
+    ('독서',     'BOOK'),
+    ('산책',     'WALK'),
+    ('문화생활', 'CULTURE'),
+    ('여행',     'TRAVEL'),
+    ('요리',     'COOKING'),
+    ('게임',     'GAME'),
+    ('낚시',     'FISHING'),
+    ('맛집탐방', 'FOOD_TOUR'),
+    ('음악감상', 'MUSIC');
 
 
 -- 3. Current-location consent policy (original V5)
@@ -71,16 +76,17 @@ INSERT INTO action_categories (
     category_name,
     emoji
 ) VALUES
-      ('WALK',          '산책',        '🚶'),
-      ('EXERCISE',      '운동',        '💪'),
-      ('STRETCHING',    '스트레칭',    '🤸'),
-      ('MEDITATION',    '명상',        '🧘'),
-      ('SLEEP',         '수면 관리',   '😴'),
-      ('MUSIC',         '음악',        '🎵'),
-      ('READING',       '독서',        '📖'),
-      ('ENTERTAINMENT', '오락',        '🎮'),
-      ('SOCIAL',        '사회적 교류', '💬'),
-      ('OUTDOOR',       '야외 활동',   '🌳'),
-      ('EATING',        '음식 섭취',   '🍽️'),
-      ('SELF_CARE',     '자기 관리',   '🛁'),
-      ('CLEANING',      '정리·청소',   '🧹');
+      ('ENTERTAINMENT', '오락',      '🎮'),
+      ('WALK',          '산책',      '🚶'),
+      ('EXERCISE',      '운동',      '💪'),
+      ('STRETCHING',    '스트레칭',  '🤸'),
+      ('OUTDOOR',       '야외활동',  '🌳'),
+      ('SELF_CARE',     '자기관리',  '🛁'),
+      ('SLEEP',         '수면관리',  '😴'),
+      ('READING',       '독서',      '📖'),
+      ('MUSIC',         '음악',      '🎵'),
+      ('MEDITATION',    '명상',      '🧘'),
+      ('EATING',        '음식섭취',  '🍽️'),
+      ('TRAVEL',        '여행',      '🧳'),
+      ('CLEANING',      '정리/청소', '🧹'),
+      ('CULTURE',       '문화생활',  '🎭');

@@ -1,4 +1,3 @@
-
 package com.moodandmove.recommendation.domain.dto;
 
 import com.moodandmove.common.domain.type.ActivityStyle;
@@ -9,6 +8,8 @@ public record LlmRecommendedActionDto(
         String actionName,
         String category,
         Integer durationMinutes,
+        Integer durationDays,
+        Integer durationNights,
         EnvironmentType environmentType,
         SocialType socialType,
         ActivityStyle activityStyle,
@@ -17,4 +18,22 @@ public record LlmRecommendedActionDto(
         String reason,
         String emoji
 ) {
+
+    public boolean hasValidDuration() {
+        boolean minuteBased =
+                durationMinutes != null
+                        && durationMinutes > 0
+                        && durationDays == null
+                        && durationNights == null;
+
+        boolean dayBased =
+                durationMinutes == null
+                        && durationDays != null
+                        && durationDays >= 1
+                        && durationNights != null
+                        && durationNights >= 0
+                        && durationNights < durationDays;
+
+        return minuteBased || dayBased;
+    }
 }

@@ -30,9 +30,17 @@ public class Action {
     @Column(name = "category", nullable = false, length = 30)
     private String category;
 
-    // 예상 소요 시간
-    @Column(name = "duration_minutes", nullable = false)
+    // 분 단위 소요 시간
+    @Column(name = "duration_minutes")
     private Integer durationMinutes;
+
+    // 일정 일수
+    @Column(name = "duration_days")
+    private Integer durationDays;
+
+    // 숙박 횟수
+    @Column(name = "duration_nights")
+    private Integer durationNights;
 
     // 활동 장소 유형
     @Enumerated(EnumType.STRING)
@@ -66,6 +74,8 @@ public class Action {
             String actionName,
             String category,
             Integer durationMinutes,
+            Integer durationDays,
+            Integer durationNights,
             EnvironmentType environmentType,
             SocialType socialType,
             ActivityStyle activityStyle,
@@ -77,6 +87,8 @@ public class Action {
         action.actionName = actionName;
         action.category = category;
         action.durationMinutes = durationMinutes;
+        action.durationDays = durationDays;
+        action.durationNights = durationNights;
         action.environmentType = environmentType;
         action.socialType = socialType;
         action.activityStyle = activityStyle;

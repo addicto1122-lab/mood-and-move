@@ -3,6 +3,8 @@ package com.moodandmove.user.repository;
 import com.moodandmove.user.domain.entity.UserHobby;
 import com.moodandmove.user.domain.entity.UserHobbyId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -12,4 +14,14 @@ public interface UserHobbyRepository
     List<UserHobby> findAllByUser_Id(Long userId);
 
     void deleteAllByUser_Id(Long userId);
+
+    @Query("""
+            select uh.hobby.name
+            from UserHobby uh
+            where uh.user.id = :userId
+            order by uh.hobby.id
+            """)
+    List<String> findHobbyNamesByUserId(
+            @Param("userId") Long userId
+    );
 }

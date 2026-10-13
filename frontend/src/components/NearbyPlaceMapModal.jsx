@@ -270,6 +270,7 @@ export default function NearbyPlaceMapModal({ places, onClose }) {
            * 거리
            */
           const distance = document.createElement("span");
+          distance.textContent = `검색 기준 위치에서 ${place.distance}m`;
 
           if (place.distance != null) {
             distance.textContent = `기준 위치에서 ${place.distance}m`;

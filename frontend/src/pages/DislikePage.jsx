@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getDislikeActions, removeDislikeAction } from "../api/authApi";
 
 import "./DislikePage.css";
+import { formatDuration } from "../utils/formatDuration";
 
 const categoryEmoji = {
   WALK: "🚶",
@@ -189,13 +190,9 @@ export default function DislikePage() {
                       <div className="dislike-item-meta">
                         {action.category && <span>{action.category}</span>}
 
-                        {action.category && action.durationMinutes != null && (
-                          <span>·</span>
-                        )}
+                        {action.category && <span>·</span>}
 
-                        {action.durationMinutes != null && (
-                          <span>{action.durationMinutes}분</span>
-                        )}
+                        <span>{formatDuration(action)}</span>
                       </div>
                     </div>
 

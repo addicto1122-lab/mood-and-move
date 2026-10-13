@@ -3,27 +3,30 @@ package com.moodandmove.recommendation.service;
 
 import com.moodandmove.analysis.dto.ActionPersonalStatResponse;
 import com.moodandmove.analysis.service.UserActionStatService;
+import com.moodandmove.common.domain.type.ActivityStyle;
+import com.moodandmove.common.domain.type.EnvironmentType;
+import com.moodandmove.common.domain.type.SocialType;
 import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
 import com.moodandmove.mood.repository.MoodEntryRepository;
 import com.moodandmove.place.domain.type.LocationMode;
+import com.moodandmove.place.domain.type.PlaceType;
 import com.moodandmove.recommendation.domain.dto.*;
 import com.moodandmove.recommendation.domain.dto.response.RecommendationResponse;
 import com.moodandmove.recommendation.domain.entity.Action;
+import com.moodandmove.recommendation.domain.type.ActionCategory;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
 import com.moodandmove.recommendation.llm.RecommendationLlmGenerator;
 import com.moodandmove.recommendation.repository.ActionRepository;
 import com.moodandmove.user.domain.entity.UserPreference;
+import com.moodandmove.user.repository.UserHobbyRepository;
 import com.moodandmove.user.repository.UserPreferenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,31 +44,18 @@ public class RecommendationService {
     private final CategoryScoreService categoryScoreService;
 
     private final RecommendationGenerationLogService generationLogService;
+    private final UserHobbyRepository userHobbyRepository;
     private final UserActionDislikeService userActionDislikeService;
 
-    private static final Set<String> ACTION_CATEGORIES = Set.of(
-            "WALK",
-            "EXERCISE",
-            "STRETCHING",
-            "MEDITATION",
-            "SLEEP",
-            "MUSIC",
-            "READING",
-            "ENTERTAINMENT",
-            "SOCIAL",
-            "OUTDOOR",
-            "EATING",
-            "SELF_CARE",
-            "CLEANING"
-    );
+    private static final Set<String> ACTION_CATEGORIES =
+            Arrays.stream(ActionCategory.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toUnmodifiableSet());
 
-    private static final Set<String> PLACE_CATEGORIES = Set.of(
-            "PARK",
-            "CAFE",
-            "SHOPPING",
-            "LIBRARY",
-            "CINEMA"
-    );
+    private static final Set<String> PLACE_CATEGORIES =
+            Arrays.stream(PlaceType.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toUnmodifiableSet());
 
     // 개인화 점수 계산
     public BigDecimal calculatePersonalScore(
@@ -154,16 +144,26 @@ public class RecommendationService {
     // 사용자 선호 조회
     private UserPreferenceDto createUserPreference(Long userId) {
 
+        List<String> hobbies = userHobbyRepository.findHobbyNamesByUserId(userId);
+
         return userPreferenceRepository
                 .findByUser_Id(userId)
                 .map(preference ->
                         new UserPreferenceDto(
                                 preference.getActivityEnvironment(),
                                 preference.getActivityStyle(),
-                                preference.getSocialPreference()
+                                preference.getSocialPreference(),
+                                preference.getDefaultAvailableMinutes(),
+                                hobbies
                         )
                 )
-                .orElse(null);
+                .orElseGet(() -> new UserPreferenceDto(
+                                EnvironmentType.ANY,
+                                ActivityStyle.ANY,
+                                SocialType.ANY,
+                                null,
+                                hobbies
+                ));
     }
 
     // Gemini에 전달할 데이터 생성
@@ -387,11 +387,15 @@ public class RecommendationService {
                     || item.reason().isBlank()
                     || item.category() == null
                     || !ACTION_CATEGORIES.contains(item.category())
-                    || item.durationMinutes() == null
-                    || item.durationMinutes() <= 0
+                    || !item.hasValidDuration()
                     || item.environmentType() == null
                     || item.socialType() == null
                     || item.activityStyle() == null) {
+                continue;
+            }
+            // 여행은 지역 수준으로 추천하며 상세 장소 검색은 사용하지 않음
+            if ("TRAVEL".equals(item.category())
+                    && (item.locationRequired() || item.placeCategory() != null)) {
                 continue;
             }
 
@@ -448,6 +452,8 @@ public class RecommendationService {
                             actionName,
                             item.category(),
                             item.durationMinutes(),
+                            item.durationDays(),
+                            item.durationNights(),
                             item.environmentType(),
                             item.socialType(),
                             item.activityStyle(),
