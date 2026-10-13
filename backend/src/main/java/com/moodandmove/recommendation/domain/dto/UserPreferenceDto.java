@@ -14,6 +14,4 @@ public record UserPreferenceDto(
         Integer defaultAvailableMinutes,
         List<String> hobbies
 ) {
-
-
 }

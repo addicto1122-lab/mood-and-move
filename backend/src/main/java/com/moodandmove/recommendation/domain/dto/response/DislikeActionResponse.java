@@ -10,6 +10,10 @@ public record DislikeActionResponse(
 
         Integer durationMinutes,
 
+        Integer durationDays,
+
+        Integer durationNights,
+
         boolean disliked
 
 ) {

@@ -993,6 +993,12 @@ public class GeminiRecommendationGenerator
 
             input.put("preference", preferences);
         }
+        input.put(
+                "dislikes",
+                request.dislikedActions() == null
+                        ? List.of()
+                        : request.dislikedActions()
+        );
 
         if (request.categoryScores() != null) {
             var categoryScores = request.categoryScores().stream()

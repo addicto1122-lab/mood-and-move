@@ -42,6 +42,8 @@ public class UserActionDislikeService {
                             action.getActionName(),
                             action.getCategory(),
                             action.getDurationMinutes(),
+                            action.getDurationDays(),
+                            action.getDurationNights(),
                             true
                     );
                 })
