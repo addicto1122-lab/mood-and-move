@@ -26,7 +26,7 @@ export default function MyPage() {
         console.error(error);
 
         navigate("/login", {
-          replace: true
+          replace: true,
         });
       } finally {
         setLoading(false);
@@ -68,7 +68,7 @@ export default function MyPage() {
       await requestWithdrawal(user.localLoginEnabled ? withdrawPassword : null);
 
       navigate("/login", {
-        replace: true
+        replace: true,
       });
     } catch (error) {
       console.error(error);
@@ -143,7 +143,6 @@ export default function MyPage() {
             </button>
 
             <div className="mypage-settings-divider" />
-
             {/* 비선호 행동 */}
             <button
               type="button"
@@ -155,7 +154,7 @@ export default function MyPage() {
               <div className="mypage-settings-text">
                 <strong>비선호 행동 관리</strong>
 
-                <span>추천에서 제외하고 싶은 행동 관리</span>
+                <span>추천에서 제외한 행동을 확인하고 관리해요</span>
               </div>
 
               <span className="mypage-settings-arrow">›</span>

@@ -11,11 +11,8 @@ import com.moodandmove.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -26,29 +23,28 @@ public class UserActionDislikeService {
     private final UserActionDislikeRepository userActionDislikeRepository;
 
     // 전체 행동 및 사용자 비선호 여부 조회
+    // 사용자가 실제 등록한 비선호 행동만 조회
     @Transactional(readOnly = true)
-    public List<DislikeActionResponse> getDislikeActions(Long userId) {
+    public List<DislikeActionResponse> getDislikeActions(
+            Long userId
+    ) {
 
-        Set<Long> dislikedActionIds =
-                userActionDislikeRepository
-                        .findAllByUser_Id(userId)
-                        .stream()
-                        .map(dislike -> dislike.getAction().getId())
-                        .collect(Collectors.toSet());
-
-        return actionRepository
-                .findAll()
+        return userActionDislikeRepository
+                .findAllByUser_Id(userId)
                 .stream()
-                .sorted(Comparator.comparing(Action::getId))
-                .map(action ->
-                        new DislikeActionResponse(
-                                action.getId(),
-                                action.getActionName(),
-                                action.getCategory(),
-                                action.getDurationMinutes(),
-                                dislikedActionIds.contains(action.getId())
-                        )
-                )
+                .map(dislike -> {
+
+                    Action action =
+                            dislike.getAction();
+
+                    return new DislikeActionResponse(
+                            action.getId(),
+                            action.getActionName(),
+                            action.getCategory(),
+                            action.getDurationMinutes(),
+                            true
+                    );
+                })
                 .toList();
     }
 
@@ -121,5 +117,19 @@ public class UserActionDislikeService {
                         userId,
                         actionId
                 );
+    }
+
+    @Transactional(readOnly = true)
+    public List<String> getDislikedActionNames(
+            Long userId
+    )
+    {
+        return userActionDislikeRepository
+                .findAllByUser_Id(userId)
+                .stream()
+                .map(dislike -> dislike.getAction().getActionName()
+                )
+                .distinct()
+                .toList();
     }
 }
