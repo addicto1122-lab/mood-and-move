@@ -7,6 +7,7 @@ import {
   getSavedRecommendations,
   selectRecommendation,
   skipRecommendations,
+  addDislike,
 } from "../api/recommendationApi";
 
 import { getNearbyPlaces } from "../api/placeApi";
@@ -21,8 +22,74 @@ const environmentNames = {
   ANY: "어디서든",
 };
 
+/*
+ * =========================
+ * 장소 캐시
+ * =========================
+ *
+ * 같은 recommendationId의 장소 결과를
+ * sessionStorage에 저장한다.
+ *
+ * F5 새로고침을 해도 유지되지만
+ * 브라우저 탭을 닫으면 제거된다.
+ */
+const PLACE_CACHE_PREFIX = "moodmove:nearby-places:";
+
+function getPlaceCacheKey(recommendationId) {
+  return PLACE_CACHE_PREFIX + recommendationId;
+}
+
+/*
+ * 캐시 조회
+ *
+ * null
+ * → 캐시 자체가 없음
+ *
+ * []
+ * → 검색했지만 결과가 없었음
+ *
+ * [place, place...]
+ * → 검색 결과 존재
+ */
+function loadCachedPlaces(recommendationId) {
+  try {
+    const raw = sessionStorage.getItem(getPlaceCacheKey(recommendationId));
+
+    if (raw === null) {
+      return null;
+    }
+
+    const data = JSON.parse(raw);
+
+    if (!Array.isArray(data)) {
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("장소 캐시 조회 실패:", error);
+
+    return null;
+  }
+}
+
+/*
+ * 캐시 저장
+ */
+function saveCachedPlaces(recommendationId, places) {
+  try {
+    sessionStorage.setItem(
+      getPlaceCacheKey(recommendationId),
+      JSON.stringify(places ?? []),
+    );
+  } catch (error) {
+    console.error("장소 캐시 저장 실패:", error);
+  }
+}
+
 export default function RecommendationPage() {
   const navigate = useNavigate();
+
   const [searchParams] = useSearchParams();
 
   /*
@@ -38,12 +105,15 @@ export default function RecommendationPage() {
    * =========================
    */
   const [recommendations, setRecommendations] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
 
   const [sessionId, setSessionId] = useState(null);
 
   const [submitting, setSubmitting] = useState(false);
+
   const [actionError, setActionError] = useState("");
 
   const submittingRef = useRef(false);
@@ -53,31 +123,20 @@ export default function RecommendationPage() {
    * 추천별 장소 검색 결과
    * =========================
    *
-   * 예:
-   *
    * {
-   *   101: [장소1, 장소2, 장소3],
-   *   102: [장소1, 장소2]
+   *   101: [장소1, 장소2],
+   *   102: [장소1]
    * }
-   *
-   * recommendationId를 key로 사용한다.
    */
   const [placeResults, setPlaceResults] = useState({});
 
   /*
-   * =========================
    * 추천별 장소 검색 오류
-   * =========================
-   *
-   * {
-   *   101: "",
-   *   102: "장소 검색 실패"
-   * }
    */
   const [placeErrors, setPlaceErrors] = useState({});
 
   /*
-   * 현재 장소를 검색하고 있는
+   * 현재 장소 검색 중인
    * recommendationId
    */
   const [placeLoadingId, setPlaceLoadingId] = useState(null);
@@ -88,14 +147,14 @@ export default function RecommendationPage() {
   const placeLoadingRef = useRef(false);
 
   /*
-   * 현재 지도 모달에서 보고 있는
-   * recommendationId
+   * 현재 지도 모달에서
+   * 보고 있는 recommendationId
    */
   const [mapRecommendationId, setMapRecommendationId] = useState(null);
 
   /*
    * =========================
-   * 위치 방식
+   * 위치
    * =========================
    *
    * SAVED
@@ -105,23 +164,66 @@ export default function RecommendationPage() {
   const [locationMode, setLocationMode] = useState(null);
 
   /*
-   * 기본 활동 지역 좌표
-   *
-   * {
-   *   latitude: ...,
-   *   longitude: ...
-   * }
+   * SAVED 위치 좌표
    */
   const [savedLocation, setSavedLocation] = useState(null);
 
   /*
    * =========================
-   * 장소 검색
+   * 임시 비선호
+   * =========================
+   *
+   * 체크 순간 DB 저장 X
+   *
+   * 행동 선택 / 추천 스킵 시
+   * 체크된 행동만 DB 저장
+   */
+  const [pendingDislikeIds, setPendingDislikeIds] = useState([]);
+
+  /*
+   * =========================
+   * 비선호 체크 / 해제
+   * =========================
+   */
+  const handleDislikeChange = (actionId, checked) => {
+    if (checked) {
+      setPendingDislikeIds((prev) => {
+        if (prev.includes(actionId)) {
+          return prev;
+        }
+
+        return [...prev, actionId];
+      });
+
+      return;
+    }
+
+    setPendingDislikeIds((prev) => prev.filter((id) => id !== actionId));
+  };
+
+  /*
+   * =========================
+   * 임시 비선호 DB 저장
+   * =========================
+   */
+  const savePendingDislikes = async () => {
+    if (pendingDislikeIds.length === 0) {
+      return;
+    }
+
+    await Promise.all(
+      pendingDislikeIds.map((actionId) => addDislike(actionId)),
+    );
+  };
+
+  /*
+   * =========================
+   * 주변 장소 검색
    * =========================
    */
   const handleFindPlaces = async (item) => {
     /*
-     * 장소가 필요하지 않은 추천이면 종료
+     * 장소 추천이 필요 없는 행동
      */
     if (!item.locationRequired || !item.placeCategory) {
       return;
@@ -130,23 +232,61 @@ export default function RecommendationPage() {
     const recommendationId = item.recommendationId;
 
     /*
-     * 이미 해당 추천 카드에서
-     * 장소 검색을 완료했다면
-     *
-     * 장소 API를 다시 호출하지 않고
-     * 바로 지도 모달을 연다.
+     * =========================
+     * 1. React State 캐시 확인
+     * =========================
      */
     const cachedPlaces = placeResults[recommendationId];
 
+    /*
+     * 장소가 이미 있으면
+     * API 호출 없이 바로 지도
+     */
     if (cachedPlaces?.length > 0) {
       setMapRecommendationId(recommendationId);
+
       return;
     }
 
     /*
-     * 다른 장소 검색이 진행 중이면
-     * 중복 API 호출 방지
+     * =========================
+     * 2. sessionStorage 확인
+     * =========================
+     *
+     * 새로고침 후 React state는 사라지지만
+     * sessionStorage는 유지된다.
      */
+    const storedPlaces = loadCachedPlaces(recommendationId);
+
+    /*
+     * null이 아니라는 것은
+     * 이전에 한번 검색했다는 뜻.
+     *
+     * 빈 배열도 다시 API 호출하지 않는다.
+     */
+    if (storedPlaces !== null) {
+      setPlaceResults((prev) => ({
+        ...prev,
+
+        [recommendationId]: storedPlaces,
+      }));
+
+      /*
+       * 장소가 있다면 지도 열기
+       */
+      if (storedPlaces.length > 0) {
+        setMapRecommendationId(recommendationId);
+      }
+
+      return;
+    }
+
+    /*
+     * =========================
+     * 3. 실제 장소 API 호출
+     * =========================
+     */
+
     if (placeLoadingRef.current) {
       return;
     }
@@ -155,11 +295,9 @@ export default function RecommendationPage() {
 
     setPlaceLoadingId(recommendationId);
 
-    /*
-     * 현재 추천 카드의 기존 에러 초기화
-     */
     setPlaceErrors((prev) => ({
       ...prev,
+
       [recommendationId]: "",
     }));
 
@@ -170,7 +308,6 @@ export default function RecommendationPage() {
       /*
        * =========================
        * SAVED
-       * 기본 활동 지역
        * =========================
        */
       if (locationMode === "SAVED") {
@@ -182,14 +319,15 @@ export default function RecommendationPage() {
         }
 
         latitude = savedLocation.latitude;
+
         longitude = savedLocation.longitude;
-      } else if (locationMode === "CURRENT") {
+
         /*
          * =========================
          * CURRENT
-         * 현재 위치
          * =========================
          */
+      } else if (locationMode === "CURRENT") {
         if (!navigator.geolocation) {
           throw new Error(
             "현재 브라우저에서는 위치 기능을 사용할 수 없습니다.",
@@ -199,20 +337,23 @@ export default function RecommendationPage() {
         const position = await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: false,
+
             timeout: 10000,
+
             maximumAge: 60000,
           });
         });
 
         latitude = position.coords.latitude;
+
         longitude = position.coords.longitude;
-      } else {
+
         /*
          * =========================
          * NONE
-         * 위치 사용 안 함
          * =========================
          */
+      } else {
         throw new Error("위치 기반 장소 추천을 사용하지 않았습니다.");
       }
 
@@ -227,28 +368,48 @@ export default function RecommendationPage() {
       });
 
       /*
-       * 장소 API 호출
+       * =========================
+       * 실제 API 호출
+       * =========================
        */
       const places = await getNearbyPlaces({
         type: item.placeCategory,
+
         latitude,
+
         longitude,
       });
 
-      console.log("===== 장소 검색 결과 =====");
+      console.log("===== 장소 검색 결과 =====", places);
 
-      console.log(places);
+      const resultPlaces = places ?? [];
 
       /*
-       * recommendationId별로
-       * 검색 결과를 각각 저장
+       * =========================
+       * sessionStorage 저장
+       * =========================
        *
-       * 기존 다른 카드 결과는 유지된다.
+       * 여기서 저장해놔야
+       * 새로고침 후 재사용 가능
+       */
+      saveCachedPlaces(recommendationId, resultPlaces);
+
+      /*
+       * React state에도 저장
        */
       setPlaceResults((prev) => ({
         ...prev,
-        [recommendationId]: places ?? [],
+
+        [recommendationId]: resultPlaces,
       }));
+
+      /*
+       * 검색 성공하면
+       * 첫 클릭부터 바로 지도 OPEN
+       */
+      if (resultPlaces.length > 0) {
+        setMapRecommendationId(recommendationId);
+      }
     } catch (error) {
       console.error("장소 검색 실패:", error);
 
@@ -263,10 +424,12 @@ export default function RecommendationPage() {
 
       setPlaceErrors((prev) => ({
         ...prev,
+
         [recommendationId]: message,
       }));
     } finally {
       placeLoadingRef.current = false;
+
       setPlaceLoadingId(null);
     }
   };
@@ -275,11 +438,6 @@ export default function RecommendationPage() {
    * =========================
    * 저장된 추천 조회
    * =========================
-   *
-   * 추천 생성 API를 다시 호출하지 않는다.
-   *
-   * moodEntryId로 이미 생성된
-   * 추천 결과를 조회한다.
    */
   useEffect(() => {
     if (!moodEntryId) {
@@ -296,18 +454,21 @@ export default function RecommendationPage() {
         setActionError("");
 
         setSessionId(null);
+
         setRecommendations([]);
 
         setLocationMode(null);
+
         setSavedLocation(null);
 
-        /*
-         * 다른 moodEntry로 이동했을 경우
-         * 장소 검색 캐시도 초기화
-         */
+        setPendingDislikeIds([]);
+
         setPlaceResults({});
+
         setPlaceErrors({});
+
         setPlaceLoadingId(null);
+
         setMapRecommendationId(null);
 
         placeLoadingRef.current = false;
@@ -323,23 +484,45 @@ export default function RecommendationPage() {
 
         console.log("===== 저장된 추천 조회 =====", data);
 
+        const loadedRecommendations = data.recommendations ?? [];
+
         setSessionId(data.sessionId);
 
-        /*
-         * SAVED / CURRENT / NONE
-         */
         setLocationMode(data.locationMode);
 
-        setRecommendations(data.recommendations ?? []);
+        setRecommendations(loadedRecommendations);
 
         /*
          * =========================
-         * SAVED
+         * sessionStorage 장소 캐시 복구
          * =========================
          *
-         * 기본 활동 지역을 선택해서
-         * 추천을 생성했다면
-         * UserPreference의 좌표 조회
+         * F5 직후에도 버튼이
+         * "카카오맵에서 보기" 상태가 되도록
+         * 기존 캐시를 React state로 복구한다.
+         */
+        const restoredPlaces = {};
+
+        loadedRecommendations.forEach((recommendation) => {
+          const cached = loadCachedPlaces(recommendation.recommendationId);
+
+          /*
+           * null
+           * → 검색한 적 없음
+           *
+           * [] 또는 [...]
+           * → 검색한 적 있음
+           */
+          if (cached !== null) {
+            restoredPlaces[recommendation.recommendationId] = cached;
+          }
+        });
+
+        setPlaceResults(restoredPlaces);
+
+        /*
+         * SAVED일 경우
+         * 기본 활동 지역 조회
          */
         if (data.locationMode === "SAVED") {
           const preference = await getPreferences();
@@ -386,10 +569,18 @@ export default function RecommendationPage() {
 
   /*
    * =========================
-   * 추천 행동 선택
+   * 행동 선택
    * =========================
    */
   const handleStart = async (item) => {
+    /*
+     * 비선호 체크된 행동
+     * 선택 불가
+     */
+    if (pendingDislikeIds.includes(item.actionId)) {
+      return;
+    }
+
     if (submittingRef.current || !sessionId) {
       return;
     }
@@ -397,15 +588,26 @@ export default function RecommendationPage() {
     submittingRef.current = true;
 
     setSubmitting(true);
+
     setActionError("");
 
     try {
+      /*
+       * 체크한 비선호 저장
+       */
+      await savePendingDislikes();
+
+      /*
+       * 행동 선택
+       */
       await selectRecommendation(sessionId, item.recommendationId);
 
       navigate("/", {
         replace: true,
       });
     } catch (err) {
+      console.error("행동 선택 실패:", err);
+
       setActionError(err.message || "행동을 선택하지 못했습니다.");
     } finally {
       submittingRef.current = false;
@@ -431,15 +633,26 @@ export default function RecommendationPage() {
     submittingRef.current = true;
 
     setSubmitting(true);
+
     setActionError("");
 
     try {
+      /*
+       * 체크한 비선호 저장
+       */
+      await savePendingDislikes();
+
+      /*
+       * 추천 스킵
+       */
       await skipRecommendations(sessionId);
 
       navigate("/", {
         replace: true,
       });
     } catch (err) {
+      console.error("추천 건너뛰기 실패:", err);
+
       setActionError(err.message || "추천을 건너뛰지 못했습니다.");
     } finally {
       submittingRef.current = false;
@@ -449,9 +662,7 @@ export default function RecommendationPage() {
   };
 
   /*
-   * =========================
    * 현재 지도에 표시할 장소
-   * =========================
    */
   const mapPlaces =
     mapRecommendationId != null
@@ -485,7 +696,7 @@ export default function RecommendationPage() {
 
   /*
    * =========================
-   * 로딩
+   * Loading
    * =========================
    */
   if (loading) {
@@ -510,7 +721,7 @@ export default function RecommendationPage() {
 
   /*
    * =========================
-   * 추천 조회 실패
+   * Error
    * =========================
    */
   if (error) {
@@ -565,6 +776,7 @@ export default function RecommendationPage() {
    */
   return (
     <main className="recommendation-page">
+      {/* Header */}
       <header className="recommendation-header">
         <button
           type="button"
@@ -590,41 +802,25 @@ export default function RecommendationPage() {
 
       {actionError && <p role="alert">{actionError}</p>}
 
+      {/* =========================
+          추천 카드
+      ========================= */}
       <section className="recommendation-grid">
         {recommendations.map((item) => {
-          /*
-           * 이 추천 카드에 저장된
-           * 장소 검색 결과
-           */
           const placesForItem = placeResults[item.recommendationId] ?? [];
 
-          /*
-           * 이 추천 카드의 장소 검색 오류
-           */
           const placeErrorForItem = placeErrors[item.recommendationId] ?? "";
 
-          /*
-           * 현재 이 추천 카드가
-           * 장소 검색 중인지
-           */
           const isPlaceLoading = placeLoadingId === item.recommendationId;
 
-          /*
-           * 이 추천 카드에서
-           * 장소 검색을 성공한 적이 있는지
-           */
           const alreadyLoaded = placesForItem.length > 0;
 
-          /*
-           * 장소 검색 자체를 한 적이 있는지
-           *
-           * 결과가 0건일 때와
-           * 아직 검색하지 않았을 때를 구분한다.
-           */
           const hasSearched = Object.prototype.hasOwnProperty.call(
             placeResults,
             item.recommendationId,
           );
+
+          const isPendingDislike = pendingDislikeIds.includes(item.actionId);
 
           return (
             <article
@@ -635,10 +831,7 @@ export default function RecommendationPage() {
                   : "action-recommend-card"
               }
             >
-              {/* =========================
-                  카드 상단
-              ========================= */}
-
+              {/* 카드 상단 */}
               <div className="card-top">
                 <div className="card-icon" aria-hidden="true">
                   {item.emoji?.trim() || item.categoryEmoji?.trim() || "✨"}
@@ -649,20 +842,14 @@ export default function RecommendationPage() {
                 )}
               </div>
 
-              {/* =========================
-                  행동 이름
-              ========================= */}
-
+              {/* 행동 이름 */}
               <h2>{item.actionName}</h2>
 
               {item.categoryName && (
                 <p className="card-category">{item.categoryName}</p>
               )}
 
-              {/* =========================
-                  행동 정보
-              ========================= */}
-
+              {/* 행동 정보 */}
               <div className="card-meta">
                 <span>◷ {item.durationMinutes}분</span>
 
@@ -671,22 +858,21 @@ export default function RecommendationPage() {
                 </span>
               </div>
 
+              {/* 추천 이유 */}
               <p className="card-reason">{item.reason}</p>
 
               {/* =========================
-                  장소 버튼
-              ========================= */}
-
+                    장소 버튼
+                ========================= */}
               {item.locationRequired && item.placeCategory && (
                 <button
                   type="button"
                   className="place-search-button"
                   onClick={() => {
                     /*
-                     * 이미 장소를 조회했다면
-                     *
-                     * 장소 API 재호출 X
-                     * 지도 모달만 OPEN
+                     * React state에
+                     * 이미 장소가 있으면
+                     * 바로 지도
                      */
                     if (alreadyLoaded) {
                       setMapRecommendationId(item.recommendationId);
@@ -695,17 +881,14 @@ export default function RecommendationPage() {
                     }
 
                     /*
-                     * 아직 검색하지 않았다면
-                     * 장소 API 호출
+                     * state에 없으면
+                     * handleFindPlaces 안에서
+                     *
+                     * sessionStorage →
+                     * API 순서로 확인
                      */
                     handleFindPlaces(item);
                   }}
-                  /*
-                   * 하나의 장소 검색이 진행 중이면
-                   * 모든 장소 버튼 잠시 비활성화
-                   *
-                   * 동시에 여러 API 호출되는 것 방지
-                   */
                   disabled={placeLoadingId !== null}
                 >
                   {isPlaceLoading
@@ -718,52 +901,17 @@ export default function RecommendationPage() {
                 </button>
               )}
 
-              {/* =========================
-                  장소 검색 로딩
-              ========================= */}
-
+              {/* 장소 검색 중 */}
               {isPlaceLoading && (
                 <p className="place-loading">주변 장소를 찾고 있어요...</p>
               )}
 
-              {/* =========================
-                  장소 검색 오류
-              ========================= */}
-
+              {/* 장소 검색 오류 */}
               {placeErrorForItem && (
                 <p className="place-error">{placeErrorForItem}</p>
               )}
 
-              {/* =========================
-                  장소 목록
-              ========================= */}
-
-              {!isPlaceLoading &&
-                !placeErrorForItem &&
-                placesForItem.length > 0 && (
-                  <div className="nearby-place-list">
-                    {placesForItem.map((place, index) => (
-                      <div key={place.placeId} className="nearby-place-card">
-                        <div className="nearby-place-rank">{index + 1}</div>
-
-                        <div className="nearby-place-info">
-                          <strong>{place.name}</strong>
-
-                          <span>{place.roadAddress || place.address}</span>
-                        </div>
-
-                        <span className="nearby-place-distance">
-                          {place.distance}m
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-              {/* =========================
-                  장소 결과 없음
-              ========================= */}
-
+              {/* 검색했지만 결과 없음 */}
               {!isPlaceLoading &&
                 !placeErrorForItem &&
                 hasSearched &&
@@ -774,26 +922,42 @@ export default function RecommendationPage() {
                 )}
 
               {/* =========================
-                  행동 선택
-              ========================= */}
-
+                    행동 선택
+                ========================= */}
               <button
                 type="button"
                 className="card-start-button"
                 onClick={() => handleStart(item)}
-                disabled={submitting || !sessionId}
+                disabled={submitting || !sessionId || isPendingDislike}
               >
-                {submitting ? "처리 중..." : "이 행동 선택하기"}
+                {isPendingDislike
+                  ? "비선호로 선택됨"
+                  : submitting
+                    ? "처리 중..."
+                    : "이 행동 선택하기"}
               </button>
+
+              {/* =========================
+                    비선호
+                ========================= */}
+              <label className="dislike-checkbox">
+                <input
+                  type="checkbox"
+                  checked={isPendingDislike}
+                  disabled={submitting}
+                  onChange={(e) =>
+                    handleDislikeChange(item.actionId, e.target.checked)
+                  }
+                />
+
+                <span>이 행동은 추천받고 싶지 않아요</span>
+              </label>
             </article>
           );
         })}
       </section>
 
-      {/* =========================
-          추천 건너뛰기
-      ========================= */}
-
+      {/* 추천 건너뛰기 */}
       <button
         type="button"
         className="recommendation-skip-button"
@@ -803,10 +967,7 @@ export default function RecommendationPage() {
         {submitting ? "처리 중..." : "이번 추천 건너뛰기"}
       </button>
 
-      {/* =========================
-          Kakao Map Modal
-      ========================= */}
-
+      {/* Kakao Map Modal */}
       {mapRecommendationId != null && mapPlaces.length > 0 && (
         <NearbyPlaceMapModal
           places={mapPlaces}

@@ -41,6 +41,7 @@ public class RecommendationService {
     private final CategoryScoreService categoryScoreService;
 
     private final RecommendationGenerationLogService generationLogService;
+    private final UserActionDislikeService userActionDislikeService;
 
     private static final Set<String> ACTION_CATEGORIES = Set.of(
             "WALK",
@@ -203,13 +204,18 @@ public class RecommendationService {
         RecommendationType recommendationType =
                 resolveRecommendationType(totalSampleCount);
 
+        List<String> dislikedActions = userActionDislikeService.getDislikedActionNames(
+                userId
+        );
+
         // 7. 행동 후보 대신 카테고리 통계를 전달
         return new LlmRecommendationRequestDto(
                 currentState,
                 location,
                 preference,
                 categoryScores,
-                recommendationType
+                recommendationType,
+                dislikedActions
         );
     }
 
@@ -312,7 +318,8 @@ public class RecommendationService {
             List<LlmRecommendedActionDto> validated =
                     validateRecommendations(
                             result,
-                            llmRequest.location().locationMode()
+                            llmRequest.location().locationMode(),
+                            llmRequest.dislikedActions()
                     );
 
             // 5. 추천 및 행동 저장
@@ -343,8 +350,23 @@ public class RecommendationService {
     // LLM 추천 결과 검증
     private List<LlmRecommendedActionDto> validateRecommendations(
             LlmRecommendationResult result,
-            LocationMode locationMode
+            LocationMode locationMode,
+            List<String> dislikedActions
     ) {
+        Set<String> dislikedNames = dislikedActions == null
+                ? Set.of()
+                : dislikedActions.stream()
+                  .map(this::normalizeName)
+                  .map(name ->
+                      name.toLowerCase(
+                              Locale.ROOT
+                      )
+                  )
+                  .collect(
+                          java.util.stream.Collectors.toSet()
+                  );
+
+
         if (result == null || result.recommendations() == null) {
             throw new IllegalStateException(
                     "추천 응답이 없습니다."
@@ -409,6 +431,13 @@ public class RecommendationService {
 
             String normalizedKey =
                     actionName.toLowerCase(Locale.ROOT);
+
+            if(dislikedNames.contains(
+                    normalizedKey
+            ))
+            {
+                continue;
+            }
 
             if (!selectedNames.add(normalizedKey)) {
                 continue;

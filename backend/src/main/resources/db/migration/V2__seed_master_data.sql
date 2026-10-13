@@ -35,10 +35,10 @@ INSERT INTO hobbies (
     category
 )
 VALUES
-    ('산책', 'ACTIVITY'),
-    ('독서', 'REST'),
-    ('음악', 'REST'),
-    ('게임', 'ENTERTAINMENT'),
+    ('산책', 'WALK'),
+    ('독서', 'READING'),
+    ('음악', 'MUSIC'),
+    ('오락', 'ENTERTAINMENT'),
     ('운동', 'ACTIVITY');
 
 
