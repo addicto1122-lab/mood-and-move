@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  getDislikeActions,
-  addDislikeAction,
-  removeDislikeAction
-} from "../api/authApi";
+import { getDislikeActions, removeDislikeAction } from "../api/authApi";
 
 import "./DislikePage.css";
+
+const categoryEmoji = {
+  WALK: "🚶",
+  EXERCISE: "🏃",
+  STRETCHING: "🧘",
+  MEDITATION: "🌿",
+  SLEEP: "😴",
+  MUSIC: "🎧",
+  READING: "📚",
+  ENTERTAINMENT: "🎮",
+  SOCIAL: "💬",
+  OUTDOOR: "🌳",
+  EATING: "☕",
+  SELF_CARE: "🫧",
+  CLEANING: "🧹",
+  TRAVEL: "🧳",
+};
 
 export default function DislikePage() {
   const navigate = useNavigate();
@@ -15,7 +28,7 @@ export default function DislikePage() {
   const [toast, setToast] = useState("");
   const [actions, setActions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [updatingId, setUpdatingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
 
   const showToast = (message) => {
@@ -26,55 +39,100 @@ export default function DislikePage() {
     }, 2000);
   };
 
+  /*
+   * =========================
+   * 비선호 행동 조회
+   * =========================
+   */
   useEffect(() => {
+    let cancelled = false;
+
     async function loadActions() {
       try {
+        setLoading(true);
+        setError("");
+
         const data = await getDislikeActions();
 
-        setActions(data);
-      } catch (error) {
-        console.error(error);
+        if (cancelled) {
+          return;
+        }
 
-        setError(error.message || "비선호 행동 목록을 불러오지 못했습니다.");
+        /*
+         * 실제 비선호 행동만 표시
+         */
+        const dislikedActions = (data ?? []).filter(
+          (action) => action.disliked !== false,
+        );
+
+        setActions(dislikedActions);
+      } catch (error) {
+        console.error("비선호 행동 조회 실패:", error);
+
+        if (!cancelled) {
+          setError(error.message || "비선호 행동 목록을 불러오지 못했습니다.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     loadActions();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const handleToggle = async (action) => {
+  /*
+   * =========================
+   * 비선호 행동 삭제
+   * =========================
+   */
+  const handleRemove = async (action) => {
+    if (deletingId != null) {
+      return;
+    }
+
+    const actionName = action.actionName ?? action.name ?? "이 행동";
+
+    /*
+     * 삭제 확인
+     */
+    const confirmed = window.confirm(
+      `"${actionName}"을(를) 비선호 행동에서 정말 삭제하시겠습니까?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
-      setUpdatingId(action.actionId);
+      setDeletingId(action.actionId);
       setError("");
 
-      if (action.disliked) {
-        await removeDislikeAction(action.actionId);
+      /*
+       * DB DELETE
+       */
+      await removeDislikeAction(action.actionId);
 
-        showToast("비선호 행동에서 해제되었습니다.");
-      } else {
-        await addDislikeAction(action.actionId);
-
-        showToast("비선호 행동으로 등록되었습니다.");
-      }
-
+      /*
+       * 삭제 성공 시
+       * 화면에서도 즉시 제거
+       */
       setActions((prev) =>
-        prev.map((item) =>
-          item.actionId === action.actionId
-            ? {
-                ...item,
-                disliked: !item.disliked
-              }
-            : item
-        )
+        prev.filter((item) => item.actionId !== action.actionId),
       );
-    } catch (error) {
-      console.error(error);
 
-      setError(error.message || "비선호 행동 변경에 실패했습니다.");
+      showToast("비선호 행동에서 삭제되었습니다.");
+    } catch (error) {
+      console.error("비선호 행동 삭제 실패:", error);
+
+      setError(error.message || "비선호 행동 삭제에 실패했습니다.");
     } finally {
-      setUpdatingId(null);
+      setDeletingId(null);
     }
   };
 
@@ -89,6 +147,7 @@ export default function DislikePage() {
   return (
     <main className="dislike-page">
       <section className="dislike-container">
+        {/* Header */}
         <header className="dislike-header">
           <button
             type="button"
@@ -102,57 +161,67 @@ export default function DislikePage() {
           <div>
             <h1>비선호 행동 관리</h1>
 
-            <p>추천에서 제외하고 싶은 행동을 선택해주세요.</p>
+            <p>다시 추천받아도 괜찮은 행동은 목록에서 삭제해주세요.</p>
           </div>
         </header>
 
         {error && <div className="dislike-error">{error}</div>}
 
         {actions.length === 0 ? (
-          <div className="dislike-empty">등록된 행동이 없습니다.</div>
+          <div className="dislike-empty">등록된 비선호 행동이 없습니다.</div>
         ) : (
           <section className="dislike-card">
-            {actions.map((action, index) => (
-              <div key={action.actionId}>
-                <button
-                  type="button"
-                  className={
-                    action.disliked ? "dislike-item selected" : "dislike-item"
-                  }
-                  disabled={updatingId === action.actionId}
-                  onClick={() => handleToggle(action)}
-                >
-                  <div className="dislike-item-content">
-                    <div className="dislike-item-title">{action.name}</div>
+            {actions.map((action, index) => {
+              const actionName = action.actionName ?? action.name ?? "행동";
 
-                    <div className="dislike-item-meta">
-                      <span>{action.category}</span>
+              const emoji = categoryEmoji[action.category] ?? "✨";
 
-                      <span>·</span>
+              return (
+                <div key={action.actionId}>
+                  <div className="dislike-item">
+                    {/* 왼쪽 이모지 */}
+                    <div className="dislike-item-emoji">{emoji}</div>
 
-                      <span>{action.durationMinutes}분</span>
+                    {/* 행동 정보 */}
+                    <div className="dislike-item-content">
+                      <div className="dislike-item-title">{actionName}</div>
+
+                      <div className="dislike-item-meta">
+                        {action.category && <span>{action.category}</span>}
+
+                        {action.category && action.durationMinutes != null && (
+                          <span>·</span>
+                        )}
+
+                        {action.durationMinutes != null && (
+                          <span>{action.durationMinutes}분</span>
+                        )}
+                      </div>
                     </div>
+
+                    {/* 삭제 버튼 */}
+                    <button
+                      type="button"
+                      className="dislike-delete-button"
+                      disabled={deletingId === action.actionId}
+                      onClick={() => handleRemove(action)}
+                      aria-label={`${actionName} 비선호 삭제`}
+                    >
+                      {deletingId === action.actionId ? "..." : "×"}
+                    </button>
                   </div>
 
-                  <div className="dislike-check">
-                    {updatingId === action.actionId
-                      ? "..."
-                      : action.disliked
-                        ? "✓"
-                        : ""}
-                  </div>
-                </button>
-
-                {index < actions.length - 1 && (
-                  <div className="dislike-divider" />
-                )}
-              </div>
-            ))}
+                  {index < actions.length - 1 && (
+                    <div className="dislike-divider" />
+                  )}
+                </div>
+              );
+            })}
           </section>
         )}
 
         <p className="dislike-note">
-          선택한 행동은 이후 추천에서 제외할 수 있어요.
+          삭제한 행동은 이후 추천에서 다시 나타날 수 있어요.
         </p>
       </section>
 

@@ -396,6 +396,35 @@ public class GeminiRecommendationGenerator
                     );
         }
 
+        // ===============================
+        // 비선호 행동
+        // ===============================
+        if(request.dislikedActions() != null
+            && !request.dislikedActions().isEmpty())
+        {
+            prompt.append("""
+                    ===== 비선호 행동 =====
+                    
+                    아래 행동은 사용자가 이전에
+                    다시 추천받고 싶지 않다고 선택한 행동입니다.
+        
+                    동일한 행동은 추천하지 마세요.
+        
+                    이름만 조금 다르더라도
+                    실제 수행 내용이 사실상 동일하거나 매우 유사한 행동도
+                    다시 추천하지 마세요.
+        
+                    단순히 같은 카테고리라는 이유만으로
+                    해당 카테고리 전체를 제외하지는 마세요.
+                    """);
+
+            for(String actionName : request.dislikedActions())
+            {
+                prompt.append("\n- ")
+                        .append(actionName);
+            }
+        }
+
         // 6. 사용자·카테고리별 개인화 통계
         // 카테고리 분류 기준
         prompt.append("""

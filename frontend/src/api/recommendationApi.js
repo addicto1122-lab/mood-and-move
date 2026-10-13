@@ -161,3 +161,44 @@ export function recheckActionExecution(executionId, afterScore) {
     { afterScore },
   );
 }
+
+// 비선호 목록 조회
+export const getDislikeActions = async () => {
+  const response = await authFetch(`${API_BASE_URL}/users/me/dislikes`, {
+    method: "GET",
+  });
+
+  if (!response.ok) {
+    throw new Error("비선호 행동 조회에 실패했습니다.");
+  }
+
+  return await response.json();
+};
+
+// 비선호 등록
+export const addDislike = async (actionId) => {
+  const response = await authFetch(
+    `${API_BASE_URL}/users/me/dislikes/${actionId}`,
+    {
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("비선호 행동 저장에 실패했습니다.");
+  }
+};
+
+// 비선호 해제
+export const removeDislike = async (actionId) => {
+  const response = await authFetch(
+    `${API_BASE_URL}/users/me/dislikes/${actionId}`,
+    {
+      method: "DELETE",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("비선호 행동 해제에 실패했습니다.");
+  }
+};

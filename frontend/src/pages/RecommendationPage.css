@@ -546,81 +546,6 @@
   margin-top: 12px;
 }
 
-.nearby-place-list {
-  display: flex;
-  flex-direction: column;
-
-  gap: 8px;
-}
-
-.nearby-place-card {
-  display: flex;
-  align-items: center;
-
-  gap: 10px;
-
-  padding: 11px 12px;
-
-  border-radius: 14px;
-
-  background: var(--mint);
-}
-
-.nearby-place-rank {
-  width: 26px;
-  height: 26px;
-
-  flex-shrink: 0;
-
-  display: grid;
-  place-items: center;
-
-  border-radius: 50%;
-
-  color: var(--sage-dark);
-  background: var(--white);
-
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.nearby-place-info {
-  flex: 1;
-  min-width: 0;
-
-  display: flex;
-  flex-direction: column;
-
-  gap: 3px;
-}
-
-.nearby-place-info strong {
-  color: var(--ink);
-
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.nearby-place-info span {
-  overflow: hidden;
-
-  color: var(--muted);
-
-  font-size: 10px;
-
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.nearby-place-distance {
-  flex-shrink: 0;
-
-  color: var(--sage-dark);
-
-  font-size: 11px;
-  font-weight: 800;
-}
-
 .kakao-map-open-button {
   width: 100%;
 
@@ -923,4 +848,80 @@
 .place-map-legend-info small {
   font-size: 11px;
   color: #87938c;
+}
+.dislike-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  margin-top: 12px;
+
+  font-size: 14px;
+  color: #66736b;
+
+  cursor: pointer;
+}
+
+.dislike-checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+/* =========================
+   추천 카드 버튼 크기 및 위치 통일
+   ========================= */
+
+/* 행동 선택 버튼 */
+.action-recommend-card .card-start-button {
+  width: 100%;
+  height: 50px;
+  min-height: 50px;
+  flex: 0 0 50px;
+  margin-top: auto;
+}
+
+/* 내 주변 장소 보기 버튼 */
+.action-recommend-card .place-search-button {
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  flex: 0 0 42px;
+  margin-top: auto;
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 장소 보기 버튼이 있는 카드 */
+.action-recommend-card:has(.place-search-button) .card-start-button {
+  margin-top: 14px;
+}
+.card-start-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/*
+ * 비선호 체크된 행동 버튼
+ */
+.action-recommend-card .card-start-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/*
+ * 비선호 체크박스
+ */
+.dislike-checkbox input:disabled {
+  cursor: not-allowed;
+}
+
+.dislike-checkbox:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
 }

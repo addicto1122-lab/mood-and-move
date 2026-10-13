@@ -43,6 +43,7 @@
   color: #8b9691;
 
   font-size: 13px;
+  line-height: 1.6;
 }
 
 .dislike-back-button {
@@ -84,69 +85,101 @@
 ========================= */
 
 .dislike-card {
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 
-  border: 1px solid #dde6e0;
-  border-radius: 22px;
-
-  background: #ffffff;
-
-  box-shadow: 0 10px 28px rgba(56, 78, 67, 0.05);
+  gap: 12px;
 }
+
+/* =========================
+   ITEM
+========================= */
 
 .dislike-item {
   width: 100%;
-  min-height: 76px;
+  min-height: 94px;
 
   display: flex;
   align-items: center;
-  justify-content: space-between;
 
-  gap: 20px;
+  gap: 18px;
 
-  padding: 15px 20px;
+  padding: 16px 18px;
 
-  border: none;
+  box-sizing: border-box;
 
-  background: transparent;
+  border: 1px solid #dce6e0;
+  border-radius: 20px;
 
-  text-align: left;
+  background: #ffffff;
 
-  cursor: pointer;
+  box-shadow: 0 7px 22px rgba(56, 78, 67, 0.04);
 
   transition:
     background 0.15s ease,
-    opacity 0.15s ease;
+    border-color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .dislike-item:hover {
-  background: #fafcfb;
+  background: #fbfdfc;
+
+  border-color: #cbdcd2;
 }
 
-.dislike-item.selected {
-  background: #f2f8f4;
+/* =========================
+   EMOJI
+========================= */
+
+.dislike-item-emoji {
+  width: 58px;
+  height: 58px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 17px;
+
+  background: #f4f8f5;
+
+  font-size: 29px;
 }
 
-.dislike-item:disabled {
-  opacity: 0.65;
-
-  cursor: default;
-}
+/* =========================
+   TEXT
+========================= */
 
 .dislike-item-content {
   min-width: 0;
 
+  flex: 1;
+
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 
   gap: 7px;
+
+  text-align: left;
 }
 
 .dislike-item-title {
+  width: 100%;
+
+  overflow: hidden;
+
   color: #293a32;
 
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 750;
+
+  text-align: left;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dislike-item-meta {
@@ -158,11 +191,17 @@
   color: #97a19c;
 
   font-size: 11px;
+
+  text-align: left;
 }
 
-.dislike-check {
-  width: 28px;
-  height: 28px;
+/* =========================
+   DELETE BUTTON
+========================= */
+
+.dislike-delete-button {
+  width: 42px;
+  height: 42px;
 
   flex-shrink: 0;
 
@@ -170,29 +209,49 @@
   align-items: center;
   justify-content: center;
 
-  border: 1px solid #d8e2dc;
-  border-radius: 9px;
+  padding: 0;
 
-  background: #ffffff;
+  border: none;
+  border-radius: 50%;
 
-  color: #ffffff;
+  background: #edf4ef;
 
-  font-size: 15px;
-  font-weight: 800;
+  color: #587264;
+
+  font-size: 27px;
+  font-weight: 300;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
 }
 
-.dislike-item.selected .dislike-check {
-  border-color: #729986;
+.dislike-delete-button:hover {
+  background: #fae8e8;
 
-  background: #729986;
+  color: #bb5c5c;
 }
 
+.dislike-delete-button:active {
+  transform: scale(0.93);
+}
+
+.dislike-delete-button:disabled {
+  opacity: 0.45;
+
+  cursor: default;
+
+  transform: none;
+}
+
+/* 기존 divider는 카드 간 gap을 쓰므로 숨김 */
 .dislike-divider {
-  height: 1px;
-
-  margin-left: 20px;
-
-  background: #edf1ee;
+  display: none;
 }
 
 /* =========================
@@ -248,6 +307,36 @@
 }
 
 /* =========================
+   TOAST
+========================= */
+
+.dislike-toast {
+  position: fixed;
+
+  left: 50%;
+  bottom: 30px;
+
+  z-index: 4000;
+
+  transform: translateX(-50%);
+
+  padding: 12px 18px;
+
+  border-radius: 14px;
+
+  background: #35483f;
+
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  box-shadow: 0 10px 30px rgba(34, 52, 43, 0.22);
+
+  white-space: nowrap;
+}
+
+/* =========================
    MOBILE
 ========================= */
 
@@ -276,46 +365,43 @@
   }
 
   .dislike-card {
-    border-radius: 20px;
+    gap: 10px;
   }
 
   .dislike-item {
-    min-height: 72px;
+    min-height: 82px;
 
-    padding: 14px 16px;
+    gap: 14px;
+
+    padding: 13px 14px;
+
+    border-radius: 18px;
   }
 
-  .dislike-divider {
-    margin-left: 16px;
+  .dislike-item-emoji {
+    width: 50px;
+    height: 50px;
+
+    border-radius: 15px;
+
+    font-size: 25px;
   }
-}
 
-.dislike-toast {
-  position: fixed;
+  .dislike-item-title {
+    font-size: 14px;
+  }
 
-  left: 50%;
-  bottom: 30px;
-  z-index: 4000;
+  .dislike-item-meta {
+    font-size: 10px;
+  }
 
-  transform: translateX(-50%);
+  .dislike-delete-button {
+    width: 36px;
+    height: 36px;
 
-  padding: 12px 18px;
+    font-size: 23px;
+  }
 
-  border-radius: 14px;
-
-  background: #35483f;
-
-  color: #ffffff;
-
-  font-size: 14px;
-  font-weight: 600;
-
-  box-shadow: 0 10px 30px rgba(34, 52, 43, 0.22);
-
-  white-space: nowrap;
-}
-
-@media (max-width: 959px) {
   .dislike-toast {
     bottom: 95px;
   }

@@ -9,6 +9,7 @@ public record LlmRecommendationRequestDto(
         RecommendationLocationDto location,
         UserPreferenceDto preference,
         List<CategoryScoreDto> categoryScores,
-        RecommendationType recommendationType
+        RecommendationType recommendationType,
+        List<String> dislikedActions
 ) {
 }
