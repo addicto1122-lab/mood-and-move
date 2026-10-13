@@ -7,6 +7,7 @@ import {
   recheckActionExecution,
 } from "../api/recommendationApi";
 import toast from "react-hot-toast";
+import { formatDuration } from "../utils/formatDuration";
 
 export default function MoodRecheckPage() {
   const location = useLocation();
@@ -171,7 +172,7 @@ export default function MoodRecheckPage() {
         )}
         <p>
           {execution.categoryName ? `${execution.categoryName} · ` : ""}
-          {execution.durationMinutes}분
+          {formatDuration(execution)}
         </p>
       </section>
 

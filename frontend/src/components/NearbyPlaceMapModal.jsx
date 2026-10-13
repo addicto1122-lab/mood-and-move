@@ -124,7 +124,7 @@ export default function NearbyPlaceMapModal({ places, onClose }) {
           name.textContent = `${index + 1}. ${place.name}`;
 
           const distance = document.createElement("span");
-          distance.textContent = `현재 위치에서 ${place.distance}m`;
+          distance.textContent = `검색 기준 위치에서 ${place.distance}m`;
 
           infoContent.appendChild(name);
           infoContent.appendChild(distance);

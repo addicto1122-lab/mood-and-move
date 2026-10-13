@@ -47,6 +47,16 @@ public class Recommendation {
     @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
     private String reason;
 
+    // 추천 당시의 소요 시간과 일정
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    @Column(name = "duration_days")
+    private Integer durationDays;
+
+    @Column(name = "duration_nights")
+    private Integer durationNights;
+
     // LLM이 생성한 추천 행동별 이모지
     @Column(name = "emoji")
     private String emoji;
@@ -71,7 +81,10 @@ public class Recommendation {
             RecommendationSession session,
             Action action,
             int rankNo,
-            String reason
+            String reason,
+            Integer durationMinutes,
+            Integer durationDays,
+            Integer durationNights
     ) {
         Objects.requireNonNull(session, "추천 세션은 필수입니다.");
         Objects.requireNonNull(action, "추천 행동은 필수입니다.");
@@ -94,6 +107,9 @@ public class Recommendation {
         recommendation.action = action;
         recommendation.rankNo = rankNo;
         recommendation.reason = reason.strip();
+        recommendation.durationMinutes = durationMinutes;
+        recommendation.durationDays = durationDays;
+        recommendation.durationNights = durationNights;
         recommendation.status = RecommendationStatus.PENDING;
         recommendation.recheckCompleted = false;
 

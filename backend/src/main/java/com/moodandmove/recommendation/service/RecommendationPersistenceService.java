@@ -10,6 +10,7 @@ import com.moodandmove.recommendation.domain.dto.response.RecommendationResponse
 import com.moodandmove.recommendation.domain.entity.Action;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 import com.moodandmove.recommendation.domain.entity.RecommendationSession;
+import com.moodandmove.recommendation.domain.type.ActionCategory;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
 import com.moodandmove.recommendation.repository.ActionCategoryRepository;
 import com.moodandmove.recommendation.repository.ActionRepository;
@@ -21,12 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,12 +36,10 @@ public class RecommendationPersistenceService {
     private final UserActionStatService userActionStatService;
     private final ActionCategoryRepository actionCategoryRepository;
 
-    private static final Set<String> ACTION_CATEGORIES = Set.of(
-            "WALK", "EXERCISE", "STRETCHING",
-            "MEDITATION", "SLEEP", "MUSIC",
-            "READING", "ENTERTAINMENT", "SOCIAL",
-            "OUTDOOR", "EATING", "SELF_CARE", "CLEANING"
-    );
+    private static final Set<String> ACTION_CATEGORIES =
+            Arrays.stream(ActionCategory.values())
+                    .map(Enum::name)
+                    .collect(Collectors.toUnmodifiableSet());
 
     // 이미 저장된 추천 조회
     @Transactional(readOnly = true)
@@ -140,7 +135,10 @@ public class RecommendationPersistenceService {
                     session,
                     action,
                     i + 1,
-                    item.reason().strip()
+                    item.reason().strip(),
+                    item.durationMinutes(),
+                    item.durationDays(),
+                    item.durationNights()
             );
             // LLM이 반환한 행동별 이모지 설정
             recommendation.assignEmoji(item.emoji());
@@ -176,6 +174,8 @@ public class RecommendationPersistenceService {
                                 actionName,
                                 item.category(),
                                 item.durationMinutes(),
+                                item.durationDays(),
+                                item.durationNights(),
                                 item.environmentType(),
                                 item.socialType(),
                                 item.activityStyle(),
@@ -194,13 +194,18 @@ public class RecommendationPersistenceService {
                 || item.reason().isBlank()
                 || item.category() == null
                 || !ACTION_CATEGORIES.contains(item.category())
-                || item.durationMinutes() == null
-                || item.durationMinutes() <= 0
+                || !item.hasValidDuration()
                 || item.environmentType() == null
                 || item.socialType() == null
                 || item.activityStyle() == null) {
             throw new IllegalArgumentException(
                     "LLM 추천 행동 정보가 올바르지 않습니다."
+            );
+        }
+        if ("TRAVEL".equals(item.category())
+                && (item.locationRequired() || item.placeCategory() != null)) {
+            throw new IllegalArgumentException(
+                    "여행 추천은 상세 장소 검색을 사용할 수 없습니다."
             );
         }
 

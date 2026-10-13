@@ -6,6 +6,7 @@ import { getMe } from "../api/authApi";
 import { getHome } from "../api/homeApi";
 
 import "./HomePage.css";
+import { formatDuration } from "../utils/formatDuration";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -248,12 +249,9 @@ export default function HomePage() {
                     : ""}
                 </span>
 
-                <h3>
-                  {currentExecution.durationMinutes
-                    ? `${currentExecution.durationMinutes}분 `
-                    : ""}
-                  {currentExecution.actionName}
-                </h3>
+                <h3>{currentExecution.actionName}</h3>
+
+                <p>{formatDuration(currentExecution)}</p>
 
                 <p>{currentExecution.reason}</p>
               </div>

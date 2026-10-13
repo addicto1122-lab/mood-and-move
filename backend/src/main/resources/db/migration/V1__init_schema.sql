@@ -201,7 +201,12 @@ CREATE TABLE actions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     action_name VARCHAR(100) NOT NULL,
     category VARCHAR(30) NOT NULL,
-    duration_minutes INT UNSIGNED NOT NULL,
+    -- 시간 단위 행동
+    duration_minutes INT UNSIGNED NULL,
+    -- 일정 단위 행동
+    duration_days INT UNSIGNED NULL,
+    -- 숙박 횟수: 일정 단위일 때 입력, 당일치기는 0
+    duration_nights INT UNSIGNED NULL,
     environment_type VARCHAR(20) NOT NULL DEFAULT 'ANY',
     social_type VARCHAR(20) NOT NULL DEFAULT 'ANY',
     activity_style VARCHAR(20) NOT NULL DEFAULT 'ANY',
@@ -214,36 +219,42 @@ CREATE TABLE actions (
     CONSTRAINT chk_actions_activity_style CHECK (activity_style IN ('ACTIVE', 'CALM', 'ANY')),
     CONSTRAINT chk_actions_category CHECK (
         category IN (
-            'WALK', 'EXERCISE', 'STRETCHING', 'MEDITATION', 'SLEEP',
-            'MUSIC', 'READING', 'ENTERTAINMENT', 'SOCIAL', 'OUTDOOR',
-            'EATING', 'SELF_CARE', 'CLEANING'
-        )
+                     'ENTERTAINMENT',
+                     'WALK',
+                     'EXERCISE',
+                     'STRETCHING',
+                     'OUTDOOR',
+                     'SELF_CARE',
+                     'SLEEP',
+                     'READING',
+                     'MUSIC',
+                     'MEDITATION',
+                     'EATING',
+                     'TRAVEL',
+                     'CLEANING',
+                     'CULTURE'
+            )
     ),
-    CONSTRAINT chk_actions_duration CHECK (duration_minutes > 0),
+    CONSTRAINT chk_actions_duration CHECK (
+        (
+            duration_minutes IS NOT NULL
+                AND duration_minutes > 0
+                AND duration_days IS NULL
+                AND duration_nights IS NULL
+            )
+            OR
+        (
+            duration_minutes IS NULL
+                AND duration_days IS NOT NULL
+                AND duration_days >= 1
+                AND duration_nights IS NOT NULL
+                AND duration_nights >= 0
+                AND duration_nights < duration_days
+            )
+        ),
     CONSTRAINT chk_actions_location_required CHECK (location_required IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
--- [09/23] action_hobbies | V1
-CREATE TABLE action_hobbies (
-                                action_id BIGINT UNSIGNED NOT NULL,
-
-                                hobby_id BIGINT UNSIGNED NOT NULL,
-
-                                PRIMARY KEY (
-                                             action_id,
-                                             hobby_id
-                                    ),
-
-                                CONSTRAINT fk_action_hobbies_action
-                                    FOREIGN KEY (action_id)
-                                        REFERENCES actions(id)
-                                        ON DELETE CASCADE,
-
-                                CONSTRAINT fk_action_hobbies_hobby
-                                    FOREIGN KEY (hobby_id)
-                                        REFERENCES hobbies(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 -- [10/23] user_action_dislikes | V1
@@ -298,6 +309,10 @@ CREATE TABLE recommendations (
     action_id BIGINT UNSIGNED NOT NULL,
     rank_no INT UNSIGNED NOT NULL,
     reason TEXT NOT NULL,
+    -- 해당 추천이 생성될 당시의 시간·일정
+    duration_minutes INT UNSIGNED NULL,
+    duration_days INT UNSIGNED NULL,
+    duration_nights INT UNSIGNED NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     recheck_completed TINYINT(1) NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
@@ -317,6 +332,23 @@ CREATE TABLE recommendations (
     CONSTRAINT uq_recommendations_id_action UNIQUE (id, action_id),
     CONSTRAINT uq_recommendations_one_selected UNIQUE (selected_session_id),
     CONSTRAINT chk_recommendations_rank CHECK (rank_no BETWEEN 1 AND 3),
+    CONSTRAINT chk_recommendations_duration CHECK (
+        (
+            duration_minutes IS NOT NULL
+                AND duration_minutes > 0
+                AND duration_days IS NULL
+                AND duration_nights IS NULL
+            )
+            OR
+        (
+            duration_minutes IS NULL
+                AND duration_days IS NOT NULL
+                AND duration_days >= 1
+                AND duration_nights IS NOT NULL
+                AND duration_nights >= 0
+                AND duration_nights < duration_days
+            )
+        ),
     CONSTRAINT chk_recommendations_status CHECK (status IN ('PENDING', 'SELECTED', 'UNSELECTED', 'SKIPPED')),
     CONSTRAINT chk_recommendations_recheck
         CHECK (recheck_completed IN (0, 1) AND (recheck_completed = 0 OR status = 'SELECTED')),
@@ -628,10 +660,21 @@ CREATE TABLE action_category_scores (
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT chk_action_category_scores_category CHECK (
         category IN (
-            'WALK', 'EXERCISE', 'STRETCHING', 'MEDITATION', 'SLEEP',
-            'MUSIC', 'READING', 'ENTERTAINMENT', 'SOCIAL', 'OUTDOOR',
-            'EATING', 'SELF_CARE', 'CLEANING'
-        )
+                     'ENTERTAINMENT',
+                     'WALK',
+                     'EXERCISE',
+                     'STRETCHING',
+                     'OUTDOOR',
+                     'SELF_CARE',
+                     'SLEEP',
+                     'READING',
+                     'MUSIC',
+                     'MEDITATION',
+                     'EATING',
+                     'TRAVEL',
+                     'CLEANING',
+                     'CULTURE'
+            )
     ),
     CONSTRAINT chk_action_category_scores_score CHECK (personal_score BETWEEN 0 AND 100),
     CONSTRAINT chk_action_category_scores_delta CHECK (avg_delta BETWEEN -59 AND 59),
