@@ -122,7 +122,8 @@ public class PlaceService {
         List<PlaceResponse> filteredPlaces =
                 placeFilter.filter(
                         placeType,
-                        cleanedCandidates
+                        cleanedCandidates,
+                        searchKeyword
                 );
 
         return filteredPlaces.stream()

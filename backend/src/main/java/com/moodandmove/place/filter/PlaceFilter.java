@@ -11,4 +11,13 @@ public interface PlaceFilter {
             PlaceType placeType,
             List<PlaceResponse> candidates
     );
+
+    default List<PlaceResponse> filter(
+            PlaceType placeType,
+            List<PlaceResponse> candidates,
+            String keyword
+    ){
+        return filter(placeType, candidates);
+    }
+
 }

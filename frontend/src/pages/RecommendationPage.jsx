@@ -374,10 +374,9 @@ export default function RecommendationPage() {
        */
       const places = await getNearbyPlaces({
         type: item.placeCategory,
-
         latitude,
-
         longitude,
+        keyword: item.placeKeyword,
       });
 
       console.log("===== 장소 검색 결과 =====", places);
