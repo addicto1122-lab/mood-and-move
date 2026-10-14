@@ -76,6 +76,16 @@ public class Recommendation {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // 이번 추천의 장소 검색 정보
+    @Column(name = "location_required", nullable = false)
+    private boolean locationRequired;
+
+    @Column(name = "place_category")
+    private String placeCategory;
+
+    @Column(name = "place_keyword")
+    private String placeKeyword;
+
     // 추천 생성
     public static Recommendation create(
             RecommendationSession session,
@@ -179,5 +189,47 @@ public class Recommendation {
         }
 
         this.emoji = value;
+    }
+
+    public void assignPlaceSearch(
+            boolean locationRequired,
+            String placeCategory,
+            String placeKeyword
+    ) {
+        // 여행은 상세 장소 검색 제외
+        if ("TRAVEL".equals(this.action.getCategory())) {
+            locationRequired = false;
+        }
+
+        if (!locationRequired) {
+            this.locationRequired = false;
+            this.placeCategory = null;
+            this.placeKeyword = null;
+            return;
+        }
+
+        if (placeCategory == null || placeCategory.isBlank()) {
+            throw new IllegalArgumentException(
+                    "장소 검색 유형이 필요합니다."
+            );
+        }
+
+        if (placeKeyword == null || placeKeyword.isBlank()) {
+            throw new IllegalArgumentException(
+                    "장소 검색어가 필요합니다."
+            );
+        }
+
+        String keyword = placeKeyword.strip();
+
+        if (keyword.codePointCount(0, keyword.length()) > 50) {
+            throw new IllegalArgumentException(
+                    "장소 검색어는 50자 이하여야 합니다."
+            );
+        }
+
+        this.locationRequired = true;
+        this.placeCategory = placeCategory.strip();
+        this.placeKeyword = keyword;
     }
 }

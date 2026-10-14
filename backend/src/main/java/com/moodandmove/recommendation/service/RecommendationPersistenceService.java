@@ -143,6 +143,12 @@ public class RecommendationPersistenceService {
             // LLM이 반환한 행동별 이모지 설정
             recommendation.assignEmoji(item.emoji());
 
+            recommendation.assignPlaceSearch(
+                    item.locationRequired(),
+                    item.placeCategory(),
+                    item.placeKeyword()
+            );
+
 
             Recommendation saved =
                     recommendationRepository.save(recommendation);
