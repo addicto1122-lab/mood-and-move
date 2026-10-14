@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -68,6 +69,8 @@ public class RecommendationPersistenceService {
             TimeBucket timeBucket,
             RecommendationType recommendationType,
             LocationMode locationMode,
+            BigDecimal searchLatitude,
+            BigDecimal searchLongitude,
             List<LlmRecommendedActionDto> selected
     ) {
         // 동일 일기에서 중복 추천 세션 생성 방지
@@ -118,7 +121,9 @@ public class RecommendationPersistenceService {
                         moodEntry,
                         timeBucket,
                         recommendationType,
-                        locationMode
+                        locationMode,
+                        searchLatitude,
+                        searchLongitude
                 )
         );
 
@@ -167,7 +172,12 @@ public class RecommendationPersistenceService {
         // 일기의 추천 요청 상태 변경
         moodEntry.markRecommendationRequested();
 
-        return new RecommendationResponse(session.getId(),session.getLocationMode() ,items);
+        return new RecommendationResponse(
+                session.getId(),
+                session.getLocationMode(),
+                session.getSearchLatitude(),
+                session.getSearchLongitude(),
+                items);
     }
 
     // 같은 이름의 행동은 기존 데이터를 재사용
@@ -245,7 +255,12 @@ public class RecommendationPersistenceService {
                         .map(this::toItem)
                         .toList();
 
-        return new RecommendationResponse(session.getId(),session.getLocationMode() ,items);
+        return new RecommendationResponse(
+                session.getId(),
+                session.getLocationMode(),
+                session.getSearchLatitude(),
+                session.getSearchLongitude(),
+                items);
     }
 
     // 추천과 카테고리 정보를 함께 응답으로 변환

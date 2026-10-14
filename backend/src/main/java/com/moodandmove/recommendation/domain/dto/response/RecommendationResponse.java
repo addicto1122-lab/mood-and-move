@@ -5,11 +5,14 @@ import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.recommendation.domain.entity.ActionCategory;
 import com.moodandmove.recommendation.domain.entity.Recommendation;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public record RecommendationResponse(
         Long sessionId,
         LocationMode locationMode,
+        BigDecimal searchLatitude,
+        BigDecimal searchLongitude,
         List<Item> recommendations
 ) {
 

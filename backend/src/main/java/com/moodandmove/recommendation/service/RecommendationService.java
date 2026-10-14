@@ -210,6 +210,7 @@ public class RecommendationService {
 
         // 7. 행동 후보 대신 카테고리 통계를 전달
         return new LlmRecommendationRequestDto(
+                userId,
                 currentState,
                 location,
                 preference,
@@ -332,6 +333,8 @@ public class RecommendationService {
                     llmRequest.currentState().timeBucket(),
                     llmRequest.recommendationType(),
                     llmRequest.location().locationMode(),
+                    llmRequest.location().latitude(),
+                    llmRequest.location().longitude(),
                     validated
             );
         }catch (RuntimeException e) {

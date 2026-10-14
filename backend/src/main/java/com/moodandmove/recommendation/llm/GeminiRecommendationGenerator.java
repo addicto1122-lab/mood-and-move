@@ -192,6 +192,7 @@ public class GeminiRecommendationGenerator
             try {
                 var generationLog = RecommendationGenerationLog.builder()
                         .requestId(requestId)
+                        .userId(request.userId())
                         .recommendationType(
                                 request.recommendationType().name()
                         )

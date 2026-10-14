@@ -1,5 +1,6 @@
 package com.moodandmove.user.scheduler;
 
+import com.moodandmove.recommendation.repository.RecommendationGenerationLogRepository;
 import com.moodandmove.user.domain.entity.UserWithdrawalRequest;
 import com.moodandmove.user.repository.UserRepository;
 import com.moodandmove.user.repository.UserWithdrawalRequestRepository;
@@ -18,6 +19,7 @@ public class UserWithdrawalScheduler {
 
     private final UserWithdrawalRequestRepository userWithdrawalRequestRepository;
     private final UserRepository userRepository;
+    private final RecommendationGenerationLogRepository generationLogRepository;
 
     @Scheduled(
             cron = "0 0 3 * * *",
@@ -45,6 +47,11 @@ public class UserWithdrawalScheduler {
                         .map(UserWithdrawalRequest::getUserId)
                         .toList();
 
+        // MongoDB 로그 삭제 실패 시 예외를 전파하여 회원 삭제를 중단한다.
+        // 탈퇴 요청이 남아 다음 스케줄 실행 때 다시 시도한다.
+        generationLogRepository.deleteByUserIdIn(userIds);
+
+        // MongoDB 로그 삭제 후 MySQL 회원 삭제
         userRepository.deleteAllByIdInBatch(userIds);
     }
 }
