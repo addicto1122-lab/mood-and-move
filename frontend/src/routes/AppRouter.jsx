@@ -19,6 +19,7 @@ import AccountRecoveryPage from "../pages/AccountRecoveryPage.jsx";
 import CalendarPage from "../pages/CalendarPage.jsx";
 import MoodRecheckPage from "../pages/MoodRecheckPage.jsx";
 import MoodRouteGuard from "./MoodRouteGuard.jsx";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage.jsx";
 
 export default function AppRouter() {
   return (
@@ -33,6 +34,7 @@ export default function AppRouter() {
         {/* 로그인 없이 접근 */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/account-recovery" element={<AccountRecoveryPage />} />
 
         {/* 로그인 필요 */}
