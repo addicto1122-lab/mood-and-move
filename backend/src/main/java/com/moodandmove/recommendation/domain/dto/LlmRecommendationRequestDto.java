@@ -5,6 +5,7 @@ import com.moodandmove.recommendation.domain.type.RecommendationType;
 import java.util.List;
 
 public record LlmRecommendationRequestDto(
+        Long userId,
         CurrentStateDto currentState,
         RecommendationLocationDto location,
         UserPreferenceDto preference,
