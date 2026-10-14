@@ -1,6 +1,8 @@
 package com.moodandmove.mood.controller;
 
-import com.moodandmove.mood.dto.request.MoodCreateRequest;
+import com.moodandmove.mood.dto.request.MoodCreateWithRecommendationRequest;
+import com.moodandmove.mood.dto.response.MoodCreateWithRecommendationResponse;
+import com.moodandmove.mood.service.MoodRecommendationService;
 import com.moodandmove.mood.service.MoodService;
 import com.moodandmove.user.domain.entity.User;
 import jakarta.validation.Valid;
@@ -15,20 +17,24 @@ import org.springframework.web.bind.annotation.*;
 public class MoodController {
 
     private final MoodService moodService;
+    private final MoodRecommendationService moodRecommendationService;
 
-    @PostMapping
-    public ResponseEntity<Long> createMood(
+
+
+    @PostMapping("/with-recommendations")
+    public ResponseEntity<MoodCreateWithRecommendationResponse>
+    createMoodWithRecommendations(
             Authentication authentication,
-            @Valid @RequestBody MoodCreateRequest request
+            @Valid @RequestBody MoodCreateWithRecommendationRequest request
     ) {
         User user = (User) authentication.getPrincipal();
 
-        Long moodEntryId = moodService.createMood(
+        var response = moodRecommendationService.create(
                 user.getId(),
                 request
         );
 
-        return ResponseEntity.ok(moodEntryId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/today/exists")

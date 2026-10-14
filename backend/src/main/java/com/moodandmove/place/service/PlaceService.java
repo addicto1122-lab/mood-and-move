@@ -1,9 +1,11 @@
 package com.moodandmove.place.service;
 
 import com.moodandmove.place.client.KakaoPlaceClient;
+import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.place.domain.type.PlaceType;
 import com.moodandmove.place.dto.PlaceResponse;
 import com.moodandmove.place.filter.PlaceFilter;
+import com.moodandmove.recommendation.repository.RecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,70 @@ public class PlaceService {
 
     private final KakaoPlaceClient kakaoPlaceClient;
     private final PlaceFilter placeFilter;
+    private final RecommendationRepository recommendationRepository;
+
+    public List<PlaceResponse> findPlacesForRecommendation(
+            Long userId,
+            Long recommendationId
+    ) {
+        // 본인 소유의 추천만 조회
+        var recommendation = recommendationRepository
+                .findByIdAndSession_UserId(recommendationId, userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "추천을 찾을 수 없습니다."
+                ));
+
+        var session = recommendation.getSession();
+
+        // 위치 사용 안 함이면 외부 장소 API를 호출하지 않음
+        if (session.getLocationMode() != LocationMode.CURRENT
+                && session.getLocationMode() != LocationMode.SAVED) {
+            return List.of();
+        }
+
+        // 장소 검색 대상이 아닌 행동
+        if (!recommendation.isLocationRequired()) {
+            return List.of();
+        }
+
+        // 과거 추천처럼 작성 당시 좌표가 없는 경우
+        if (session.getSearchLatitude() == null
+                || session.getSearchLongitude() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이 추천에는 작성 당시 위치가 저장되어 있지 않습니다."
+            );
+        }
+
+        String placeCategory = recommendation.getPlaceCategory();
+
+        if (placeCategory == null || placeCategory.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이 추천에 장소 검색 유형이 저장되어 있지 않습니다."
+            );
+        }
+
+        PlaceType placeType;
+
+        try {
+            placeType = PlaceType.valueOf(placeCategory);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "지원하지 않는 장소 검색 유형입니다."
+            );
+        }
+
+        // 좌표는 세션에서, 장소 유형과 검색어는 해당 추천에서 가져옴
+        return findNearbyPlaceWithFallback(
+                placeType,
+                session.getSearchLatitude().doubleValue(),
+                session.getSearchLongitude().doubleValue(),
+                recommendation.getPlaceKeyword()
+        );
+    }
 
     public List<PlaceResponse> findNearbyPlaces(
             PlaceType placeType,

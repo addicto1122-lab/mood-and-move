@@ -1,15 +1,9 @@
 import { authFetch } from "./authApi";
 
-export async function getNearbyPlaces({ type, latitude, longitude, keyword }) {
+export async function getNearbyPlaces({ recommendationId }) {
   const params = new URLSearchParams({
-    type,
-    latitude: String(latitude),
-    longitude: String(longitude),
+    recommendationId: String(recommendationId),
   });
-
-  if (keyword?.trim()) {
-    params.set("keyword", keyword.trim());
-  }
 
   const response = await authFetch(`/api/places/nearby?${params.toString()}`, {
     method: "GET",
