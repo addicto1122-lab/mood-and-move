@@ -273,6 +273,8 @@ export default function StatsPage() {
     effectRanking: [],
   });
 
+  const [categoryMeta, setCategoryMeta] = useState({});
+
   const [loading, setLoading] = useState(true);
 
   const [chartLoading, setChartLoading] = useState(true);
@@ -282,6 +284,57 @@ export default function StatsPage() {
   const [rankingModal, setRankingModal] = useState(null);
 
   const [selectedDateKey, setSelectedDateKey] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchActionCategories() {
+      try {
+        const response = await authFetch("/api/action-categories", {
+          method: "GET",
+          credentials: "include",
+        });
+
+        const data = await response.json();
+
+        if (cancelled) {
+          return;
+        }
+
+        const meta = Object.fromEntries(
+          (data ?? []).map((item) => [
+            item.category,
+            {
+              categoryName: item.categoryName,
+              emoji: item.emoji,
+            },
+          ]),
+        );
+
+        setCategoryMeta(meta);
+      } catch (error) {
+        console.error("행동 카테고리 조회 실패:", error);
+
+        if (!cancelled) {
+          setCategoryMeta({});
+        }
+      }
+    }
+
+    fetchActionCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const getCategoryName = (category) => {
+    return categoryMeta[category]?.categoryName ?? category;
+  };
+
+  const getCategoryEmoji = (category) => {
+    return categoryMeta[category]?.emoji ?? "✨";
+  };
 
   /* =========================================================
      선택 월 Calendar 조회
@@ -1115,44 +1168,6 @@ export default function StatsPage() {
   };
 
   /* =========================================================
-     행동 카테고리
-  ========================================================= */
-
-  const CATEGORY_LABEL = {
-    ENTERTAINMENT: "오락",
-    WALK: "산책",
-    EXERCISE: "운동",
-    STRETCHING: "스트레칭",
-    OUTDOOR: "야외활동",
-    SELF_CARE: "자기관리",
-    SLEEP: "수면관리",
-    READING: "독서",
-    MUSIC: "음악",
-    MEDITATION: "명상",
-    EATING: "음식섭취",
-    TRAVEL: "여행",
-    CLEANING: "정리/청소",
-    CULTURE: "문화생활",
-  };
-
-  const CATEGORY_EMOJI = {
-    ENTERTAINMENT: "🎮",
-    WALK: "🚶",
-    EXERCISE: "💪",
-    STRETCHING: "🤸",
-    OUTDOOR: "🌳",
-    SELF_CARE: "🛁",
-    SLEEP: "😴",
-    READING: "📖",
-    MUSIC: "🎵",
-    MEDITATION: "🧘",
-    EATING: "🍽️",
-    TRAVEL: "🧳",
-    CLEANING: "🧹",
-    CULTURE: "🎭",
-  };
-
-  /* =========================================================
      Render
   ========================================================= */
 
@@ -1556,10 +1571,8 @@ export default function StatsPage() {
                   <div className="best-action-content">
                     <div>
                       <span className="best-action-category">
-                        {CATEGORY_EMOJI[actionEffects.bestAction.category] ||
-                          "✨"}{" "}
-                        {CATEGORY_LABEL[actionEffects.bestAction.category] ||
-                          actionEffects.bestAction.category}
+                        {getCategoryEmoji(actionEffects.bestAction.category)}{" "}
+                        {getCategoryName(actionEffects.bestAction.category)}
                       </span>
 
                       <strong>{actionEffects.bestAction.actionName}</strong>
@@ -1613,13 +1626,11 @@ export default function StatsPage() {
                         <span className="ranking-number">{index + 1}</span>
 
                         <span className="ranking-category-emoji">
-                          {CATEGORY_EMOJI[item.category] || "✨"}
+                          {getCategoryEmoji(item.category)}
                         </span>
 
                         <div className="ranking-name">
-                          <strong>
-                            {CATEGORY_LABEL[item.category] || item.category}
-                          </strong>
+                          <strong>{getCategoryName(item.category)}</strong>
 
                           <span>{item.category}</span>
                         </div>
@@ -1664,13 +1675,11 @@ export default function StatsPage() {
                         <span className="ranking-number">{index + 1}</span>
 
                         <span className="ranking-category-emoji">
-                          {CATEGORY_EMOJI[item.category] || "✨"}
+                          {getCategoryEmoji(item.category)}
                         </span>
 
                         <div className="ranking-name">
-                          <strong>
-                            {CATEGORY_LABEL[item.category] || item.category}
-                          </strong>
+                          <strong>{getCategoryName(item.category)}</strong>
 
                           <span>재측정 {item.sampleCount}회</span>
                         </div>
@@ -1757,13 +1766,11 @@ export default function StatsPage() {
                       <span className="ranking-number">{index + 1}</span>
 
                       <span className="ranking-category-emoji">
-                        {CATEGORY_EMOJI[item.category] || "✨"}
+                        {getCategoryEmoji(item.category)}
                       </span>
 
                       <div className="ranking-name">
-                        <strong>
-                          {CATEGORY_LABEL[item.category] || item.category}
-                        </strong>
+                        <strong>{getCategoryName(item.category)}</strong>
 
                         <span>{item.category}</span>
                       </div>
@@ -1781,13 +1788,11 @@ export default function StatsPage() {
                       <span className="ranking-number">{index + 1}</span>
 
                       <span className="ranking-category-emoji">
-                        {CATEGORY_EMOJI[item.category] || "✨"}
+                        {getCategoryEmoji(item.category)}
                       </span>
 
                       <div className="ranking-name">
-                        <strong>
-                          {CATEGORY_LABEL[item.category] || item.category}
-                        </strong>
+                        <strong>{getCategoryName(item.category)}</strong>
 
                         <span>재측정 {item.sampleCount}회</span>
                       </div>

@@ -16,6 +16,8 @@ public interface RecommendationRepository
     @EntityGraph(attributePaths = "action")
     Optional<Recommendation> findFirstBySession_MoodEntry_IdOrderByRankNoAsc(Long moodEntryId);
 
+    Optional<Recommendation> findTopByAction_IdOrderByIdDesc(Long actionId);
+
     // 본인 소유의 추천만 조회하고 연결된 세션도 함께 로딩
     @EntityGraph(attributePaths = "session")
     Optional<Recommendation> findByIdAndSession_UserId(

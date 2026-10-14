@@ -14,7 +14,9 @@ public record DislikeActionResponse(
 
         Integer durationNights,
 
-        boolean disliked
+        boolean disliked,
+
+        String emoji
 
 ) {
 }

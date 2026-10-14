@@ -4,24 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { getDislikeActions, removeDislikeAction } from "../api/authApi";
 
 import "./DislikePage.css";
-import { formatDuration } from "../utils/formatDuration";
 
-const categoryEmoji = {
-  WALK: "🚶",
-  EXERCISE: "🏃",
-  STRETCHING: "🧘",
-  MEDITATION: "🌿",
-  SLEEP: "😴",
-  MUSIC: "🎧",
-  READING: "📚",
-  ENTERTAINMENT: "🎮",
-  SOCIAL: "💬",
-  OUTDOOR: "🌳",
-  EATING: "☕",
-  SELF_CARE: "🫧",
-  CLEANING: "🧹",
-  TRAVEL: "🧳",
-};
+import { formatDuration } from "../utils/formatDuration";
 
 export default function DislikePage() {
   const navigate = useNavigate();
@@ -32,6 +16,11 @@ export default function DislikePage() {
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
 
+  /*
+   * =========================
+   * Toast
+   * =========================
+   */
   const showToast = (message) => {
     setToast(message);
 
@@ -112,6 +101,7 @@ export default function DislikePage() {
 
     try {
       setDeletingId(action.actionId);
+
       setError("");
 
       /*
@@ -137,6 +127,11 @@ export default function DislikePage() {
     }
   };
 
+  /*
+   * =========================
+   * Loading
+   * =========================
+   */
   if (loading) {
     return (
       <main className="dislike-page">
@@ -148,7 +143,9 @@ export default function DislikePage() {
   return (
     <main className="dislike-page">
       <section className="dislike-container">
-        {/* Header */}
+        {/* =========================
+            Header
+        ========================= */}
         <header className="dislike-header">
           <button
             type="button"
@@ -166,21 +163,36 @@ export default function DislikePage() {
           </div>
         </header>
 
+        {/* Error */}
         {error && <div className="dislike-error">{error}</div>}
 
+        {/* =========================
+            Empty / List
+        ========================= */}
         {actions.length === 0 ? (
           <div className="dislike-empty">등록된 비선호 행동이 없습니다.</div>
         ) : (
           <section className="dislike-card">
             {actions.map((action, index) => {
+              /*
+               * API DTO에 따라
+               * actionName / name 대응
+               */
               const actionName = action.actionName ?? action.name ?? "행동";
 
-              const emoji = categoryEmoji[action.category] ?? "✨";
+              /*
+               * 중요
+               *
+               * 카테고리 이모지를 사용하지 않고
+               * recommendations 테이블에서
+               * 내려온 추천 당시 emoji를 사용한다.
+               */
+              const emoji = action.emoji?.trim() || "✨";
 
               return (
                 <div key={action.actionId}>
                   <div className="dislike-item">
-                    {/* 왼쪽 이모지 */}
+                    {/* 추천 행동 이모지 */}
                     <div className="dislike-item-emoji">{emoji}</div>
 
                     {/* 행동 정보 */}
@@ -222,6 +234,7 @@ export default function DislikePage() {
         </p>
       </section>
 
+      {/* Toast */}
       {toast && <div className="dislike-toast">{toast}</div>}
     </main>
   );
