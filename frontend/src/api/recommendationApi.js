@@ -2,7 +2,10 @@ import { authFetch } from "./authApi";
 
 const API_BASE_URL = "/api";
 
-// 추천 생성 (POST)
+/* =========================================================
+   추천 생성
+========================================================= */
+
 export async function generateRecommendations({
   moodEntryId,
   locationMode,
@@ -57,7 +60,10 @@ export async function generateRecommendations({
   return data;
 }
 
-// 저장된 추천 조회 (GET)
+/* =========================================================
+   저장된 추천 조회
+========================================================= */
+
 export async function getSavedRecommendations(moodEntryId) {
   if (!moodEntryId) {
     throw new Error("감정 기록 ID가 필요합니다.");
@@ -96,14 +102,21 @@ export async function getSavedRecommendations(moodEntryId) {
 
   return data;
 }
-// 행동 선택·재측정 API 공통 요청 처리
+
+/* =========================================================
+   행동 선택 / 스킵 / 재측정 공통 요청
+========================================================= */
+
 async function requestActionExecution(path, method = "GET", body) {
-  const options = { method };
+  const options = {
+    method,
+  };
 
   if (body !== undefined) {
     options.headers = {
       "Content-Type": "application/json",
     };
+
     options.body = JSON.stringify(body);
   }
 
@@ -113,34 +126,59 @@ async function requestActionExecution(path, method = "GET", body) {
     switch (response.status) {
       case 400:
         throw new Error("입력한 정보를 확인해 주세요.");
+
       case 401:
         throw new Error("로그인이 필요합니다.");
+
       case 403:
         throw new Error("접근 권한이 없습니다.");
+
       case 404:
         throw new Error("요청한 기록을 찾을 수 없습니다.");
+
       case 409:
         throw new Error(
           "이미 처리되었거나 현재 상태에서 진행할 수 없습니다. 화면을 새로고침해 주세요.",
         );
+
       default:
         throw new Error("요청을 처리하지 못했습니다. 다시 시도해 주세요.");
     }
   }
 
+  /*
+   * 204 No Content
+   *
+   * 추천 스킵처럼
+   * 성공했지만 응답 body가 없는 경우
+   * response.json()을 호출하면 오류가 발생한다.
+   */
+  if (response.status === 204) {
+    return null;
+  }
+
   return response.json();
 }
 
-// 행동 선택: 선택 즉시 실행 시작
+/* =========================================================
+   행동 선택
+========================================================= */
+
+// 선택 즉시 ActionExecution STARTED 생성
 export function selectRecommendation(sessionId, recommendationId) {
   return requestActionExecution(
     `/recommendations/sessions/${sessionId}/select`,
     "POST",
-    { recommendationId },
+    {
+      recommendationId,
+    },
   );
 }
 
-// 추천 3개 모두 건너뛰기
+/* =========================================================
+   추천 건너뛰기
+========================================================= */
+
 export function skipRecommendations(sessionId) {
   return requestActionExecution(
     `/recommendations/sessions/${sessionId}/skip`,
@@ -148,21 +186,32 @@ export function skipRecommendations(sessionId) {
   );
 }
 
-// 실행 상태와 재측정 전후 점수 조회
+/* =========================================================
+   실행 상태 조회
+========================================================= */
+
 export function getActionExecution(executionId) {
   return requestActionExecution(`/action-executions/${executionId}`);
 }
 
-// 슬라이더에서 선택한 기분 점수로 재측정 완료
+/* =========================================================
+   재측정
+========================================================= */
+
 export function recheckActionExecution(executionId, afterScore) {
   return requestActionExecution(
     `/action-executions/${executionId}/recheck`,
     "POST",
-    { afterScore },
+    {
+      afterScore,
+    },
   );
 }
 
-// 비선호 목록 조회
+/* =========================================================
+   비선호 행동 조회
+========================================================= */
+
 export const getDislikeActions = async () => {
   const response = await authFetch(`${API_BASE_URL}/users/me/dislikes`, {
     method: "GET",
@@ -175,7 +224,10 @@ export const getDislikeActions = async () => {
   return await response.json();
 };
 
-// 비선호 등록
+/* =========================================================
+   비선호 행동 등록
+========================================================= */
+
 export const addDislike = async (actionId) => {
   const response = await authFetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,
@@ -189,7 +241,10 @@ export const addDislike = async (actionId) => {
   }
 };
 
-// 비선호 해제
+/* =========================================================
+   비선호 행동 해제
+========================================================= */
+
 export const removeDislike = async (actionId) => {
   const response = await authFetch(
     `${API_BASE_URL}/users/me/dislikes/${actionId}`,

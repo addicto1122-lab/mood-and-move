@@ -7,7 +7,8 @@ import com.moodandmove.calendar.dto.CalendarDetailResponse;
 import com.moodandmove.calendar.dto.MonthlyCalendarResponse;
 import com.moodandmove.mood.repository.MoodEntryRepository;
 import com.moodandmove.mood.domain.entity.MoodEntry;
-import com.moodandmove.recommendation.repository.RecommendationRepository;
+import com.moodandmove.recommendation.domain.type.SelectionStatus;
+import com.moodandmove.recommendation.repository.RecommendationSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,7 @@ public class CalendarService {
 
     private final MoodEntryRepository moodEntryRepository;
     private final MoodRecheckRepository moodRecheckRepository;
-    private final RecommendationRepository recommendationRepository;
+    private final RecommendationSessionRepository recommendationSessionRepository;
 
     public MonthlyCalendarResponse getMonthlyCalendar(
             Long userId,
@@ -57,15 +58,15 @@ public class CalendarService {
 
     private CalendarDayResponse toCalendarDayResponse(
             MoodEntry moodEntry
-    )
-    {
-        boolean skipped = recommendationRepository.findFirstBySession_MoodEntry_IdOrderByRankNoAsc(
-                moodEntry.getId()
-        )
-                .map(recommendation ->
-                        "SKIPPED".equals(recommendation.getStatus())
-                )
-                .orElse(false);
+    ) {
+        boolean skipped =
+                recommendationSessionRepository
+                        .findByMoodEntry_Id(moodEntry.getId())
+                        .map(session ->
+                                session.getSelectionStatus()
+                                        == SelectionStatus.SKIPPED
+                        )
+                        .orElse(false);
 
         Integer afterScore = moodRecheckRepository
                 .findAfterScoreByMoodEntryId(moodEntry.getId())

@@ -5,6 +5,7 @@ import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
 import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
+import com.moodandmove.recommendation.domain.type.SelectionStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -89,6 +90,10 @@ public class RecommendationSession {
     )
     private BigDecimal searchLongitude;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "selection_status", nullable = false)
+    private SelectionStatus selectionStatus;
+
     // 추천 세션 생성
     public static RecommendationSession create(
             Long userId,
@@ -112,6 +117,7 @@ public class RecommendationSession {
         session.timeBucket = timeBucket;
         session.recommendationType = recommendationType;
         session.locationMode = locationMode;
+        session.selectionStatus = SelectionStatus.GENERATED;
 
         if (locationMode == LocationMode.NONE) {
             session.searchLatitude = null;
@@ -132,5 +138,14 @@ public class RecommendationSession {
         }
 
         return session;
+    }
+
+    public void select()
+    {
+        this.selectionStatus = SelectionStatus.SELECTED;
+    }
+
+    public void skip(){
+        this.selectionStatus = SelectionStatus.SKIPPED;
     }
 }

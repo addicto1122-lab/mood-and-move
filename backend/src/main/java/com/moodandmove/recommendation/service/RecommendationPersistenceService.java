@@ -12,6 +12,7 @@ import com.moodandmove.recommendation.domain.entity.Recommendation;
 import com.moodandmove.recommendation.domain.entity.RecommendationSession;
 import com.moodandmove.recommendation.domain.type.ActionCategory;
 import com.moodandmove.recommendation.domain.type.RecommendationType;
+import com.moodandmove.recommendation.domain.type.SelectionStatus;
 import com.moodandmove.recommendation.repository.ActionCategoryRepository;
 import com.moodandmove.recommendation.repository.ActionRepository;
 import com.moodandmove.recommendation.repository.RecommendationRepository;
@@ -59,6 +60,42 @@ public class RecommendationPersistenceService {
 
         return sessionRepository.findByMoodEntry_Id(moodEntryId)
                 .map(this::toResponse);
+    }
+
+    @Transactional
+    public void skip(Long userId, Long sessionId) {
+
+        RecommendationSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "추천 세션을 찾을 수 없습니다."
+                                )
+                        );
+
+        // 내 추천 세션인지 검사
+        if (!session.getUserId().equals(userId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "해당 추천 세션에 접근할 수 없습니다."
+            );
+        }
+
+        // 이미 스킵한 경우
+        if (session.getSelectionStatus() == SelectionStatus.SKIPPED) {
+            return;
+        }
+
+        // 이미 행동을 선택한 세션은 스킵 불가
+        if (session.getSelectionStatus() != SelectionStatus.GENERATED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "이미 처리된 추천 세션입니다."
+            );
+        }
+
+        session.skip();
     }
 
     // 추천 세션 + 행동 3개 + 추천 3개 저장
