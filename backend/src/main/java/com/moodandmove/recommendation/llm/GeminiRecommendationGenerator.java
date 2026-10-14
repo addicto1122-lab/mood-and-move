@@ -28,7 +28,7 @@ public class GeminiRecommendationGenerator
     private final String model;
 
     private final RecommendationGenerationLogService generationLogService;
-    private static final String PROMPT_VERSION = "diary-priority-place5km-v6";
+    private static final String PROMPT_VERSION = "diary-priority-place5km-keyword-v7";
 
     private static final String ACTION_CATEGORIES =
             Arrays.stream(ActionCategory.values())
@@ -153,6 +153,7 @@ public class GeminiRecommendationGenerator
                         );
                         action.put("locationRequired", item.locationRequired());
                         action.put("placeCategory", item.placeCategory());
+                        action.put("placeKeyword", item.placeKeyword());
                         action.put("reason", item.reason());
                         action.put("emoji", item.emoji());
 
@@ -685,6 +686,7 @@ public class GeminiRecommendationGenerator
                 위치 정보 없이도 지역 수준의 여행 행동은 추천할 수 있습니다.
                 
                 actionName은 100자를 초과하지 마세요.
+                
                 ===== 상세 장소 검색 규칙 =====
                 
                 placeCategory는 다음 값 중 하나 또는 null이어야 합니다.
@@ -754,7 +756,7 @@ public class GeminiRecommendationGenerator
                 
                 위치 사용 모드가 NONE이거나 행동 카테고리가 TRAVEL이면
                 locationRequired=false로 설정하세요.
-                false일 때 placeCategory는 반드시 null입니다.
+                false일 때 placeCategory와 placeKeyword는 모두 null입니다.
                 
                 장소 검색은 시설 후보를 찾는 기능입니다.
                 공연·경기 개최 일정, 영업시간, 잔여 좌석, 예약 가능 여부는
@@ -764,6 +766,27 @@ public class GeminiRecommendationGenerator
                 실제 장소 이름과 주소를 임의로 만들어 응답하지 마세요.
                 구체적인 시설 정보는 별도의 장소 검색 결과로 제공합니다.
 
+                ===== 구체적인 장소 검색어 =====
+                
+                locationRequired=true이면 placeKeyword에
+                50자 이내의 구체적인 장소 검색어를 작성하세요.
+                
+                예시:
+                - 삼겹살 식당 방문 → "삼겹살"
+                - 조개구이 식당 방문 → "조개구이"
+                - 야구장 현장 관람 → "야구장"
+                - 미술관 방문 → "미술관"
+                
+                원하는 음식이나 시설이 명확하면 검색어에도 반영하세요.
+                삼겹살을 원하는데 "음식점"처럼 넓은 검색어를 사용하지 마세요.
+                
+                검색어에 다른 지역명이나 추측한 시설 이름을 넣지 마세요.
+                검색은 현재 위치 또는 기본 활동 지역에서 5km 이내로 수행합니다.
+                적절한 검색 결과가 없으면 다른 종류의 장소로 대체하지 않습니다.
+                
+                locationRequired=false이면 placeKeyword는 반드시 null입니다.
+                TRAVEL은 지역·일정만 추천하며 상세 장소를 검색하지 않습니다.
+                
                 category와 enum 속성은
                 반드시 위 허용값만 사용하세요.
                 """);
@@ -779,7 +802,7 @@ public class GeminiRecommendationGenerator
                 recommendations 배열에는
                 정확히 3개의 행동을 넣으세요.
 
-                각 행동에는 아래 12개 필드를 빠짐없이 포함하세요.
+                각 행동에는 아래 13개 필드를 빠짐없이 포함하세요.
                 값이 없는 시간 필드도 생략하지 말고 null로 작성하세요.
 
                 actionName: 행동 이름 (문자열)
@@ -792,6 +815,7 @@ public class GeminiRecommendationGenerator
                 activityStyle: 활동 성향 (문자열)
                 locationRequired: 상세 장소 검색 사용 여부 (boolean)
                 placeCategory: 상세 장소 검색 규칙에 명시된 장소 유형 하나 또는 null
+                placeKeyword: 구체적인 장소 검색어 (50자 이내 문자열 또는 null)
                 reason: 추천 이유 (문자열)
                 emoji: 해당 행동을 나타내는 대표 이모지 하나 (문자열)
                 
@@ -821,6 +845,7 @@ public class GeminiRecommendationGenerator
                   "activityStyle": "CALM",
                   "locationRequired": false,
                   "placeCategory": null,
+                  "placeKeyword": null,
                   "reason": "몸을 가볍게 움직이며 긴장을 풀어보세요.",
                   "emoji": "🤸"
                 },
@@ -835,6 +860,7 @@ public class GeminiRecommendationGenerator
                   "activityStyle": "CALM",
                   "locationRequired": false,
                   "placeCategory": null,
+                  "placeKeyword": null,
                   "reason": "편안한 음악으로 기분을 환기해 보세요.",
                   "emoji": "🎧"
                 },
@@ -849,6 +875,7 @@ public class GeminiRecommendationGenerator
                   "activityStyle": "CALM",
                   "locationRequired": false,
                   "placeCategory": null,
+                  "placeKeyword": null,
                   "reason": "잠시 독서에 집중하면서 마음을 정리해 보세요.",
                   "emoji": "📖"
                 }

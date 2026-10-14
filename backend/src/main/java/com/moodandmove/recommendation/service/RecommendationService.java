@@ -459,6 +459,8 @@ public class RecommendationService {
                             item.activityStyle(),
                             item.locationRequired(),
                             normalizedPlaceCategory,
+                            item.locationRequired() && item.placeKeyword() != null
+                                ? item.placeKeyword().strip() : null,
                             item.reason().strip(),
                             item.emoji()
                     )
