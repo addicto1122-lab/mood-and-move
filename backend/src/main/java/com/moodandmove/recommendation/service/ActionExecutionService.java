@@ -82,6 +82,8 @@ public class ActionExecutionService {
                 throw conflict("이미 다른 행동을 선택했습니다.");
             }
 
+            session.select();
+
             // 같은 행동을 다시 선택한 요청은 기존 결과 반환
             var recheck = moodRecheckRepository
                     .findByActionExecution_Id(execution.getId())
@@ -114,6 +116,8 @@ public class ActionExecutionService {
         candidates.stream()
                 .filter(item -> !item.getId().equals(recommendationId))
                 .forEach(Recommendation::unselect);
+
+        session.select();
 
         // 6. 선택 즉시 실행 시작: STARTED와 startedAt 저장
         var execution = actionExecutionRepository.saveAndFlush(
@@ -174,6 +178,9 @@ public class ActionExecutionService {
                         );
 
         if (alreadySkipped) {
+
+            session.skip();
+
             return new RecommendationResponse(
                     sessionId,
                     session.getLocationMode(),
@@ -205,6 +212,8 @@ public class ActionExecutionService {
         candidates.forEach(
                 Recommendation::skip
         );
+
+        session.skip();
 
         return new RecommendationResponse(
                 sessionId,
