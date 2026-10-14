@@ -228,7 +228,11 @@ export default function RecommendationPage() {
     /*
      * 장소 추천이 필요 없는 행동
      */
-    if (!item.locationRequired || !item.placeCategory) {
+    if (
+      (locationMode !== "CURRENT" && locationMode !== "SAVED") ||
+      !item.locationRequired ||
+      !item.placeCategory
+    ) {
       return;
     }
 
@@ -319,17 +323,13 @@ export default function RecommendationPage() {
         );
       }
 
-      const { latitude, longitude } = searchLocation;
       /*
        * =========================
        * 실제 API 호출
        * =========================
        */
       const places = await getNearbyPlaces({
-        type: item.placeCategory,
-        latitude,
-        longitude,
-        keyword: item.placeKeyword,
+        recommendationId: item.recommendationId,
       });
 
       console.log("===== 장소 검색 결과 =====", places);
@@ -481,6 +481,16 @@ export default function RecommendationPage() {
         const restoredPlaces = {};
 
         loadedRecommendations.forEach((recommendation) => {
+          // 위치를 사용하지 않거나 장소 검색 대상이 아니면 캐시 복원 생략
+          if (
+            (data.locationMode !== "CURRENT" &&
+              data.locationMode !== "SAVED") ||
+            !recommendation.locationRequired ||
+            !recommendation.placeCategory
+          ) {
+            return;
+          }
+
           const cached = loadCachedPlaces(
             recommendation.recommendationId,
             cacheScope,
@@ -817,42 +827,44 @@ export default function RecommendationPage() {
               {/* =========================
                     장소 버튼
                 ========================= */}
-              {item.locationRequired && item.placeCategory && (
-                <button
-                  type="button"
-                  className="place-search-button"
-                  onClick={() => {
-                    /*
-                     * React state에
-                     * 이미 장소가 있으면
-                     * 바로 지도
-                     */
-                    if (alreadyLoaded) {
-                      setMapRecommendationId(item.recommendationId);
+              {(locationMode === "CURRENT" || locationMode === "SAVED") &&
+                item.locationRequired &&
+                item.placeCategory && (
+                  <button
+                    type="button"
+                    className="place-search-button"
+                    onClick={() => {
+                      /*
+                       * React state에
+                       * 이미 장소가 있으면
+                       * 바로 지도
+                       */
+                      if (alreadyLoaded) {
+                        setMapRecommendationId(item.recommendationId);
 
-                      return;
-                    }
+                        return;
+                      }
 
-                    /*
-                     * state에 없으면
-                     * handleFindPlaces 안에서
-                     *
-                     * sessionStorage →
-                     * API 순서로 확인
-                     */
-                    handleFindPlaces(item);
-                  }}
-                  disabled={placeLoadingId !== null}
-                >
-                  {isPlaceLoading
-                    ? "📍 주변 장소 찾는 중..."
-                    : alreadyLoaded
-                      ? "🗺️ 카카오맵에서 보기"
-                      : locationMode === "SAVED"
-                        ? "🏠 기본 활동 지역 장소 보기"
-                        : "📍 내 주변 장소 보기"}
-                </button>
-              )}
+                      /*
+                       * state에 없으면
+                       * handleFindPlaces 안에서
+                       *
+                       * sessionStorage →
+                       * API 순서로 확인
+                       */
+                      handleFindPlaces(item);
+                    }}
+                    disabled={placeLoadingId !== null}
+                  >
+                    {isPlaceLoading
+                      ? "📍 주변 장소 찾는 중..."
+                      : alreadyLoaded
+                        ? "🗺️ 카카오맵에서 보기"
+                        : locationMode === "SAVED"
+                          ? "🏠 기본 활동 지역 장소 보기"
+                          : "📍 내 주변 장소 보기"}
+                  </button>
+                )}
 
               {/* 장소 검색 중 */}
               {isPlaceLoading && (

@@ -8,7 +8,10 @@ import com.moodandmove.common.domain.type.EnvironmentType;
 import com.moodandmove.common.domain.type.SocialType;
 import com.moodandmove.common.domain.type.TimeBucket;
 import com.moodandmove.mood.domain.entity.MoodEntry;
+import com.moodandmove.mood.dto.request.MoodCreateRequest;
+import com.moodandmove.mood.repository.EmotionRepository;
 import com.moodandmove.mood.repository.MoodEntryRepository;
+import com.moodandmove.mood.service.MoodScoreCalculator;
 import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.place.domain.type.PlaceType;
 import com.moodandmove.recommendation.domain.dto.*;
@@ -25,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,6 +50,9 @@ public class RecommendationService {
     private final RecommendationGenerationLogService generationLogService;
     private final UserHobbyRepository userHobbyRepository;
     private final UserActionDislikeService userActionDislikeService;
+
+    private final EmotionRepository emotionRepository;
+    private final MoodScoreCalculator moodScoreCalculator;
 
     private static final Set<String> ACTION_CATEGORIES =
             Arrays.stream(ActionCategory.values())
@@ -80,12 +87,6 @@ public class RecommendationService {
         List<ActionCandidateDto> candidates = new ArrayList<>();
 
         for (Action action : actions) {
-
-            // 위치를 사용하지 않을 경우 장소 필수 행동 제외
-            if (locationMode == LocationMode.NONE
-                    && action.isLocationRequired()) {
-                continue;
-            }
 
             ActionPersonalStatResponse emotionStat =
                     userActionStatService.getPersonalStat(
@@ -172,10 +173,57 @@ public class RecommendationService {
             Long moodEntryId,
             RecommendationGenerateRequest request
     ) {
-        // 1. 감정 일기 기반 현재 상태
-        CurrentStateDto currentState =
-                createCurrentState(userId, moodEntryId);
+        return buildLlmRequest(
+                userId,
+                createCurrentState(userId, moodEntryId),
+                request
+        );
+    }
+    // DB 저장 전, 사용자가 입력한 일기 내용으로 추천 요청 구성
+    public LlmRecommendationRequestDto createLlmRequestFromInput(
+            Long userId,
+            MoodCreateRequest moodRequest,
+            RecommendationGenerateRequest recommendationRequest,
+            LocalDateTime recordedAt
+    ) {
+        var emotion = emotionRepository
+                .findById(moodRequest.emotionCode())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "존재하지 않는 감정입니다."
+                ));
 
+        if (!emotion.isActive()) {
+            throw new IllegalArgumentException(
+                    "현재 사용할 수 없는 감정입니다."
+            );
+        }
+
+        int moodScore = moodScoreCalculator.calculate(
+                emotion,
+                moodRequest.intensity()
+        );
+
+        CurrentStateDto currentState = new CurrentStateDto(
+                emotion.getEmotionCode(),
+                moodRequest.intensity(),
+                moodScore,
+                moodRequest.currentActivity(),
+                moodRequest.diaryContent(),
+                timeBucketResolver.resolve(recordedAt)
+        );
+
+        return buildLlmRequest(
+                userId,
+                currentState,
+                recommendationRequest
+        );
+    }
+
+    private LlmRecommendationRequestDto buildLlmRequest(
+            Long userId,
+            CurrentStateDto currentState,
+            RecommendationGenerateRequest request
+    ){
         // 2. 사용자 위치
         RecommendationLocationDto location =
                 resolveLocation(userId, request);
@@ -282,6 +330,46 @@ public class RecommendationService {
                 );
             }
         };
+    }
+
+    // 추천 생성·검증만 수행. 일기와 추천의 MySQL 저장은 하지 않음.
+    public PreparedRecommendation prepareRecommendation(
+            Long userId,
+            MoodCreateRequest moodRequest,
+            RecommendationGenerateRequest recommendationRequest,
+            LocalDateTime recordedAt
+    ) {
+        var llmRequest = createLlmRequestFromInput(
+                userId,
+                moodRequest,
+                recommendationRequest,
+                recordedAt
+        );
+
+        // 호출 실패 로그는 기존 Gemini 생성기에서 기록
+        var result = recommendationLlmGenerator.generate(llmRequest);
+
+        try {
+            var validated = validateRecommendations(
+                    result,
+                    llmRequest.location().locationMode(),
+                    llmRequest.dislikedActions()
+            );
+
+            return new PreparedRecommendation(
+                    result.requestId(),
+                    llmRequest,
+                    validated
+            );
+        } catch (RuntimeException e) {
+            generationLogService.markFailure(
+                    result.requestId(),
+                    "VALIDATE_RECOMMENDATIONS",
+                    e
+            );
+
+            throw e;
+        }
     }
 
     // 실제 추천 생성
@@ -428,12 +516,6 @@ public class RecommendationService {
                 if (!PLACE_CATEGORIES.contains(normalizedPlaceCategory)) {
                     continue;
                 }
-            }
-
-            // 위치를 사용하지 않는다면 장소 필수 행동 제외
-            if (locationMode == LocationMode.NONE
-                    && item.locationRequired()) {
-                continue;
             }
 
             String normalizedKey =

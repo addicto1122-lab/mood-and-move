@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +31,20 @@ public class MoodService {
             Long userId,
             MoodCreateRequest request
     ) {
+        return createMood(userId, request, LocalDateTime.now());
+    }
+
+    @Transactional
+    public Long createMood(
+            Long userId,
+            MoodCreateRequest request,
+            LocalDateTime recordedAt
+    ) {
+        if (recordedAt == null) {
+            throw new IllegalArgumentException("작성 시각은 필수입니다.");
+        }
+
+        // 아래 기존 재측정 확인 코드부터 그대로 유지
 
         boolean hasPendingRecheck = actionExecutionRepository.findFirstByUserIdAndStatusAndSession_MoodEntry_DeletedAtIsNullOrderByStartedAtDescIdDesc(
                 userId,
@@ -43,7 +58,7 @@ public class MoodService {
             );
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = recordedAt.toLocalDate();
 
         if (moodEntryRepository.existsByUser_IdAndEntryDate(userId, today)) {
             throw new IllegalArgumentException(
@@ -84,7 +99,8 @@ public class MoodService {
                 request.intensity(),
                 moodScore,
                 request.currentActivity(),
-                request.diaryContent()
+                request.diaryContent(),
+                recordedAt
         );
 
         MoodEntry savedMood =
@@ -102,5 +118,30 @@ public class MoodService {
                 userId,
                 today
         );
+    }
+    @Transactional(readOnly = true)
+    public void validateCanCreate(Long userId, LocalDate entryDate) {
+        if (!userRepository.existsById(userId)) {
+            throw new IllegalArgumentException("사용자를 찾을 수 없습니다.");
+        }
+
+        boolean hasPendingRecheck = actionExecutionRepository
+                .findFirstByUserIdAndStatusAndSession_MoodEntry_DeletedAtIsNullOrderByStartedAtDescIdDesc(
+                        userId,
+                        ExecutionStatus.STARTED
+                )
+                .isPresent();
+
+        if (hasPendingRecheck) {
+            throw new IllegalStateException(
+                    "이전 행동의 기분 재측정을 먼저 완료해주세요."
+            );
+        }
+
+        if (moodEntryRepository.existsByUser_IdAndEntryDate(userId, entryDate)) {
+            throw new IllegalArgumentException(
+                    "오늘의 감정 기록은 이미 작성했습니다."
+            );
+        }
     }
 }
