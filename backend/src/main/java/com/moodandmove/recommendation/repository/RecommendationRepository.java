@@ -15,4 +15,6 @@ public interface RecommendationRepository
 
     @EntityGraph(attributePaths = "action")
     Optional<Recommendation> findFirstBySession_MoodEntry_IdOrderByRankNoAsc(Long moodEntryId);
+
+    Optional<Recommendation> findTopByAction_IdOrderByIdDesc(Long actionId);
 }

@@ -5,6 +5,7 @@ import com.moodandmove.recommendation.domain.dto.response.DislikeActionResponse;
 import com.moodandmove.recommendation.domain.entity.Action;
 import com.moodandmove.recommendation.domain.entity.UserActionDislike;
 import com.moodandmove.recommendation.repository.ActionRepository;
+import com.moodandmove.recommendation.repository.RecommendationRepository;
 import com.moodandmove.recommendation.repository.UserActionDislikeRepository;
 import com.moodandmove.user.domain.entity.User;
 import com.moodandmove.user.repository.UserRepository;
@@ -21,6 +22,7 @@ public class UserActionDislikeService {
     private final UserRepository userRepository;
     private final ActionRepository actionRepository;
     private final UserActionDislikeRepository userActionDislikeRepository;
+    private final RecommendationRepository recommendationRepository;
 
     // 전체 행동 및 사용자 비선호 여부 조회
     // 사용자가 실제 등록한 비선호 행동만 조회
@@ -37,6 +39,15 @@ public class UserActionDislikeService {
                     Action action =
                             dislike.getAction();
 
+                    String emoji = recommendationRepository
+                            .findTopByAction_IdOrderByIdDesc(
+                                    action.getId()
+                            )
+                            .map(recommendation ->
+                                    recommendation.getEmoji()
+                            )
+                            .orElse("✨");
+
                     return new DislikeActionResponse(
                             action.getId(),
                             action.getActionName(),
@@ -44,7 +55,8 @@ public class UserActionDislikeService {
                             action.getDurationMinutes(),
                             action.getDurationDays(),
                             action.getDurationNights(),
-                            true
+                            true,
+                            emoji
                     );
                 })
                 .toList();
