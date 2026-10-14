@@ -82,6 +82,10 @@ public class SecurityConfig {
                                 "/api/consents/current-location",
                                 //메일
                                 "/api/auth/email/**",
+                                // 비밀번호 찾기
+                                "/api/auth/password-reset/send",
+                                "/api/auth/password-reset/verify",
+                                "/api/auth/password-reset/reset",
                                 // 위치 기반 장소 API 테스트용
                                 "/api/places/**"
                         ).permitAll()
