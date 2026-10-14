@@ -27,6 +27,9 @@ public class RecommendationGenerationLog {
     // MySQL 추천 세션 ID: 저장 전이나 실패 시에는 null
     private Long sessionId;
 
+    // 추천을 요청한 사용자 ID
+    private Long userId;
+
     // COLD_START / HYBRID / PERSONALIZED
     private String recommendationType;
 

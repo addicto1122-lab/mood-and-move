@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { getPreferences } from "../api/authApi";
 import { formatDuration } from "../utils/formatDuration";
 import {
   getSavedRecommendations,
@@ -33,10 +32,10 @@ const environmentNames = {
  * F5 새로고침을 해도 유지되지만
  * 브라우저 탭을 닫으면 제거된다.
  */
-const PLACE_CACHE_PREFIX = "moodmove:nearby-places:";
+const PLACE_CACHE_PREFIX = "moodmove:nearby-places:v2";
 
-function getPlaceCacheKey(recommendationId) {
-  return PLACE_CACHE_PREFIX + recommendationId;
+function getPlaceCacheKey(recommendationId, scope) {
+  return PLACE_CACHE_PREFIX + JSON.stringify([scope, recommendationId]);
 }
 
 /*
@@ -51,9 +50,11 @@ function getPlaceCacheKey(recommendationId) {
  * [place, place...]
  * → 검색 결과 존재
  */
-function loadCachedPlaces(recommendationId) {
+function loadCachedPlaces(recommendationId, scope) {
   try {
-    const raw = sessionStorage.getItem(getPlaceCacheKey(recommendationId));
+    const raw = sessionStorage.getItem(
+      getPlaceCacheKey(recommendationId, scope),
+    );
 
     if (raw === null) {
       return null;
@@ -76,10 +77,10 @@ function loadCachedPlaces(recommendationId) {
 /*
  * 캐시 저장
  */
-function saveCachedPlaces(recommendationId, places) {
+function saveCachedPlaces(recommendationId, places, scope) {
   try {
     sessionStorage.setItem(
-      getPlaceCacheKey(recommendationId),
+      getPlaceCacheKey(recommendationId, scope),
       JSON.stringify(places ?? []),
     );
   } catch (error) {
@@ -115,6 +116,8 @@ export default function RecommendationPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [actionError, setActionError] = useState("");
+
+  const [placeCacheScope, setPlaceCacheScope] = useState(null);
 
   const submittingRef = useRef(false);
 
@@ -166,7 +169,7 @@ export default function RecommendationPage() {
   /*
    * SAVED 위치 좌표
    */
-  const [savedLocation, setSavedLocation] = useState(null);
+  const [searchLocation, setSearchLocation] = useState(null);
 
   /*
    * =========================
@@ -256,7 +259,7 @@ export default function RecommendationPage() {
      * 새로고침 후 React state는 사라지지만
      * sessionStorage는 유지된다.
      */
-    const storedPlaces = loadCachedPlaces(recommendationId);
+    const storedPlaces = loadCachedPlaces(recommendationId, placeCacheScope);
 
     /*
      * null이 아니라는 것은
@@ -302,71 +305,21 @@ export default function RecommendationPage() {
     }));
 
     try {
-      let latitude;
-      let longitude;
-
-      /*
-       * =========================
-       * SAVED
-       * =========================
-       */
-      if (locationMode === "SAVED") {
-        if (
-          savedLocation?.latitude == null ||
-          savedLocation?.longitude == null
-        ) {
-          throw new Error("저장된 기본 활동 지역을 확인할 수 없습니다.");
-        }
-
-        latitude = savedLocation.latitude;
-
-        longitude = savedLocation.longitude;
-
-        /*
-         * =========================
-         * CURRENT
-         * =========================
-         */
-      } else if (locationMode === "CURRENT") {
-        if (!navigator.geolocation) {
-          throw new Error(
-            "현재 브라우저에서는 위치 기능을 사용할 수 없습니다.",
-          );
-        }
-
-        const position = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: false,
-
-            timeout: 10000,
-
-            maximumAge: 60000,
-          });
-        });
-
-        latitude = position.coords.latitude;
-
-        longitude = position.coords.longitude;
-
-        /*
-         * =========================
-         * NONE
-         * =========================
-         */
-      } else {
+      if (locationMode !== "CURRENT" && locationMode !== "SAVED") {
         throw new Error("위치 기반 장소 추천을 사용하지 않았습니다.");
       }
 
-      console.log("===== 장소 검색 기준 =====");
+      if (
+        !searchLocation ||
+        !Number.isFinite(searchLocation.latitude) ||
+        !Number.isFinite(searchLocation.longitude)
+      ) {
+        throw new Error(
+          "이 추천에는 작성 당시 위치가 저장되어 있지 않습니다. 새 추천부터 장소 검색을 사용할 수 있어요.",
+        );
+      }
 
-      console.log({
-        recommendationId,
-        locationMode,
-        latitude,
-        longitude,
-        placeCategory: item.placeCategory,
-      });
-
+      const { latitude, longitude } = searchLocation;
       /*
        * =========================
        * 실제 API 호출
@@ -374,10 +327,9 @@ export default function RecommendationPage() {
        */
       const places = await getNearbyPlaces({
         type: item.placeCategory,
-
         latitude,
-
         longitude,
+        keyword: item.placeKeyword,
       });
 
       console.log("===== 장소 검색 결과 =====", places);
@@ -392,7 +344,7 @@ export default function RecommendationPage() {
        * 여기서 저장해놔야
        * 새로고침 후 재사용 가능
        */
-      saveCachedPlaces(recommendationId, resultPlaces);
+      saveCachedPlaces(recommendationId, resultPlaces, placeCacheScope);
 
       /*
        * React state에도 저장
@@ -459,7 +411,7 @@ export default function RecommendationPage() {
 
         setLocationMode(null);
 
-        setSavedLocation(null);
+        setSearchLocation(null);
 
         setPendingDislikeIds([]);
 
@@ -486,9 +438,34 @@ export default function RecommendationPage() {
 
         const loadedRecommendations = data.recommendations ?? [];
 
+        const cacheScope = JSON.stringify({
+          sessionId: data.sessionId,
+          locationMode: data.locationMode,
+          latitude: data.searchLatitude,
+          longitude: data.searchLongitude,
+          recommendations: loadedRecommendations.map((item) => ({
+            id: item.recommendationId,
+            actionName: item.actionName,
+            locationRequired: item.locationRequired,
+            placeCategory: item.placeCategory,
+            placeKeyword: item.placeKeyword ?? null,
+          })),
+        });
+
+        setPlaceCacheScope(cacheScope);
+
         setSessionId(data.sessionId);
 
         setLocationMode(data.locationMode);
+
+        setSearchLocation(
+          data.searchLatitude != null && data.searchLongitude != null
+            ? {
+                latitude: Number(data.searchLatitude),
+                longitude: Number(data.searchLongitude),
+              }
+            : null,
+        );
 
         setRecommendations(loadedRecommendations);
 
@@ -504,8 +481,10 @@ export default function RecommendationPage() {
         const restoredPlaces = {};
 
         loadedRecommendations.forEach((recommendation) => {
-          const cached = loadCachedPlaces(recommendation.recommendationId);
-
+          const cached = loadCachedPlaces(
+            recommendation.recommendationId,
+            cacheScope,
+          );
           /*
            * null
            * → 검색한 적 없음
@@ -519,32 +498,6 @@ export default function RecommendationPage() {
         });
 
         setPlaceResults(restoredPlaces);
-
-        /*
-         * SAVED일 경우
-         * 기본 활동 지역 조회
-         */
-        if (data.locationMode === "SAVED") {
-          const preference = await getPreferences();
-
-          if (cancelled) {
-            return;
-          }
-
-          console.log("===== 기본 활동 지역 =====", {
-            region: preference.defaultRegionName,
-
-            latitude: preference.defaultRegionLatitude,
-
-            longitude: preference.defaultRegionLongitude,
-          });
-
-          setSavedLocation({
-            latitude: preference.defaultRegionLatitude,
-
-            longitude: preference.defaultRegionLongitude,
-          });
-        }
       } catch (err) {
         console.error("추천 조회 실패:", err);
 

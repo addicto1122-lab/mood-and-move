@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -72,13 +73,31 @@ public class RecommendationSession {
     )
     private LocationMode locationMode;
 
+    // 추천 요청 당시 장소 검색 기준 위도
+    @Column(
+            name = "search_latitude",
+            precision = 10,
+            scale = 7
+    )
+    private BigDecimal searchLatitude;
+
+    // 추천 요청 당시 장소 검색 기준 경도
+    @Column(
+            name = "search_longitude",
+            precision = 10,
+            scale = 7
+    )
+    private BigDecimal searchLongitude;
+
     // 추천 세션 생성
     public static RecommendationSession create(
             Long userId,
             MoodEntry moodEntry,
             TimeBucket timeBucket,
             RecommendationType recommendationType,
-            LocationMode locationMode
+            LocationMode locationMode,
+            BigDecimal searchLatitude,
+            BigDecimal searchLongitude
     ) {
         Objects.requireNonNull(userId, "사용자 ID는 필수입니다.");
         Objects.requireNonNull(moodEntry, "기분 입력은 필수입니다.");
@@ -93,6 +112,24 @@ public class RecommendationSession {
         session.timeBucket = timeBucket;
         session.recommendationType = recommendationType;
         session.locationMode = locationMode;
+
+        if (locationMode == LocationMode.NONE) {
+            session.searchLatitude = null;
+            session.searchLongitude = null;
+        } else {
+            if (searchLatitude == null || searchLongitude == null
+                    || searchLatitude.compareTo(BigDecimal.valueOf(-90)) < 0
+                    || searchLatitude.compareTo(BigDecimal.valueOf(90)) > 0
+                    || searchLongitude.compareTo(BigDecimal.valueOf(-180)) < 0
+                    || searchLongitude.compareTo(BigDecimal.valueOf(180)) > 0) {
+                throw new IllegalArgumentException(
+                        "장소 검색 기준 좌표가 올바르지 않습니다."
+                );
+            }
+
+            session.searchLatitude = searchLatitude;
+            session.searchLongitude = searchLongitude;
+        }
 
         return session;
     }

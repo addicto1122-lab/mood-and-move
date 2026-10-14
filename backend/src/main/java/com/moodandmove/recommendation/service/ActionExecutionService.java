@@ -177,6 +177,8 @@ public class ActionExecutionService {
             return new RecommendationResponse(
                     sessionId,
                     session.getLocationMode(),
+                    session.getSearchLatitude(),
+                    session.getSearchLongitude(),
                     candidates.stream()
                             .map(
                                     RecommendationResponse.Item::from
@@ -207,6 +209,8 @@ public class ActionExecutionService {
         return new RecommendationResponse(
                 sessionId,
                 session.getLocationMode(),
+                session.getSearchLatitude(),
+                session.getSearchLongitude(),
                 candidates.stream()
                         .map(
                                 RecommendationResponse.Item::from
