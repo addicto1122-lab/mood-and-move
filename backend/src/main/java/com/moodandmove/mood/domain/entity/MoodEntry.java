@@ -80,19 +80,41 @@ public class MoodEntry {
             String currentActivity,
             String diaryContent
     ) {
+        return create(
+                user,
+                emotion,
+                intensity,
+                moodScore,
+                currentActivity,
+                diaryContent,
+                LocalDateTime.now()
+        );
+    }
+
+    public static MoodEntry create(
+            User user,
+            Emotion emotion,
+            Integer intensity,
+            Integer moodScore,
+            String currentActivity,
+            String diaryContent,
+            LocalDateTime recordedAt
+    ) {
+        if (recordedAt == null) {
+            throw new IllegalArgumentException("작성 시각은 필수입니다.");
+        }
+
         MoodEntry moodEntry = new MoodEntry();
 
-        LocalDateTime now = LocalDateTime.now();
-
         moodEntry.user = user;
-        moodEntry.entryDate = now.toLocalDate();
+        moodEntry.entryDate = recordedAt.toLocalDate();
         moodEntry.emotion = emotion;
         moodEntry.moodScore = moodScore;
         moodEntry.intensity = intensity;
         moodEntry.currentActivity = currentActivity;
         moodEntry.diaryContent = diaryContent;
         moodEntry.recommendationStatus = RecommendationStatus.AVAILABLE;
-        moodEntry.recordedAt = now;
+        moodEntry.recordedAt = recordedAt;
 
         return moodEntry;
     }
