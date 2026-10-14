@@ -134,6 +134,10 @@ export default function LoginPage() {
             />
           </div>
 
+          <div className="forgot-password-link">
+            <Link to="/forgot-password">비밀번호를 잊으셨나요?</Link>
+          </div>
+
           <button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? "로그인 중..." : "로그인"}
           </button>

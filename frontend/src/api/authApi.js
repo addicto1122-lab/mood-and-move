@@ -567,3 +567,59 @@ export async function cancelSocialRecovery() {
     throw new Error("계정 복구 취소에 실패했습니다.");
   }
 }
+
+const PASSWORD_RESET_URL = "/api/auth/password-reset";
+
+// 인증번호 발송
+export async function sendPasswordResetCode(email) {
+  const response = await fetch(`${PASSWORD_RESET_URL}/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify({ email })
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(response, "인증번호 발송에 실패했습니다.")
+    );
+  }
+
+  return response.json();
+}
+
+// 인증번호 검증
+export async function verifyPasswordResetCode(email, code) {
+  const response = await fetch(`${PASSWORD_RESET_URL}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify({ email, code })
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(response, "인증번호가 올바르지 않습니다.")
+    );
+  }
+
+  return response.json();
+}
+
+// 새 비밀번호 저장
+export async function confirmPasswordReset(resetToken, newPassword) {
+  const response = await fetch(`${PASSWORD_RESET_URL}/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "omit",
+    body: JSON.stringify({ resetToken, newPassword })
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await getErrorMessage(response, "비밀번호 재설정에 실패했습니다.")
+    );
+  }
+
+  return response.json();
+}
