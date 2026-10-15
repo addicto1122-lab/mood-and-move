@@ -52,9 +52,8 @@ function getPlaceCacheKey(recommendationId, scope) {
  */
 function loadCachedPlaces(recommendationId, scope) {
   try {
-    const raw = sessionStorage.getItem(
-      getPlaceCacheKey(recommendationId, scope),
-    );
+    const key = getPlaceCacheKey(recommendationId, scope);
+    const raw = sessionStorage.getItem(key);
 
     if (raw === null) {
       return null;
@@ -62,14 +61,15 @@ function loadCachedPlaces(recommendationId, scope) {
 
     const data = JSON.parse(raw);
 
-    if (!Array.isArray(data)) {
+    // 빈 결과나 잘못된 캐시는 삭제하고 검색 가능한 상태로 처리
+    if (!Array.isArray(data) || data.length === 0) {
+      sessionStorage.removeItem(key);
       return null;
     }
 
     return data;
   } catch (error) {
     console.error("장소 캐시 조회 실패:", error);
-
     return null;
   }
 }
@@ -79,10 +79,15 @@ function loadCachedPlaces(recommendationId, scope) {
  */
 function saveCachedPlaces(recommendationId, places, scope) {
   try {
-    sessionStorage.setItem(
-      getPlaceCacheKey(recommendationId, scope),
-      JSON.stringify(places ?? []),
-    );
+    const key = getPlaceCacheKey(recommendationId, scope);
+
+    // 빈 결과는 저장하지 않고 기존 캐시도 제거
+    if (!Array.isArray(places) || places.length === 0) {
+      sessionStorage.removeItem(key);
+      return;
+    }
+
+    sessionStorage.setItem(key, JSON.stringify(places));
   } catch (error) {
     console.error("장소 캐시 저장 실패:", error);
   }
@@ -224,10 +229,8 @@ export default function RecommendationPage() {
    * 주변 장소 검색
    * =========================
    */
-  const handleFindPlaces = async (item) => {
-    /*
-     * 장소 추천이 필요 없는 행동
-     */
+  const handleFindPlaces = async (item, forceRefresh = false) => {
+    // 위치를 사용하지 않거나 장소 검색 대상이 아니면 중단
     if (
       (locationMode !== "CURRENT" && locationMode !== "SAVED") ||
       !item.locationRequired ||
@@ -235,57 +238,36 @@ export default function RecommendationPage() {
     ) {
       return;
     }
-
+    /*
+     * 장소 추천이 필요 없는 행동
+     */
     const recommendationId = item.recommendationId;
 
-    /*
-     * =========================
-     * 1. React State 캐시 확인
-     * =========================
-     */
-    const cachedPlaces = placeResults[recommendationId];
-
-    /*
-     * 장소가 이미 있으면
-     * API 호출 없이 바로 지도
-     */
-    if (cachedPlaces?.length > 0) {
-      setMapRecommendationId(recommendationId);
-
+    // 검색 중에는 추가 요청이나 지도 열기를 막음
+    if (placeLoadingRef.current) {
       return;
     }
 
-    /*
-     * =========================
-     * 2. sessionStorage 확인
-     * =========================
-     *
-     * 새로고침 후 React state는 사라지지만
-     * sessionStorage는 유지된다.
-     */
-    const storedPlaces = loadCachedPlaces(recommendationId, placeCacheScope);
+    // 다시 찾아보기일 때는 두 캐시 모두 건너뜀
+    if (!forceRefresh) {
+      const cachedPlaces = placeResults[recommendationId];
 
-    /*
-     * null이 아니라는 것은
-     * 이전에 한번 검색했다는 뜻.
-     *
-     * 빈 배열도 다시 API 호출하지 않는다.
-     */
-    if (storedPlaces !== null) {
-      setPlaceResults((prev) => ({
-        ...prev,
-
-        [recommendationId]: storedPlaces,
-      }));
-
-      /*
-       * 장소가 있다면 지도 열기
-       */
-      if (storedPlaces.length > 0) {
+      if (cachedPlaces?.length > 0) {
         setMapRecommendationId(recommendationId);
+        return;
       }
 
-      return;
+      const storedPlaces = loadCachedPlaces(recommendationId, placeCacheScope);
+
+      if (storedPlaces !== null) {
+        setPlaceResults((prev) => ({
+          ...prev,
+          [recommendationId]: storedPlaces,
+        }));
+
+        setMapRecommendationId(recommendationId);
+        return;
+      }
     }
 
     /*
@@ -863,6 +845,20 @@ export default function RecommendationPage() {
                         : locationMode === "SAVED"
                           ? "🏠 기본 활동 지역 장소 보기"
                           : "📍 내 주변 장소 보기"}
+                  </button>
+                )}
+              {(locationMode === "CURRENT" || locationMode === "SAVED") &&
+                item.locationRequired &&
+                item.placeCategory &&
+                (Boolean(placeErrorForItem) ||
+                  (hasSearched && placesForItem.length === 0)) && (
+                  <button
+                    type="button"
+                    className="place-search-button"
+                    onClick={() => handleFindPlaces(item, true)}
+                    disabled={placeLoadingId !== null}
+                  >
+                    다시 찾아보기
                   </button>
                 )}
 

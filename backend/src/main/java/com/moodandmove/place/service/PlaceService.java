@@ -5,6 +5,7 @@ import com.moodandmove.place.domain.type.LocationMode;
 import com.moodandmove.place.domain.type.PlaceType;
 import com.moodandmove.place.dto.PlaceResponse;
 import com.moodandmove.place.filter.PlaceFilter;
+import com.moodandmove.place.filter.RuleBasedPlaceFilter;
 import com.moodandmove.recommendation.repository.RecommendationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ public class PlaceService {
     private final KakaoPlaceClient kakaoPlaceClient;
     private final PlaceFilter placeFilter;
     private final RecommendationRepository recommendationRepository;
+    private final RuleBasedPlaceFilter ruleBasedPlaceFilter;
 
     public List<PlaceResponse> findPlacesForRecommendation(
             Long userId,
@@ -191,6 +193,15 @@ public class PlaceService {
                         cleanedCandidates,
                         searchKeyword
                 );
+
+        // Gemini가 후보를 모두 제외하면 유형·검색어 규칙으로 다시 확인
+        if (filteredPlaces.isEmpty()) {
+            filteredPlaces = ruleBasedPlaceFilter.filter(
+                    placeType,
+                    cleanedCandidates,
+                    searchKeyword
+            );
+        }
 
         return filteredPlaces.stream()
                 .filter(place ->
