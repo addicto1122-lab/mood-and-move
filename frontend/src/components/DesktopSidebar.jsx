@@ -5,9 +5,9 @@ import RecordNavLink from "../constants/RecordNavLink";
 export default function DesktopSidebar() {
   return (
     <aside className="desktop-sidebar">
-      <div className="sidebar-logo">
+      <NavLink to="/" className="sidebar-logo">
         Mood<span>&</span>Move
-      </div>
+      </NavLink>
 
       <nav className="sidebar-menu">
         <NavLink to="/">홈</NavLink>

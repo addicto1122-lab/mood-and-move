@@ -1,6 +1,5 @@
 package com.moodandmove.recommendation.domain.type;
 
-
 public enum ActionCategory {
 
     ENTERTAINMENT,
@@ -9,12 +8,15 @@ public enum ActionCategory {
     STRETCHING,
     OUTDOOR,
     SELF_CARE,
-    SLEEP,
     READING,
     MUSIC,
     MEDITATION,
     EATING,
+    DRINK,
     TRAVEL,
     CLEANING,
-    CULTURE
+    CULTURE,
+    SOCIAL,
+    REST,
+    COOKING
 }

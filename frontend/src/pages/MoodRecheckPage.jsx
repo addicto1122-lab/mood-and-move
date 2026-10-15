@@ -88,8 +88,8 @@ export default function MoodRecheckPage() {
       return;
     }
 
-    if (!Number.isInteger(afterScore) || afterScore < 1 || afterScore > 60) {
-      setSubmitError("기분 점수는 1~60 사이로 선택해 주세요.");
+    if (!Number.isInteger(afterScore) || afterScore < 0 || afterScore > 100) {
+      setSubmitError("기분 점수는 0~100 사이로 선택해 주세요.");
       return;
     }
 
@@ -243,13 +243,13 @@ export default function MoodRecheckPage() {
           <label htmlFor="after-score">지금 기분은 어떤가요?</label>
 
           <div className="recheck-slider">
-            <span>1</span>
+            <span>0</span>
 
             <input
               id="after-score"
               type="range"
-              min="1"
-              max="60"
+              min="0"
+              max="100"
               step="1"
               value={afterScore ?? execution.beforeScore}
               onChange={(event) => setAfterScore(Number(event.target.value))}
@@ -257,7 +257,7 @@ export default function MoodRecheckPage() {
               aria-valuetext={`${afterScore}점`}
             />
 
-            <span>60</span>
+            <span>100</span>
           </div>
 
           <output htmlFor="after-score" className="recheck-score">
@@ -265,7 +265,8 @@ export default function MoodRecheckPage() {
           </output>
 
           <p className="recheck-hint">
-            1점은 기분이 매우 좋지 않은 상태, 60점은 매우 좋은 상태예요.
+            0점은 기분이 매우 좋지 않은 상태, 100점은 매우 좋은 상태예요. 행동
+            전 점수에서 시작하니, 지금 기분에 맞게 조절해주세요.
           </p>
 
           {submitError && <p role="alert">{submitError}</p>}
