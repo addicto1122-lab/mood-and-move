@@ -131,7 +131,7 @@
 }
 
 .preference-hobby-card {
-  min-height: 100px;
+  min-height: 50px;
 
   display: flex;
   flex-direction: column;
