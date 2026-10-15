@@ -237,7 +237,7 @@ export default function HomePage() {
           </div>
 
           {currentExecution ? (
-            <section className="card action-card">
+            <section className="card action-card action-progress-card">
               <div className="action-icon" aria-hidden="true">
                 {currentExecution.emoji?.trim() ||
                   currentExecution.categoryEmoji?.trim() ||

@@ -84,7 +84,7 @@ public class GeminiRecommendationGenerator
 
         위 조건을 만족하는 행동 중에서는 다음 우선순위를 사용하세요.
 
-        1. 일기에 명시된 현재 상황, 의도, 원하는 행동, 시간, 일정, 장소, 동행 조건
+        1. 일기에 명시된 현재 상황, 의도, 원하는 행동, 행동 가능 시간, 일정, 장소, 동행 조건
         2. 현재 감정, 감정 강도, 기분 점수, 현재 활동
         3. 현재 시간대
         4. 현재 위치 사용 조건
@@ -113,7 +113,7 @@ public class GeminiRecommendationGenerator
         ===== 일기와 사용자 선호 반영 원칙 =====
 
         안전성과 비선호 제외 규칙을 지키면서,
-        일기에 명시된 현재 상황, 원하는 행동, 시간, 일정,
+        일기에 명시된 현재 상황, 원하는 행동, 행동 가능 시간, 일정,
         장소, 동행 조건을 최우선으로 반영하세요.
 
         일기에 명시되지 않은 내용은 금지 조건이 아닙니다.
@@ -203,6 +203,39 @@ public class GeminiRecommendationGenerator
 
         개인화 점수가 낮다는 이유만으로 사용자가 명시적으로 원하는
         활동을 무조건 다른 활동으로 대체하지 마세요.
+        """;
+
+    private static final String DIARY_TIME_CONTEXT_RULES = """
+        ===== 일기 속 행동의 시간적 의미 판단 =====
+
+        일기에 특정 행동이 언급되었다는 이유만으로
+        그 행동을 사용자가 앞으로 하고 싶은 행동이라고 판단하지 마세요.
+
+        일기 속 행동을 다음 세 종류로 구분하세요.
+
+        1. 이미 완료한 행동
+        - "~했다", "~먹었다", "~봤다", "~다녀왔다",
+          "~찍었다", "~보냈다", "~즐겼다" 등
+        - 이미 수행한 행동은 기본적으로 다시 추천하지 마세요.
+        - 표현만 조금 바꾼 사실상 동일한 행동도 반복 추천하지 마세요.
+
+        2. 현재 수행 중인 행동
+        - "~하고 있다", "~중이다", "~있는 중이다" 등
+        - 현재 상황을 이해하는 정보로 사용하세요.
+        - 이미 수행 중인 행동을 다시 시작하라고 추천하지 마세요.
+
+        3. 앞으로 원하는 행동
+        - "~하고 싶다", "~가고 싶다", "~먹고 싶다",
+          "~해보고 싶다", "~원한다" 등
+        - 안전하고 실행 가능한 경우 추천에 적극적으로 반영하세요.
+
+        일기가 하루를 회고하거나 이미 한 활동을 정리하는 내용이라면,
+        과거 행동을 그대로 반복 추천하지 말고
+        현재 감정, 현재 활동, 시간대, 선호, 취미와 과거 효과를 바탕으로
+        다음에 할 수 있는 새로운 행동을 추천하세요.
+
+        사용자가 이미 한 행동을 다시 하고 싶다고 명시적으로 표현한 경우에만
+        동일하거나 유사한 행동을 다시 추천할 수 있습니다.
         """;
 
     private static final String CATEGORY_RULES = """
@@ -745,6 +778,7 @@ public class GeminiRecommendationGenerator
         appendCurrentState(prompt, request.currentState());
         appendLocationMode(prompt, request);
         appendSection(prompt, DIARY_PRIORITY_RULES);
+        appendSection(prompt, DIARY_TIME_CONTEXT_RULES);
         appendPreference(prompt, request);
         appendDislikedActions(prompt, request.dislikedActions());
         appendSection(prompt, CATEGORY_RULES);
