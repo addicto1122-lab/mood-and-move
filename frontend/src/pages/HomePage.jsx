@@ -126,6 +126,9 @@ export default function HomePage() {
   const handleMoodClick = () => {
     navigate("/mypage");
   };
+  const handleMoodClick_mood = () => {
+    navigate("/mood");
+  };
 
   return (
     <main className="home-page">
@@ -167,7 +170,7 @@ export default function HomePage() {
           <button
             type="button"
             className="primary-button"
-            onClick={handleMoodClick}
+            onClick={handleMoodClick_mood}
           >
             감정 기록하기
             <span>›</span>
