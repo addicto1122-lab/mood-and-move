@@ -8,7 +8,7 @@ import java.math.RoundingMode;
 @Component
 public class PersonalScoreCalculator {
 
-    private static final BigDecimal MAX_DELTA = BigDecimal.valueOf(59);
+    private static final BigDecimal MAX_DELTA = BigDecimal.valueOf(99);
     private static final BigDecimal NEUTRAL_SCORE = BigDecimal.valueOf(50);
     private static final BigDecimal DELTA_WEIGHT = BigDecimal.valueOf(0.60);
     private static final BigDecimal POSITIVE_RATE_WEIGHT = BigDecimal.valueOf(0.40);

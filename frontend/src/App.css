@@ -124,6 +124,14 @@
     letter-spacing: -0.04em;
   }
 
+  .sidebar-logo,
+  .sidebar-logo:visited,
+  .sidebar-logo:hover,
+  .sidebar-logo:active {
+    color: inherit;
+    text-decoration: none;
+  }
+
   .sidebar-logo span {
     color: var(--sage);
   }
