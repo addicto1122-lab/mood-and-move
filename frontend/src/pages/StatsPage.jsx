@@ -1426,8 +1426,8 @@ export default function StatsPage() {
                           />
 
                           <YAxis
-                            domain={[0, 100]}
-                            ticks={[0, 25, 50, 75, 100]}
+                            domain={[0, 80]}
+                            ticks={[0, 20, 40, 60, 80]}
                             width={36}
                             tick={{
                               fontSize: 10,

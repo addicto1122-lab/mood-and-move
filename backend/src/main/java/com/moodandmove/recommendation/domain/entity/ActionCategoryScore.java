@@ -107,10 +107,10 @@ public class ActionCategoryScore {
         }
 
         if (avgDelta != null
-                && (avgDelta.compareTo(new BigDecimal("-59")) < 0
-                || avgDelta.compareTo(new BigDecimal("59")) > 0)) {
+                && (avgDelta.compareTo(new BigDecimal("-60")) < 0
+                || avgDelta.compareTo(new BigDecimal("79")) > 0)) {
             throw new IllegalArgumentException(
-                    "평균 기분 변화량은 -59~59 사이여야 합니다."
+                    "평균 기분 변화량은 -60~79 사이여야 합니다."
             );
         }
 

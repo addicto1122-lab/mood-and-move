@@ -319,10 +319,10 @@ public class ActionExecutionService {
             Integer afterScore
     ) {
         // 1. 슬라이더로 전달받은 기분 점수 검증
-        if (afterScore == null || afterScore < 0 || afterScore > 100) {
+        if (afterScore == null || afterScore < 0 || afterScore > 80) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "기분 점수는 0~100 사이여야 합니다."
+                    "기분 점수는 0~80 사이여야 합니다."
             );
         }
 
