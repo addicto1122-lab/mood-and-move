@@ -64,8 +64,8 @@ public class MoodRecheck {
         if(this.afterScore != null || this.checkedAt != null){
             throw new IllegalStateException("이미 재측정이 완료되었습니다.");
         }
-        if (afterScore == null || afterScore < 1 || afterScore > 60){
-            throw new IllegalStateException("감정 점수는 1~60점 이어야 합니다");
+        if (afterScore == null || afterScore < 0 || afterScore > 100){
+            throw new IllegalStateException("감정 점수는 0~100점 이어야 합니다");
         }
         if (checkedAt == null) {
             throw new IllegalStateException("재측정 완료 시간이 필요합니다.");

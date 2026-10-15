@@ -37,4 +37,25 @@ public record LlmRecommendedActionDto(
 
         return minuteBased || dayBased;
     }
+
+    // JSON 응답을 DTO로 변환할 때 장소 필드 정리
+    public LlmRecommendedActionDto {
+        placeCategory = normalizeNullablePlaceField(placeCategory);
+        placeKeyword = normalizeNullablePlaceField(placeKeyword);
+    }
+
+    private static String normalizeNullablePlaceField(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.strip();
+
+        if (normalized.isEmpty()
+                || "null".equalsIgnoreCase(normalized)) {
+            return null;
+        }
+
+        return normalized;
+    }
 }

@@ -124,7 +124,7 @@ export default function HomePage() {
 
   // 진행 중 행동이 있으면 우선 표시
   const handleMoodClick = () => {
-    navigate("/mood");
+    navigate("/mypage");
   };
 
   return (
