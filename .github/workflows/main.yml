@@ -58,11 +58,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Build Spring Boot
+      - name: Build and Test Spring Boot
         working-directory: backend
         run: |
           chmod +x ./gradlew
-          ./gradlew assemble --no-daemon
+          ./gradlew build --no-daemon
 
       - name: Build Backend Docker Image
         run: docker build -t moodandmove-backend:ci ./backend
