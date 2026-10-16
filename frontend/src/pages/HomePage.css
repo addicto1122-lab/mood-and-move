@@ -715,3 +715,81 @@
     box-sizing: border-box;
   }
 }
+
+/* 지금 필요한 한 걸음 - 컴팩트 카드 */
+.home-page .action-progress-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 0;
+
+  min-height: 110px;
+  padding: 16px 20px;
+}
+
+/* 아이콘 가운데 정렬 */
+.home-page .action-progress-card .action-icon {
+  align-self: center;
+}
+
+/* 텍스트 간격 축소 */
+.home-page .action-progress-card .action-copy {
+  min-width: 0;
+  padding-right: 0;
+}
+
+.home-page .action-progress-card .action-copy > span {
+  margin: 0 0 4px;
+}
+
+.home-page .action-progress-card .action-copy h3 {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.home-page .action-progress-card .action-copy p {
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+/* 버튼을 오른쪽에 배치 */
+.home-page .action-progress-card > .primary-button {
+  grid-column: 3;
+  grid-row: 1;
+
+  justify-self: end;
+  align-self: center;
+
+  width: auto;
+  min-height: 40px;
+  margin: 0;
+  padding: 0 18px;
+
+  border-radius: 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* 모바일에서는 버튼을 텍스트 아래에 배치 */
+@media (max-width: 767px) {
+  .home-page .action-progress-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    row-gap: 8px;
+    padding: 16px;
+  }
+
+  .home-page .action-progress-card > .primary-button {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    margin-top: 4px;
+  }
+}
+/* PC 화면에서 행동 카드 아이콘 위치 조정 */
+@media (min-width: 960px) {
+  .home-page .action-progress-card .action-icon {
+    transform: translateY(-8px);
+  }
+}

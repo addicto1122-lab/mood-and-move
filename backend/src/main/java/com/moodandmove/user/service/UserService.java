@@ -386,12 +386,15 @@ public class UserService {
     @Transactional
     public void cancelWithdrawal(Long userId) {
 
-        if (!userWithdrawalRequestRepository.existsByUser_Id(userId)) {
-            throw new IllegalArgumentException(
-                    "진행 중인 탈퇴 신청이 없습니다."
-            );
-        }
+        UserWithdrawalRequest withdrawalRequest =
+                userWithdrawalRequestRepository
+                        .findForUpdate(userId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "진행 중인 탈퇴 신청이 없습니다."
+                                )
+                        );
 
-        userWithdrawalRequestRepository.deleteByUser_Id(userId);
+        userWithdrawalRequestRepository.delete(withdrawalRequest);
     }
 }

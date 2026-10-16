@@ -16,6 +16,8 @@ public interface EmailVerificationRepository
 
     boolean existsByEmail(String email);
 
+    void deleteByEmail(String email);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM EmailVerification e WHERE e.email = :email")
     Optional<EmailVerification> findByEmailForUpdate(

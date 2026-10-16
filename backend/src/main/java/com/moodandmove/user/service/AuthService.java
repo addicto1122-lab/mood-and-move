@@ -218,7 +218,6 @@ public class AuthService {
         return userWithdrawalRequestRepository.existsByUser_Id(userId);
     }
 
-    // 탈퇴 계정 복구 - 비밀번호 인증 실패만 별도 예외
     @Transactional
     public User recoverAccount(LoginRequest request) {
 
@@ -232,16 +231,16 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        // 비밀번호는 맞지만 복구 대상이 아닌 경우
-        if (!userWithdrawalRequestRepository.existsByUser_Id(user.getId())) {
-            throw new IllegalArgumentException(
-                    "탈퇴 신청 상태가 아닙니다."
-            );
-        }
+        UserWithdrawalRequest withdrawalRequest =
+                userWithdrawalRequestRepository
+                        .findForUpdate(user.getId())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "탈퇴 신청 상태가 아닙니다."
+                                )
+                        );
 
-        userWithdrawalRequestRepository.deleteByUser_Id(
-                user.getId()
-        );
+        userWithdrawalRequestRepository.delete(withdrawalRequest);
 
         return user;
     }
@@ -426,12 +425,15 @@ public class AuthService {
     @Transactional
     public void recoverSocialAccount(Long userId) {
 
-        if (!userWithdrawalRequestRepository.existsByUser_Id(userId)) {
-            throw new IllegalArgumentException(
-                    "탈퇴 신청 상태가 아닙니다."
-            );
-        }
+        UserWithdrawalRequest withdrawalRequest =
+                userWithdrawalRequestRepository
+                        .findForUpdate(userId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "탈퇴 신청 상태가 아닙니다."
+                                )
+                        );
 
-        userWithdrawalRequestRepository.deleteByUser_Id(userId);
+        userWithdrawalRequestRepository.delete(withdrawalRequest);
     }
 }
