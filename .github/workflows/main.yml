@@ -39,10 +39,19 @@ jobs:
           fi
 
       - name: Build React
-        run: npm run build
+        env:
+          VITE_KAKAO_MAP_JS_KEY: ${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
+        run: |
+          test -n "$VITE_KAKAO_MAP_JS_KEY"
+          npm run build
 
       - name: Build Frontend Docker Image
-        run: docker build -t moodandmove-frontend:ci .
+        env:
+          VITE_KAKAO_MAP_JS_KEY: ${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
+        run: |
+          docker build \
+            --build-arg VITE_KAKAO_MAP_JS_KEY \
+            -t moodandmove-frontend:ci .
 
   backend:
     name: Spring Boot Build
@@ -93,8 +102,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Frontend
+        env:
+          VITE_KAKAO_MAP_JS_KEY: ${{ secrets.VITE_KAKAO_MAP_JS_KEY }}
         run: |
           docker build \
+            --build-arg VITE_KAKAO_MAP_JS_KEY \
             -t ghcr.io/addicto1122-lab/moodandmove-frontend:latest \
             -t ghcr.io/addicto1122-lab/moodandmove-frontend:${{ github.sha }} \
             ./frontend
