@@ -16,6 +16,8 @@ public interface PasswordResetVerificationRepository
     // 이메일로 인증 정보 조회
     Optional<PasswordResetVerification> findByEmail(String email);
 
+    void deleteByEmail(String email);
+
     // 인증번호 검증 시 동시 요청 방지
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

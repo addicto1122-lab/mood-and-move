@@ -17,7 +17,7 @@ export default function ProtectedRoute() {
       setLoading(true);
 
       try {
-        const data = await getMe();
+        const data = await getMe({ silentUnauthorized: true });
 
         if (!cancelled) {
           setUser(data);

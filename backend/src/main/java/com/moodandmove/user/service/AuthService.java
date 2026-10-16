@@ -1,5 +1,7 @@
+
 package com.moodandmove.user.service;
 
+import com.moodandmove.common.exception.InvalidCredentialsException;
 import com.moodandmove.common.security.JwtProvider;
 import com.moodandmove.common.security.RefreshTokenHasher;
 import com.moodandmove.mail.service.EmailVerificationService;
@@ -179,17 +181,18 @@ public class AuthService {
         return userRepository.existsByEmail(email);
     }
 
+    // 일반 로그인 - 인증 실패 예외 분리
     @Transactional(readOnly = true)
     public User login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다."));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash()
         )) {
-            throw new IllegalArgumentException("이메일 또는 비밀번호가 올바르지 않습니다.");
+            throw new InvalidCredentialsException();
         }
 
         return user;
@@ -209,6 +212,7 @@ public class AuthService {
 
         user.increaseTokenVersion();
     }
+
     @Transactional(readOnly = true)
     public boolean isWithdrawalPending(Long userId) {
         return userWithdrawalRequestRepository.existsByUser_Id(userId);
@@ -218,30 +222,25 @@ public class AuthService {
     public User recoverAccount(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "이메일 또는 비밀번호가 올바르지 않습니다."
-                        )
-                );
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash()
         )) {
-            throw new IllegalArgumentException(
-                    "이메일 또는 비밀번호가 올바르지 않습니다."
-            );
+            throw new InvalidCredentialsException();
         }
 
-        if (!userWithdrawalRequestRepository.existsByUser_Id(user.getId())) {
-            throw new IllegalArgumentException(
-                    "탈퇴 신청 상태가 아닙니다."
-            );
-        }
+        UserWithdrawalRequest withdrawalRequest =
+                userWithdrawalRequestRepository
+                        .findForUpdate(user.getId())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "탈퇴 신청 상태가 아닙니다."
+                                )
+                        );
 
-        userWithdrawalRequestRepository.deleteByUser_Id(
-                user.getId()
-        );
+        userWithdrawalRequestRepository.delete(withdrawalRequest);
 
         return user;
     }
@@ -262,7 +261,6 @@ public class AuthService {
                 .deleteAllByUser_Id(
                         user.getId()
                 );
-
 
         refreshTokenRepository.flush();
 
@@ -404,13 +402,14 @@ public class AuthService {
         String tokenType = jwtProvider.getTokenType(recoveryToken);
 
         if(!"RECOVERY".equals(tokenType)){
-            throw  new IllegalArgumentException("올바른 복구 토큰이 아닙니다.");
+            throw new IllegalArgumentException("올바른 복구 토큰이 아닙니다.");
         }
 
         Long userId = jwtProvider.getUserId(recoveryToken);
-        int tokenVersion  = jwtProvider.getTokenVersion(recoveryToken);
+        int tokenVersion = jwtProvider.getTokenVersion(recoveryToken);
 
-        User user = userRepository.findById(userId).orElseThrow(() -> new IllegalArgumentException("사용자를 찾을수 없습니다"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을수 없습니다"));
 
         if(user.getTokenVersion() != tokenVersion){
             throw new IllegalArgumentException("유효하지 않은 복구 토큰입니다.");
@@ -422,16 +421,19 @@ public class AuthService {
 
         return user;
     }
+
     @Transactional
     public void recoverSocialAccount(Long userId) {
 
-        if (!userWithdrawalRequestRepository.existsByUser_Id(userId)) {
-            throw new IllegalArgumentException(
-                    "탈퇴 신청 상태가 아닙니다."
-            );
-        }
+        UserWithdrawalRequest withdrawalRequest =
+                userWithdrawalRequestRepository
+                        .findForUpdate(userId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "탈퇴 신청 상태가 아닙니다."
+                                )
+                        );
 
-        userWithdrawalRequestRepository.deleteByUser_Id(userId);
+        userWithdrawalRequestRepository.delete(withdrawalRequest);
     }
-
 }

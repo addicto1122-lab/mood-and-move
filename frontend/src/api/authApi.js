@@ -49,32 +49,36 @@ async function refreshAccessToken() {
 
 // 인증 요청 공통 처리
 export async function authFetch(url, options = {}) {
-  // 요청 시작 시점의 재발급 버전
+  const { silentUnauthorized = false, ...fetchOptions } = options;
+
   const requestVersion = refreshVersion;
 
   const response = await fetch(url, {
-    ...options,
+    ...fetchOptions,
     credentials: "include"
   });
 
-  // 인증 오류가 없으면 그대로 반환
   if (response.status !== 401) {
     return response;
   }
 
-  // 다른 요청이 이미 재발급을 완료했다면 다시 재발급하지 않음
+  // 기존 Refresh Token 재발급 로직 유지
   const refreshed =
     requestVersion !== refreshVersion || (await refreshAccessToken());
 
   if (refreshed) {
-    // 새 Access Token 쿠키로 원래 요청 재시도
     return fetch(url, {
-      ...options,
+      ...fetchOptions,
       credentials: "include"
     });
   }
 
-  // 재발급 실패 시 경고와 로그인 이동은 한 번만 실행
+  // 최초 로그인 상태 확인이면 알림 없이 401 반환
+  if (silentUnauthorized) {
+    return response;
+  }
+
+  // 서비스 이용 중 인증 만료
   if (!handlingUnauthorized) {
     handlingUnauthorized = true;
 
@@ -248,10 +252,16 @@ export async function logout() {
 }
 
 // 현재 로그인 사용자 조회
-export async function getMe() {
+export async function getMe({ silentUnauthorized = false } = {}) {
   const response = await authFetch(`${API_BASE_URL}/auth/me`, {
-    method: "GET"
+    method: "GET",
+    silentUnauthorized
   });
+
+  // 비로그인 상태를 정상적인 방문자 상태로 처리
+  if (silentUnauthorized && response.status === 401) {
+    return null;
+  }
 
   if (!response.ok) {
     throw new Error("로그인이 필요합니다.");
