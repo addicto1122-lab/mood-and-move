@@ -47,12 +47,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResponseStatusException(
             ResponseStatusException e
     ) {
-        return ResponseEntity.status(e.getStatusCode())
+        return ResponseEntity
+                .status(e.getStatusCode())
                 .body(new ErrorResponse(
                         "HTTP_ERROR",
-                        e.getReason() != null
-                                ? e.getReason()
-                                : "요청을 처리할 수 없습니다.",
+                        e.getReason(),
                         null
                 ));
     }
