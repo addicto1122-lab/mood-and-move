@@ -15,7 +15,7 @@ export default function HomePage() {
   const [homeData, setHomeData] = useState({
     latestMood: null,
     todayRecommendation: null,
-    currentExecution: null,
+    currentExecution: null
   });
 
   const [now, setNow] = useState(new Date());
@@ -28,7 +28,7 @@ export default function HomePage() {
       try {
         const [userData, homeResponse] = await Promise.all([
           getMe(),
-          getHome(),
+          getHome()
         ]);
 
         setUser(userData);
@@ -264,7 +264,7 @@ export default function HomePage() {
                 className="primary-button"
                 onClick={() =>
                   navigate(
-                    `/action-executions/${currentExecution.executionId}/recheck`,
+                    `/action-executions/${currentExecution.executionId}/recheck`
                   )
                 }
               >
@@ -272,7 +272,7 @@ export default function HomePage() {
               </button>
             </section>
           ) : (
-            <section className="card action-card">
+            <section className="card action-card action-progress-card">
               <div className="action-icon" aria-hidden="true">
                 🌱
               </div>
@@ -283,20 +283,20 @@ export default function HomePage() {
                 <h3>아직 행동을 선택하지 않았어요</h3>
 
                 <p>추천받은 3가지 행동 중 하나를 골라보세요.</p>
-
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={!latestMood?.moodEntryId}
-                  onClick={() =>
-                    navigate(
-                      `/recommendation?moodEntryId=${latestMood.moodEntryId}`,
-                    )
-                  }
-                >
-                  추천 행동 선택하러 가기
-                </button>
               </div>
+
+              <button
+                type="button"
+                className="primary-button"
+                disabled={!latestMood?.moodEntryId}
+                onClick={() =>
+                  navigate(
+                    `/recommendation?moodEntryId=${latestMood.moodEntryId}`
+                  )
+                }
+              >
+                추천 행동 선택하러 가기
+              </button>
             </section>
           )}
 
