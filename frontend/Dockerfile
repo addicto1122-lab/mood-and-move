@@ -10,8 +10,17 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# 프로젝트 복사 및 빌드
+# 프로젝트 복사
 COPY . .
+
+# 카카오 지도 JavaScript API 키
+ARG VITE_KAKAO_MAP_JS_KEY
+
+# 환경변수 확인
+RUN test -n "$VITE_KAKAO_MAP_JS_KEY" || \
+    (echo "VITE_KAKAO_MAP_JS_KEY is missing" && exit 1)
+
+# React 빌드
 RUN npm run build
 
 
