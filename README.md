@@ -64,7 +64,7 @@
 | 번호 | 기능 | 설명 |
 | --- | --- | --- |
 | 01 | 회원가입 및 로그인 | 이메일 인증, 일반 로그인, 카카오 소셜 로그인 |
-| 02 | 인증 및 세션 관리 | JWT 쿠키 인증, Access/Refresh Token 재발급 및 로그아웃 |
+| 02 | 인증 및 세션 관리 | JWT HttpOnly 쿠키 인증, Access/Refresh Token 재발급, CSRF 보호 및 로그아웃 |
 | 03 | 온보딩 | 나이대, 성별, 취미, 활동 성향, 환경 및 동행 선호 설정 |
 | 04 | 감정 및 일기 기록 | 감정, 강도, 현재 활동, 일기 내용, 위치 사용 방식 입력 |
 | 05 | AI 행동 추천 | Gemini를 활용한 현재 상황 기반 행동 3개 추천 |
@@ -303,7 +303,7 @@ flowchart TD
 
 실제 DB 동시성 및 장애 복구 통합 테스트는 추가 검증 과제로 남아 있습니다.
 
-### 7. JWT 쿠키 기반 인증
+### 7. JWT 쿠키 기반 인증 및 CSRF 보호
 
 Spring Security와 JWT를 이용하여 인증을 구현했습니다.
 
@@ -311,10 +311,20 @@ Spring Security와 JWT를 이용하여 인증을 구현했습니다.
 - `HttpOnly` 쿠키에 토큰 저장
 - `SameSite=Lax` 설정
 - 운영 환경에서 `Secure` 쿠키 설정 지원
-- Access Token 만료 시 Refresh Token을 사용한 재발급
+- Access Token 만료 시 Refresh Token을 사용한 자동 재발급
 - Refresh Token 회전
 - 로그아웃 및 비밀번호 변경 시 기존 인증 상태 무효화
 - 사용자 인증 여부에 따른 API 접근 제어
+
+쿠키 기반 인증에서 발생할 수 있는 CSRF 공격을 방어하기 위해 Spring Security의 CSRF 보호를 적용했습니다.
+
+- `XSRF-TOKEN` 쿠키 발급
+- 상태 변경 요청에서 `X-XSRF-TOKEN` 헤더 검증
+- 프론트엔드의 `csrfFetch()`가 CSRF 쿠키 값을 읽어 요청 헤더에 자동 첨부
+- 기존 인증 공통 요청 함수인 `authFetch()` 내부에서 `csrfFetch()`를 사용하도록 연결
+- `/api/csrf` 엔드포인트를 통해 CSRF 토큰 초기화
+- 로그아웃 등 인증 관련 상태 변경 요청에도 CSRF 검증 적용
+- Access Token 재발급 이후 기존 요청을 자동 재시도하는 인증 흐름 유지
 
 또한 로그인 및 일반 계정 복구에는 실패 횟수 제한을 적용했습니다.
 
@@ -338,7 +348,7 @@ Spring Security와 JWT를 이용하여 인증을 구현했습니다.
 | --- | --- |
 | Language | Java 21, JavaScript |
 | Backend | Spring Boot 4.1.1, Spring Web MVC, Gradle |
-| Security | Spring Security, JWT, JJWT, BCrypt |
+| Security | Spring Security, JWT, JJWT, BCrypt, CSRF Protection |
 | ORM / Data Access | Spring Data JPA |
 | Database | MySQL 8, MongoDB |
 | Database Migration | Flyway |
@@ -876,6 +886,8 @@ npm run build
 - 이메일 인증 및 회원가입
 - 일반 로그인 및 카카오 로그인
 - JWT 재발급 및 로그아웃
+- CSRF 토큰 쿠키 발급 및 `X-XSRF-TOKEN` 요청 헤더 검증
+- Access Token 삭제 후 Refresh Token 기반 자동 재발급 및 요청 재시도
 - 로그인 실패 횟수 제한
 - 일기와 추천 동시 저장
 - AI 추천 결과 검증
@@ -979,6 +991,36 @@ Vite 환경변수는 프론트엔드 빌드 시점에 주입되는데 Docker 빌
 
 클라이언트 오류와 서버 오류를 구분하여 응답할 수 있도록 개선했습니다.
 
+### 6. JWT 쿠키 인증의 CSRF 보호
+
+**문제**
+
+Access Token과 Refresh Token을 쿠키로 전달하는 구조에서는 브라우저가 쿠키를 자동 전송하므로, 상태 변경 요청에 대한 CSRF 방어가 필요했습니다.
+
+**해결**
+
+- Spring Security CSRF 보호 활성화
+- `XSRF-TOKEN` 쿠키 발급
+- 프론트엔드에서 `X-XSRF-TOKEN` 헤더 자동 첨부
+- 공통 요청 함수 `authFetch()`가 `csrfFetch()`를 사용하도록 구성
+- `/api/csrf`를 통해 초기 CSRF 토큰을 발급
+- 로그인·로그아웃 등 상태 변경 요청에 동일한 CSRF 처리 적용
+
+**검증**
+
+- 백엔드 `compileJava` 성공
+- 프론트엔드 Vite 프로덕션 빌드 성공
+- `/api/csrf` 요청 `200 OK`
+- `XSRF-TOKEN` 쿠키 발급 확인
+- 로그아웃 POST 요청의 `X-XSRF-TOKEN` 헤더 포함 확인
+- 로그아웃 `200 OK` 및 인증 쿠키 제거 확인
+- Access Token 삭제 후 Refresh Token을 통한 Access Token 자동 재발급 확인
+- 재발급 이후 `/api/auth/me` 요청 `200 OK` 확인
+
+**결과**
+
+JWT HttpOnly 쿠키 기반 인증 흐름을 유지하면서 상태 변경 요청에 대한 CSRF 검증을 적용했습니다.
+
 ---
 
 ## 📌 향후 개선 과제
@@ -986,7 +1028,6 @@ Vite 환경변수는 프론트엔드 빌드 시점에 주입되는데 Docker 빌
 ### Backend
 
 - MySQL 동시성 및 MongoDB Outbox 장애 복구 통합 테스트
-- JWT 쿠키 인증에 대한 CSRF 방어 강화
 - 로그인 요청 제한 상태의 Redis 공용 저장소 전환
 - Gemini 및 Kakao API 타임아웃과 제한적 재시도 적용
 - SMTP 발송과 데이터베이스 트랜잭션 분리
