@@ -44,8 +44,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(
                                 corsConfigurationSource()))
 
-                // 개발 단계에서는 비활성화
-                .csrf(csrf -> csrf.disable())
+                // React SPA용 CSRF 보호 활성화
+                .csrf(csrf -> csrf.spa())
 
                 // 인증/인가 실패 처리
                 .exceptionHandling(exception -> exception
@@ -66,6 +66,7 @@ public class SecurityConfig {
                 // 접근 권한
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/csrf",
                                 "/api/auth/signup",
                                 "/api/auth/login",
                                 "/api/auth/check-email",

@@ -1,3 +1,5 @@
+import { csrfFetch } from "./csrfFetch";
+
 const API_BASE_URL = "/api";
 
 // 에러 메시지
@@ -26,7 +28,7 @@ async function refreshAccessToken() {
     return refreshPromise;
   }
 
-  refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
+  refreshPromise = csrfFetch(`${API_BASE_URL}/auth/refresh`, {
     method: "POST",
     credentials: "include"
   })
@@ -53,7 +55,7 @@ export async function authFetch(url, options = {}) {
 
   const requestVersion = refreshVersion;
 
-  const response = await fetch(url, {
+  const response = await csrfFetch(url, {
     ...fetchOptions,
     credentials: "include"
   });
@@ -67,7 +69,7 @@ export async function authFetch(url, options = {}) {
     requestVersion !== refreshVersion || (await refreshAccessToken());
 
   if (refreshed) {
-    return fetch(url, {
+    return csrfFetch(url, {
       ...fetchOptions,
       credentials: "include"
     });
@@ -94,9 +96,12 @@ export async function authFetch(url, options = {}) {
 
 // 현재 위치 기반 추천 약관 조회
 export async function getCurrentLocationPolicy() {
-  const response = await fetch(`${API_BASE_URL}/consents/current-location`, {
-    method: "GET"
-  });
+  const response = await csrfFetch(
+    `${API_BASE_URL}/consents/current-location`,
+    {
+      method: "GET"
+    }
+  );
 
   if (!response.ok) {
     throw new Error("약관 정보를 불러오지 못했습니다.");
@@ -114,7 +119,7 @@ export async function signup({
   locationConsent,
   signupToken
 }) {
-  const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+  const response = await csrfFetch(`${API_BASE_URL}/auth/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -137,9 +142,9 @@ export async function signup({
   }
 }
 
-//메일 인증
+// 메일 인증
 export async function sendEmailCode(email) {
-  const response = await fetch("/api/auth/email/send", {
+  const response = await csrfFetch("/api/auth/email/send", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -158,7 +163,7 @@ export async function sendEmailCode(email) {
 }
 
 export async function verifyEmailCode(email, code) {
-  const response = await fetch("/api/auth/email/verify", {
+  const response = await csrfFetch("/api/auth/email/verify", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -178,7 +183,7 @@ export async function verifyEmailCode(email, code) {
 
 // 이메일 중복확인
 export async function checkEmail(email) {
-  const response = await fetch(
+  const response = await csrfFetch(
     `${API_BASE_URL}/auth/check-email?email=${encodeURIComponent(email)}`,
     {
       method: "GET",
@@ -195,7 +200,7 @@ export async function checkEmail(email) {
 
 // 로그인
 export async function login({ email, password }) {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await csrfFetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -221,7 +226,7 @@ export async function login({ email, password }) {
 
 // 탈퇴 신청 계정 복구
 export async function recoverAccount({ email, password }) {
-  const response = await fetch(`${API_BASE_URL}/auth/recover`, {
+  const response = await csrfFetch(`${API_BASE_URL}/auth/recover`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -556,7 +561,7 @@ export async function updateLocationConsent(agreed) {
 
 // 소셜 로그인 계정 복구
 export async function recoverSocialAccount() {
-  const response = await fetch(`${API_BASE_URL}/auth/social/recover`, {
+  const response = await csrfFetch(`${API_BASE_URL}/auth/social/recover`, {
     method: "POST",
     credentials: "include"
   });
@@ -568,10 +573,13 @@ export async function recoverSocialAccount() {
 
 // 소셜 로그인 계정 복구 취소
 export async function cancelSocialRecovery() {
-  const response = await fetch(`${API_BASE_URL}/auth/social/recover/cancel`, {
-    method: "POST",
-    credentials: "include"
-  });
+  const response = await csrfFetch(
+    `${API_BASE_URL}/auth/social/recover/cancel`,
+    {
+      method: "POST",
+      credentials: "include"
+    }
+  );
 
   if (!response.ok) {
     throw new Error("계정 복구 취소에 실패했습니다.");
@@ -582,10 +590,12 @@ const PASSWORD_RESET_URL = "/api/auth/password-reset";
 
 // 인증번호 발송
 export async function sendPasswordResetCode(email) {
-  const response = await fetch(`${PASSWORD_RESET_URL}/send`, {
+  const response = await csrfFetch(`${PASSWORD_RESET_URL}/send`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "omit",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
     body: JSON.stringify({ email })
   });
 
@@ -600,10 +610,12 @@ export async function sendPasswordResetCode(email) {
 
 // 인증번호 검증
 export async function verifyPasswordResetCode(email, code) {
-  const response = await fetch(`${PASSWORD_RESET_URL}/verify`, {
+  const response = await csrfFetch(`${PASSWORD_RESET_URL}/verify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "omit",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
     body: JSON.stringify({ email, code })
   });
 
@@ -618,10 +630,12 @@ export async function verifyPasswordResetCode(email, code) {
 
 // 새 비밀번호 저장
 export async function confirmPasswordReset(resetToken, newPassword) {
-  const response = await fetch(`${PASSWORD_RESET_URL}/reset`, {
+  const response = await csrfFetch(`${PASSWORD_RESET_URL}/reset`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "omit",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    credentials: "include",
     body: JSON.stringify({ resetToken, newPassword })
   });
 
